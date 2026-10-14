@@ -10,10 +10,26 @@ import type { Player } from '@/domain/types'
 import { useAnthem } from '@/hooks/useAnthem'
 import type { Draw } from '@/lib/draw'
 
-const SHOW_MS = 1050
-const FLY_MS = 550
-const START_MS = 500
-const END_MS = 1100
+/** Tiempos a velocidad 1×; el selector de velocidad los divide */
+const SHOW_MS = 1700
+const FLY_MS = 750
+const START_MS = 700
+const END_MS = 1500
+
+const SPEEDS = [0.5, 0.75, 1, 1.5, 2] as const
+type Speed = (typeof SPEEDS)[number]
+const SPEED_KEY = 'wefa:revealSpeed'
+
+function readSpeed(): Speed {
+  try {
+    const v = Number(localStorage.getItem(SPEED_KEY))
+    return (SPEEDS as readonly number[]).includes(v) ? (v as Speed) : 1
+  } catch {
+    return 1
+  }
+}
+
+const speedLabel = (s: Speed) => `${String(s).replace('.', ',')}×`
 
 interface Pick {
   side: 'A' | 'B'
@@ -48,6 +64,8 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
   /** Cartas ya colocadas en su equipo */
   const [landed, setLanded] = useState(0)
   const [phase, setPhase] = useState<'wait' | 'show' | 'fly'>('wait')
+  const [speed, setSpeed] = useState<Speed>(readSpeed)
+  const ms = (base: number) => base / speed
   const current = picks[landed]
   const finished = landed >= total
 
@@ -62,7 +80,7 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
   useEffect(() => {
     if (finished) {
       fadeOut(1000)
-      const t = setTimeout(onDone, END_MS)
+      const t = setTimeout(onDone, END_MS / speed)
       return () => clearTimeout(t)
     }
     const next =
@@ -74,9 +92,20 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
               setLanded((n) => n + 1)
               setPhase('show')
             }
-    const t = setTimeout(next, phase === 'wait' ? START_MS : phase === 'show' ? SHOW_MS : FLY_MS)
+    const base = phase === 'wait' ? START_MS : phase === 'show' ? SHOW_MS : FLY_MS
+    const t = setTimeout(next, base / speed)
     return () => clearTimeout(t)
-  }, [phase, finished, fadeOut, onDone])
+  }, [phase, finished, fadeOut, onDone, speed])
+
+  const cycleSpeed = () => {
+    const nextSpeed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]!
+    setSpeed(nextSpeed)
+    try {
+      localStorage.setItem(SPEED_KEY, String(nextSpeed))
+    } catch {
+      /* almacenamiento no disponible */
+    }
+  }
 
   const shown = picks.slice(0, landed)
   const teamA = shown.filter((p) => p.side === 'A').map((p) => p.player)
@@ -100,7 +129,7 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
       aria-label="Revelación de equipos"
     >
       <div className="relative mx-auto flex h-full max-w-[480px] flex-col">
-        <Zone side="A" draw={draw} revealed={teamA} />
+        <Zone side="A" draw={draw} revealed={teamA} speed={speed} />
 
         {/* Carta central */}
         <div className="relative z-[5] flex flex-1 flex-col items-center justify-center">
@@ -129,8 +158,8 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
                   exit={{ opacity: 0 }}
                   transition={
                     phase === 'fly'
-                      ? { duration: FLY_MS / 1000, ease: [0.2, 0.9, 0.25, 1] }
-                      : { type: 'spring', stiffness: 260, damping: 22 }
+                      ? { duration: ms(FLY_MS) / 1000, ease: [0.2, 0.9, 0.25, 1] }
+                      : { type: 'spring', duration: ms(900) / 1000, bounce: 0.3 }
                   }
                 >
                   <PlayerCard player={current.player} />
@@ -169,7 +198,7 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
           </div>
         </div>
 
-        <Zone side="B" draw={draw} revealed={teamB} />
+        <Zone side="B" draw={draw} revealed={teamB} speed={speed} />
 
         <div className="absolute top-[38px] right-[18px] z-10 flex gap-1.5">
           <button
@@ -179,6 +208,15 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
             onClick={() => anthem.setMuted(!anthem.muted)}
           >
             {anthem.muted ? <VolumeX /> : <Volume2 />}
+          </button>
+          <button
+            className="btn btn--glass btn--sm num h-10 min-w-[54px] px-2.5"
+            type="button"
+            aria-label={`Velocidad ${speedLabel(speed)}. Cambiar velocidad`}
+            title="Velocidad de la animación"
+            onClick={cycleSpeed}
+          >
+            {speedLabel(speed)}
           </button>
           <button className="btn btn--glass btn--sm h-10" type="button" onClick={skip}>
             Saltar
@@ -190,7 +228,17 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
   )
 }
 
-function Zone({ side, draw, revealed }: { side: 'A' | 'B'; draw: Draw; revealed: Player[] }) {
+function Zone({
+  side,
+  draw,
+  revealed,
+  speed,
+}: {
+  side: 'A' | 'B'
+  draw: Draw
+  revealed: Player[]
+  speed: number
+}) {
   const clubId = side === 'A' ? draw.clubA : draw.clubB
   const club = getClub(clubId)
   const team = side === 'A' ? draw.result.teamA : draw.result.teamB
@@ -239,7 +287,7 @@ function Zone({ side, draw, revealed }: { side: 'A' | 'B'; draw: Draw; revealed:
             className="chip"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: [0, 1.25, 1], opacity: 1 }}
-            transition={{ duration: 0.35 }}
+            transition={{ duration: 0.45 / speed }}
           >
             <div className="chip__disc">
               {initials(p.name)}
