@@ -10,6 +10,7 @@ import {
   Trophy,
   X,
 } from 'lucide-react'
+import { LayoutGroup, motion } from 'motion/react'
 import { useState, type ReactNode } from 'react'
 import { CardSkeletons, EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
@@ -162,26 +163,51 @@ function StepPlayers({ players }: { players: Player[] }) {
         <span className="small">{n >= 2 ? `${a} contra ${b}` : 'Elige al menos 2'}</span>
       </div>
 
-      <div className="flex flex-col gap-2 pb-[150px] lg:pb-[120px]" role="group" aria-label="Jugadores">
-        {byRating.map((p) => {
-          const on = selected.has(p.id)
-          const m = Math.round(overall(p.stats))
-          return (
-            <button
-              key={p.id}
-              className={cx('prow', on && 'prow--on')}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggle(p)}
-            >
-              <span className={cx('check', on && 'check--on')}>{on && <Check strokeWidth={3} />}</span>
-              <span className="avatar">{initials(p.name)}</span>
-              <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
-              <span className={`ovr-badge ovr-badge--${tier(m)}`}>{m}</span>
-            </button>
-          )
-        })}
-      </div>
+      <LayoutGroup>
+        <div className="flex flex-col gap-6 pb-[150px] lg:pb-[120px]">
+          {[
+            { title: 'Juegan', list: byRating.filter((p) => selected.has(p.id)), accent: true },
+            { title: 'No juegan', list: byRating.filter((p) => !selected.has(p.id)), accent: false },
+          ].map(
+            (group) =>
+              group.list.length > 0 && (
+                <section key={group.title} className="flex flex-col gap-2" aria-label={group.title}>
+                  <div className="flex items-center gap-3">
+                    <h2 className="h-display h-s">{group.title}</h2>
+                    <span
+                      className={cx('h-display num text-xl', group.accent ? 'neon' : 'text-[var(--muted)]')}
+                    >
+                      {group.list.length}
+                    </span>
+                    <span className="h-px flex-1 bg-[var(--line)]" aria-hidden />
+                  </div>
+                  {group.list.map((p) => {
+                    const on = selected.has(p.id)
+                    const m = Math.round(overall(p.stats))
+                    return (
+                      <motion.button
+                        key={p.id}
+                        layoutId={`prow-${p.id}`}
+                        transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                        className={cx('prow', on && 'prow--on')}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => toggle(p)}
+                      >
+                        <span className={cx('check', on && 'check--on')}>
+                          {on && <Check strokeWidth={3} />}
+                        </span>
+                        <span className="avatar">{initials(p.name)}</span>
+                        <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
+                        <span className={`ovr-badge ovr-badge--${tier(m)}`}>{m}</span>
+                      </motion.button>
+                    )
+                  })}
+                </section>
+              ),
+          )}
+        </div>
+      </LayoutGroup>
 
       <BottomBar>
         <div
