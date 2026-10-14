@@ -8,5 +8,6 @@ export const SEED_PLAYERS: Player[] = seed.map((p) => ({
   name: p.name,
   rating: Math.round(overall(p.stats)),
   stats: p.stats,
+  avatar: null,
   active: p.active,
 }))

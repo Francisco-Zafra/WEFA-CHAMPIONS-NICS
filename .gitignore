@@ -17,3 +17,6 @@ __pycache__/
 *.db
 .vscode/*
 !.vscode/extensions.json
+
+# Avatares originales (PNG); la app usa las versiones optimizadas de public/avatars
+avatares/

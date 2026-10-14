@@ -38,9 +38,10 @@ function baseLines(players: Player[]): Player[][] {
   )
   const [keeper, ...rest] = sorted
   const m = rest.length
-  const base = Math.floor(m / 3)
-  const extra = m % 3
-  const sizes = [base + (extra > 0 ? 1 : 0), base + (extra > 1 ? 1 : 0), base]
+  // Pocas líneas para que las cartas del campo no se apilen: hasta 3 jugadores, una línea;
+  // hasta 8, dos (la de atrás con el que sobra); más, tres
+  const rows = m <= 3 ? 1 : m <= 8 ? 2 : 3
+  const sizes = Array.from({ length: rows }, (_, r) => Math.floor(m / rows) + (r < m % rows ? 1 : 0))
   const lines: Player[][] = [[keeper!]]
   let i = 0
   for (const size of sizes) {
@@ -50,7 +51,7 @@ function baseLines(players: Player[]): Player[][] {
   return lines
 }
 
-/** "2-2-1" para 6 jugadores, etc. (sin contar portero) */
+/** "3-2" para 6 jugadores, etc. (sin contar portero) */
 export function formationLabel(players: Player[]): string {
   return formationLines(players)
     .slice(1)

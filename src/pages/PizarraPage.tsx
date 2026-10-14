@@ -319,7 +319,7 @@ export function PizarraPage({
               <Pitch
                 teamA={teamA}
                 teamB={teamB}
-                height={desktop ? 600 : 640}
+                height={600}
                 edit={editing && isAdmin ? { selected, onSelect } : undefined}
               />
             </LayoutGroup>
@@ -426,7 +426,7 @@ export function PizarraPage({
               <Pitch
                 teamA={teamA}
                 teamB={teamB}
-                height={desktop ? 600 : 640}
+                height={600}
                 edit={editing && isAdmin ? { selected, onSelect } : undefined}
               />
             </LayoutGroup>

@@ -15,6 +15,7 @@ export function teamPlayers(team: MatchPlayer[], players: Player[]): Player[] {
       name: mp.name,
       rating: r,
       active: false,
+      avatar: null,
       stats: { rit: r, tir: r, pas: r, reg: r, def: r, fis: r },
     }
   })

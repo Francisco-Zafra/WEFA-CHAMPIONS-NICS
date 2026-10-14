@@ -11,6 +11,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore'
 import { useEffect, useState } from 'react'
+import { isAvatarId } from '@/domain/avatars'
 import { isClubId } from '@/domain/clubs'
 import { emptyTie, TIE_COUNT, type Cup, type CupInput, type CupTie } from '@/domain/cup'
 import { clampRating, clampStat, overall } from '@/domain/rating'
@@ -39,7 +40,8 @@ function toPlayer(id: string, d: DocumentData): Player {
   const stats = toStats(d.stats)
   // Jugadores de antes de la media manual: su media es la de los atributos
   const rating = typeof d.rating === 'number' ? clampRating(d.rating) : clampRating(overall(stats))
-  return { id, name: String(d.name ?? ''), rating, stats, active: Boolean(d.active) }
+  const avatar = isAvatarId(d.avatar) ? d.avatar : null
+  return { id, name: String(d.name ?? ''), rating, stats, avatar, active: Boolean(d.active) }
 }
 
 function toMatch(id: string, d: DocumentData): Match | null {

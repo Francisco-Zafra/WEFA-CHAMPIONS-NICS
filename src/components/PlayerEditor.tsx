@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { clampRating, clampStat, tier, TIER_LABELS } from '@/domain/rating'
 import { STAT_KEYS, STAT_LABELS, type Player, type PlayerInput, type Stats } from '@/domain/types'
 import { createPlayer, deletePlayer, updatePlayer } from '@/lib/data'
+import { AvatarPicker } from './AvatarPicker'
 import { PlayerCard } from './PlayerCard'
 import { Sheet } from './Sheet'
 import { useToast } from './Toast'
@@ -67,8 +68,14 @@ function PlayerEditorForm({
   const toast = useToast()
   const [form, setForm] = useState<PlayerInput>(
     player
-      ? { name: player.name, rating: player.rating, stats: player.stats, active: player.active }
-      : { name: '', rating: 75, stats: DEFAULT_STATS, active: true },
+      ? {
+          name: player.name,
+          rating: player.rating,
+          stats: player.stats,
+          avatar: player.avatar,
+          active: player.active,
+        }
+      : { name: '', rating: 75, stats: DEFAULT_STATS, avatar: null, active: true },
   )
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -144,6 +151,10 @@ function PlayerEditorForm({
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
+      </div>
+
+      <div className="mt-4">
+        <AvatarPicker value={form.avatar} onChange={(avatar) => setForm((f) => ({ ...f, avatar }))} />
       </div>
 
       <div className="field mt-4">

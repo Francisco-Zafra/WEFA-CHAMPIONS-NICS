@@ -16,6 +16,7 @@ service cloud.firestore {
       return d.name is string && d.name.size() > 0 && d.name.size() <= 40
         && d.active is bool
         && (!('rating' in d) || (d.rating is int && d.rating >= 1 && d.rating <= 99))
+        && (!('avatar' in d) || d.avatar == null || (d.avatar is string && d.avatar.size() <= 40))
         && d.stats.keys().hasOnly(['rit', 'tir', 'pas', 'reg', 'def', 'fis'])
         && validStat(d.stats.rit) && validStat(d.stats.tir) && validStat(d.stats.pas)
         && validStat(d.stats.reg) && validStat(d.stats.def) && validStat(d.stats.fis);

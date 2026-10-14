@@ -2,11 +2,11 @@ import { Crown, Minus, Plus, Star, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Sheet } from '@/components/Sheet'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { EmptyCards, ErrorState } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Crest, PageHeader, Seg } from '@/components/ui'
 import { getClub } from '@/domain/clubs'
-import { initials } from '@/domain/rating'
 import { clubStandings, isPlayed, playerStandings, type Outcome } from '@/domain/standings'
 import type { Match, Player } from '@/domain/types'
 import { useAuth } from '@/lib/auth'
@@ -402,6 +402,7 @@ function PlayerTable({ matches, players }: { matches: Match[]; players: Player[]
     () => playerStandings(matches, new Map(players.map((p) => [p.id, p.name]))),
     [matches, players],
   )
+  const avatars = useMemo(() => new Map(players.map((p) => [p.id, p.avatar])), [players])
   if (rows.length === 0)
     return (
       <EmptyCards title="Sin estadísticas">
@@ -437,7 +438,10 @@ function PlayerTable({ matches, players }: { matches: Match[]; players: Player[]
                   <td>
                     <div className="flex items-center gap-2">
                       <span className="num w-3.5 text-xs text-[var(--muted)]">{i + 1}</span>
-                      <span className="avatar size-[30px] text-sm">{initials(r.name)}</span>
+                      <PlayerAvatar
+                        player={{ name: r.name, avatar: avatars.get(r.id) ?? null }}
+                        className="size-[30px] text-sm"
+                      />
                       <span className="font-semibold whitespace-nowrap text-[var(--ink)]">{r.name}</span>
                     </div>
                   </td>

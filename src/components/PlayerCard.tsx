@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { avatarUrl } from '@/domain/avatars'
 import { initials, tier } from '@/domain/rating'
 import { STAT_LABELS, type Player, type StatKey } from '@/domain/types'
 import { cx } from '@/lib/cx'
@@ -14,7 +15,7 @@ export function PlayerCard({
   className,
   style,
 }: {
-  player: Pick<Player, 'name' | 'stats' | 'rating'>
+  player: Pick<Player, 'name' | 'stats' | 'rating'> & { avatar?: Player['avatar'] }
   size?: number
   off?: boolean
   className?: string
@@ -33,8 +34,12 @@ export function PlayerCard({
           <div className="pc__ovr">{rating}</div>
           <div className="pc__lbl">MED</div>
         </div>
-        <div className="pc__mono">
-          <span>{initials(name)}</span>
+        <div className={cx('pc__mono', player.avatar && 'pc__mono--img')}>
+          {player.avatar ? (
+            <img src={avatarUrl(player.avatar)} alt="" draggable={false} />
+          ) : (
+            <span>{initials(name)}</span>
+          )}
         </div>
       </div>
       <div className="pc__name" style={{ fontSize: name.length > 12 ? '1.4em' : '2em' }}>

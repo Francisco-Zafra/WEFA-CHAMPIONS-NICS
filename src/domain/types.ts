@@ -1,3 +1,5 @@
+import type { AvatarId } from './avatars'
+
 export const STAT_KEYS = ['rit', 'tir', 'pas', 'reg', 'def', 'fis'] as const
 export type StatKey = (typeof STAT_KEYS)[number]
 export type Stats = Record<StatKey, number>
@@ -27,6 +29,8 @@ export interface Player {
   rating: number
   /** Atributos decorativos: se muestran en la carta y la comparativa, pero no cuentan */
   stats: Stats
+  /** Avatar predefinido (public/avatars); null = sin avatar */
+  avatar: AvatarId | null
   /** Convocado: entra por defecto en el sorteo */
   active: boolean
 }

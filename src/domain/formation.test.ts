@@ -4,17 +4,20 @@ import { formationLabel, formationLines } from './formation'
 import type { Player } from './types'
 
 describe('formationLines', () => {
-  it('pone portero + 3 líneas con todos los jugadores', () => {
+  it('pone portero + líneas con todos los jugadores', () => {
     const team = SEED_PLAYERS.slice(0, 7)
     const lines = formationLines(team)
     expect(lines[0]).toHaveLength(1)
     expect(lines.flat()).toHaveLength(7)
-    expect(formationLabel(team)).toBe('2-2-2')
+    expect(formationLabel(team)).toBe('3-3')
   })
 
-  it('reparte los sobrantes hacia atrás', () => {
-    expect(formationLabel(SEED_PLAYERS.slice(0, 6))).toBe('2-2-1')
-    expect(formationLabel(SEED_PLAYERS.slice(0, 5))).toBe('2-1-1')
+  it('usa pocas líneas y reparte los sobrantes hacia atrás', () => {
+    expect(formationLabel(SEED_PLAYERS.slice(0, 6))).toBe('3-2')
+    expect(formationLabel(SEED_PLAYERS.slice(0, 5))).toBe('2-2')
+    expect(formationLabel(SEED_PLAYERS.slice(0, 4))).toBe('3')
+    expect(formationLabel(SEED_PLAYERS.slice(0, 9))).toBe('4-4')
+    expect(formationLabel(SEED_PLAYERS.slice(0, 11))).toBe('4-3-3')
     expect(formationLabel(SEED_PLAYERS.slice(0, 2))).toBe('1')
     expect(formationLines([])).toEqual([])
   })

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { PlayerCard } from '@/components/PlayerCard'
 import { Crest, CrestGhost, ShieldMark } from '@/components/ui'
+import { avatarUrl } from '@/domain/avatars'
 import { getClub } from '@/domain/clubs'
 import { averageRating, balancePct, fmt, initials } from '@/domain/rating'
 import type { Player } from '@/domain/types'
@@ -340,7 +341,7 @@ function Zone({
             transition={{ duration: 0.45 / speed }}
           >
             <div className="chip__disc">
-              {initials(p.name)}
+              {p.avatar ? <img src={avatarUrl(p.avatar)} alt="" className="chip__img" /> : initials(p.name)}
               {p.id === captain && (
                 <Crown className="chip__crown" fill="currentColor" strokeWidth={1.5} aria-label="Capitán" />
               )}

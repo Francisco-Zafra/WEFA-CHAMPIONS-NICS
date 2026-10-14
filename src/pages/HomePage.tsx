@@ -9,6 +9,7 @@ import { Sheet } from '@/components/Sheet'
 import { EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { CrestGhost } from '@/components/ui'
+import { avatarUrl } from '@/domain/avatars'
 import type { Cup } from '@/domain/cup'
 import { getClub } from '@/domain/clubs'
 import { captainFirst } from '@/domain/formation'
@@ -433,7 +434,7 @@ function Roster({ club, players, captain }: { club: Club; players: Player[]; cap
     <div className={`club-${club.id} flex flex-col gap-1.5`}>
       {sorted.map((p) => (
         <div key={p.id} className={cx('rrow', p.id === captain && 'rrow--cap')}>
-          <span className="d">{initials(p.name)}</span>
+          <span className="d">{p.avatar ? <img src={avatarUrl(p.avatar)} alt="" /> : initials(p.name)}</span>
           <span className="n">{p.name}</span>
           {p.id === captain && (
             <Crown className="size-3.5 shrink-0 text-[#ffd34d]" fill="currentColor" aria-label="Capitán" />

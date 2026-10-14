@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react'
 import { LayoutGroup, motion } from 'motion/react'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CardSkeletons, EmptyCards } from '@/components/States'
@@ -21,7 +22,7 @@ import type { PlayerPair } from '@/domain/balance'
 import { resolveCaptains } from '@/domain/captains'
 import { roundOf, tieLabel } from '@/domain/cup'
 import { CLUBS, getClub } from '@/domain/clubs'
-import { averageRating, fmt, initials, tier } from '@/domain/rating'
+import { averageRating, fmt, tier } from '@/domain/rating'
 import type { ClubId, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
 import { useAuth } from '@/lib/auth'
@@ -240,7 +241,7 @@ function StepPlayers({ players }: { players: Player[] }) {
                         <span className={cx('check', on && 'check--on')}>
                           {on && <Check strokeWidth={3} />}
                         </span>
-                        <span className="avatar">{initials(p.name)}</span>
+                        <PlayerAvatar player={p} />
                         <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
                         <span className={`ovr-badge ovr-badge--${tier(m)}`}>{m}</span>
                       </motion.button>
@@ -651,7 +652,7 @@ function RuleBox({ kind, selection }: { kind: 'apart' | 'together'; selection: P
             )}
             title={stale ? 'Algún jugador no está convocado: la regla se ignora' : undefined}
           >
-            <Who name={n1 ?? '¿?'} />
+            <Who name={n1 ?? '¿?'} player={selection.find((p) => p.id === pair[0])} />
             <span
               className="grid size-7 shrink-0 place-items-center"
               style={{ color }}
@@ -659,7 +660,7 @@ function RuleBox({ kind, selection }: { kind: 'apart' | 'together'; selection: P
             >
               <Icon className="size-4" strokeWidth={2.4} />
             </span>
-            <Who name={n2 ?? '¿?'} />
+            <Who name={n2 ?? '¿?'} player={selection.find((p) => p.id === pair[1])} />
             <button
               className="btn btn--ghost btn--icon"
               type="button"
@@ -675,10 +676,10 @@ function RuleBox({ kind, selection }: { kind: 'apart' | 'together'; selection: P
   )
 }
 
-function Who({ name }: { name: string }) {
+function Who({ name, player }: { name: string; player?: Player }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
-      <span className="avatar size-[30px] text-sm">{initials(name)}</span>
+      <PlayerAvatar player={player ?? { name }} className="size-[30px] text-sm" />
       <span className="truncate text-[13px] font-semibold">{name}</span>
     </div>
   )

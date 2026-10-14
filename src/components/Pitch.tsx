@@ -3,7 +3,7 @@ import { motion } from 'motion/react'
 import type { CSSProperties } from 'react'
 import { getClub } from '@/domain/clubs'
 import { formationLines } from '@/domain/formation'
-import { initials } from '@/domain/rating'
+import { avatarUrl } from '@/domain/avatars'
 import type { ClubId, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
 import { CrestGhost } from './ui'
@@ -16,46 +16,65 @@ export interface PitchTeam {
 
 interface Spot {
   player: Player
-  /** % del ancho (centro de la ficha) */
+  /** % del ancho (centro de la carta) */
   x: number
-  /** px desde arriba (borde superior de la ficha) */
+  /** px desde arriba (borde superior de la carta) */
   y: number
 }
 
-/** Alto aproximado de una ficha (disco + nombre + media) y margen a la línea de fondo */
-const CHIP = { small: { h: 86, pad: 8 }, big: { h: 132, pad: 22 } }
-
-/** Separación horizontal (en % del ancho) entre fichas de una línea; las líneas alternas se abren
- *  más para que las fichas de líneas consecutivas no se pisen (como en el diseño de exportación) */
-function spacing(k: number, wide: boolean): number {
-  if (k <= 1) return 0
-  if (k === 2) return wide ? 56 : 34
-  if (k === 3) return wide ? 36 : 27
-  return 76 / (k - 1)
+/** Tamaño de la mini-carta, margen a la línea de fondo y ancho aproximado del campo */
+const CARD = {
+  small: { w: 70, h: 94, pad: 8, pitchW: 380 },
+  big: { w: 110, h: 148, pad: 16, pitchW: 760 },
 }
 
-/** A arriba con el portero junto a su portería; B abajo, en espejo */
+/** Posición horizontal (%) de cada carta de una línea */
+function xsFor(k: number, big: boolean): number[] {
+  if (k === 1) return [50]
+  if (k === 2) return big ? [30, 70] : [33, 67]
+  if (k === 3) return big ? [15, 50, 85] : [20, 50, 80]
+  return Array.from({ length: k }, (_, j) => ((j + 0.5) * 100) / k)
+}
+
+/**
+ * A arriba con el portero junto a su portería; B abajo, en espejo.
+ * Dos líneas seguidas solo se solapan en vertical si sus cartas no coinciden en horizontal
+ * (como en el diseño); si chocan, la siguiente baja una carta entera.
+ */
 function spots(team: PitchTeam, side: 'A' | 'B', height: number, big: boolean): Spot[] {
-  const { h, pad } = big ? CHIP.big : CHIP.small
-  const lines = formationLines(team.players, team.captain)
-  const steps = Math.max(lines.length - 1, 1)
-  const near = pad
-  const far = height / 2 - h - 4
-  return lines.flatMap((line, i) => {
-    const offset = near + ((far - near) * i) / steps
+  const { w, h, pad, pitchW } = big ? CARD.big : CARD.small
+  const lines = formationLines(team.players, team.captain).map((line) => ({
+    line,
+    xs: xsFor(line.length, big),
+  }))
+  const ys: number[] = []
+  lines.forEach(({ xs }, i) => {
+    if (i === 0) return ys.push(pad)
+    const prev = lines[i - 1]!.xs
+    const collide = xs.some((x) => prev.some((px) => (Math.abs(x - px) / 100) * pitchW < w + 4))
+    ys.push(ys[i - 1]! + (collide ? h + 2 : Math.round(h * 0.55)))
+  })
+  // Si no cabe en medio campo, se comprime
+  const limit = height / 2 - h - 4
+  const last = ys[ys.length - 1] ?? pad
+  const k = last > limit && last > pad ? (limit - pad) / (last - pad) : 1
+  return lines.flatMap(({ line, xs }, i) => {
+    const offset = pad + (ys[i]! - pad) * k
     const y = side === 'A' ? offset : height - h - offset
-    const gap = spacing(line.length, i % 2 === 0)
-    return line.map((player, j) => ({ player, y, x: 50 + (j - (line.length - 1) / 2) * gap }))
+    return line.map((player, j) => ({ player, y, x: xs[j]! }))
   })
 }
 
-/** Modo edición del campo: tocar fichas para seleccionarlas / intercambiarlas */
+/** «Guti's Boyfriend» → «Guti's BF» */
+const shortName = (name: string) => name.replace(/ boyfriend$/i, ' BF')
+
+/** Modo edición del campo: tocar cartas para seleccionarlas / intercambiarlas */
 export interface PitchEdit {
   selected: string | null
   onSelect: (playerId: string) => void
 }
 
-function Chip({
+function Card({
   spot,
   captain,
   big,
@@ -72,42 +91,52 @@ function Chip({
   const { player } = spot
   const selected = edit?.selected === player.id
   const style = { left: `${spot.x}%`, top: spot.y, x: '-50%' }
+  const label = `${player.name}, media ${player.rating}${captain ? ', capitán' : ''}`
+  const body = (
+    <>
+      {captain && <Crown className="pk__crown" fill="currentColor" strokeWidth={1.5} aria-hidden />}
+      <div className="pk__frame">
+        <div className="pk__body">
+          <span className="pk__ovr">{player.rating}</span>
+          {captain && (
+            <span className="pk__c" aria-hidden>
+              C
+            </span>
+          )}
+          <span className="pk__img">
+            {player.avatar ? (
+              <img src={avatarUrl(player.avatar)} alt="" draggable={false} />
+            ) : (
+              <svg viewBox="0 0 40 40" aria-hidden>
+                <circle cx="20" cy="15" r="7.5" fill="rgba(238,242,255,.55)" />
+                <path d="M5 40c1.5-9 7.5-13.5 15-13.5S33.5 31 35 40z" fill="rgba(238,242,255,.55)" />
+              </svg>
+            )}
+          </span>
+          <span className="pk__name">{shortName(player.name)}</span>
+        </div>
+      </div>
+    </>
+  )
   if (edit)
     return (
       <motion.button
         type="button"
-        layoutId={`chip-${player.id}`}
+        layoutId={`pk-${player.id}`}
         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-        className={cx('chip chip--btn absolute', selected && 'chip--selected', target && 'chip--target')}
+        className={cx('pk pk--btn', selected && 'pk--selected', target && 'pk--target')}
         style={style}
         aria-pressed={selected}
-        aria-label={
-          selected ? `${player.name}, seleccionado` : target ? `Intercambiar con ${player.name}` : player.name
-        }
+        aria-label={selected ? `${label}, seleccionado` : target ? `Intercambiar con ${player.name}` : label}
         onClick={() => edit.onSelect(player.id)}
       >
-        <ChipBody player={player} captain={captain} />
+        {body}
       </motion.button>
     )
   return (
-    <motion.div className={cx('chip absolute', big && 'chip--big')} style={style}>
-      <ChipBody player={player} captain={captain} />
+    <motion.div className={cx('pk', big && 'pk--big')} style={style} aria-label={label}>
+      {body}
     </motion.div>
-  )
-}
-
-function ChipBody({ player, captain }: { player: Player; captain: boolean }) {
-  return (
-    <>
-      <div className="chip__disc">
-        {initials(player.name)}
-        {captain && (
-          <Crown className="chip__crown" fill="currentColor" strokeWidth={1.5} aria-label="Capitán" />
-        )}
-      </div>
-      <div className="chip__name">{player.name}</div>
-      <div className="chip__ovr">{Math.round(player.rating)}</div>
-    </>
   )
 }
 
@@ -173,7 +202,7 @@ export function Pitch({
       ))}
       <div className="team-red">
         {spots(teamA, 'A', height, !!big).map((s) => (
-          <Chip
+          <Card
             key={s.player.id}
             spot={s}
             captain={s.player.id === teamA.captain}
@@ -185,7 +214,7 @@ export function Pitch({
       </div>
       <div className="team-blue">
         {spots(teamB, 'B', height, !!big).map((s) => (
-          <Chip
+          <Card
             key={s.player.id}
             spot={s}
             captain={s.player.id === teamB.captain}

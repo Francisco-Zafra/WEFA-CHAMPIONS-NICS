@@ -2144,4 +2144,238 @@
     height: 18px;
     flex: none;
   }
+
+  /* ---- avatar dentro de la carta ---- */
+  .pc__mono--img {
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 0 2px rgba(0, 0, 0, 0.18),
+      0 2px 8px rgba(0, 0, 0, 0.25);
+  }
+  .pc__mono--img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ---- mini-carta del campo (pizarra e imagen exportable) ---- */
+  .pk {
+    position: absolute;
+    width: 70px;
+    height: 94px;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55))
+      drop-shadow(0 0 10px color-mix(in oklab, var(--club) 40%, transparent));
+  }
+  .pk__frame {
+    position: absolute;
+    inset: 0;
+    padding: 1.5px;
+    clip-path: polygon(20% 0, 80% 0, 100% 13%, 100% 100%, 0 100%, 0 13%);
+    background: linear-gradient(
+      165deg,
+      color-mix(in oklab, var(--club) 70%, #fff),
+      var(--club) 40%,
+      var(--club-deep)
+    );
+  }
+  .pk__body {
+    position: relative;
+    height: 100%;
+    box-sizing: border-box;
+    clip-path: polygon(20% 0, 80% 0, 100% 13%, 100% 100%, 0 100%, 0 13%);
+    background:
+      radial-gradient(
+        ellipse 80% 55% at 50% 30%,
+        color-mix(in oklab, var(--club) 30%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(180deg, #16244d, #070d20);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .pk__ovr {
+    position: absolute;
+    top: 5px;
+    left: 8px;
+    font-family: var(--display);
+    font-size: 17px;
+    line-height: 1;
+    color: var(--club);
+    text-shadow: 0 0 8px color-mix(in oklab, var(--club) 60%, transparent);
+  }
+  .pk__img {
+    width: 46px;
+    height: 46px;
+    margin-top: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    display: grid;
+    place-items: end center;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--club) 45%, transparent);
+  }
+  .pk__img svg {
+    width: 40px;
+    height: 40px;
+  }
+  .pk__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .pk__name {
+    margin-top: auto;
+    width: 100%;
+    height: 22px;
+    display: block;
+    line-height: 22px;
+    text-align: center;
+    padding: 0 5px;
+    box-sizing: border-box;
+    background: var(--club);
+    color: var(--club-ink);
+    font-family: var(--display);
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pk__crown {
+    position: absolute;
+    top: -17px;
+    left: 50%;
+    width: 17px;
+    height: 17px;
+    transform: translateX(-50%);
+    color: #ffd34d;
+    z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  }
+  .pk__c {
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    background: #ffc21a;
+    color: #161004;
+    font: 800 9px var(--sans);
+    display: grid;
+    place-items: center;
+  }
+  /* Versión grande (imagen 1080×1350) */
+  .pk--big {
+    width: 110px;
+    height: 148px;
+    filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.55))
+      drop-shadow(0 0 16px color-mix(in oklab, var(--club) 45%, transparent));
+  }
+  .pk--big .pk__frame {
+    padding: 2.5px;
+  }
+  .pk--big .pk__ovr {
+    top: 8px;
+    left: 12px;
+    font-size: 28px;
+  }
+  .pk--big .pk__img {
+    width: 74px;
+    height: 74px;
+    margin-top: 26px;
+    border-radius: 18px;
+  }
+  .pk--big .pk__img svg {
+    width: 64px;
+    height: 64px;
+  }
+  .pk--big .pk__name {
+    height: 34px;
+    line-height: 34px;
+    padding: 0 8px;
+    font-size: 22px;
+  }
+  .pk--big .pk__crown {
+    top: -28px;
+    width: 28px;
+    height: 28px;
+  }
+  .pk--big .pk__c {
+    top: 8px;
+    right: 11px;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  /* Modo edición de la pizarra */
+  .pk--btn {
+    appearance: none;
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .pk--selected {
+    z-index: 3;
+    filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 3px #fff) drop-shadow(0 0 18px var(--club));
+  }
+  .pk--selected .pk__frame {
+    background: linear-gradient(165deg, #fff, var(--club) 45%, var(--club-deep));
+  }
+  .pk--target::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 10px;
+    border: 2px dashed rgba(255, 255, 255, 0.65);
+    pointer-events: none;
+  }
+
+  /* ---- selector de avatar ---- */
+  .avatar-opt {
+    appearance: none;
+    border: 0;
+    padding: 0;
+    aspect-ratio: 1;
+    border-radius: 14px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .avatar-opt:active {
+    transform: scale(0.95);
+  }
+  .avatar-opt img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .avatar-opt--on {
+    box-shadow:
+      0 0 0 2px var(--night-900),
+      0 0 0 4px var(--club),
+      0 0 18px color-mix(in oklab, var(--club) 60%, transparent);
+  }
+
+  /* ---- avatares en fichas y filas ---- */
+  .chip__img,
+  .rrow .d img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .rrow .d {
+    overflow: hidden;
+  }
 }
