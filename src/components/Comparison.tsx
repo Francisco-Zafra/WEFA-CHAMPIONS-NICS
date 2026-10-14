@@ -1,20 +1,22 @@
 import type { TeamSummary } from '@/domain/balance'
-import { fmt } from '@/domain/rating'
+import { fmt, statScale } from '@/domain/rating'
 import { STAT_KEYS, STAT_LABELS, type Club, type Stats } from '@/domain/types'
 
-/** Escala ampliada alrededor de los valores para que se vean las diferencias */
-function scale(a: Stats, b: Stats): [number, number] {
-  const values = STAT_KEYS.flatMap((k) => [a[k], b[k]])
-  let lo = Math.floor((Math.min(...values) - 2) / 5) * 5
-  let hi = Math.ceil((Math.max(...values) + 1) / 5) * 5
-  if (hi - lo < 10) lo = hi - 10
-  lo = Math.max(0, lo)
-  hi = Math.min(100, Math.max(hi, lo + 10))
-  return [lo, hi]
-}
-
-export function Radar({ a, b, clubA, clubB }: { a: TeamSummary; b: TeamSummary; clubA: Club; clubB: Club }) {
-  const [lo, hi] = scale(a.stats, b.stats)
+export function Radar({
+  a,
+  b,
+  clubA,
+  clubB,
+  bare,
+}: {
+  a: TeamSummary
+  b: TeamSummary
+  clubA: Club
+  clubB: Club
+  /** Sin leyenda ni nota de escala */
+  bare?: boolean
+}) {
+  const [lo, hi] = statScale(a.stats, b.stats)
   const R = 100
   const C = { x: 130, y: 120 }
   const angle = (i: number) => (Math.PI * 2 * i) / STAT_KEYS.length - Math.PI / 2
@@ -75,19 +77,30 @@ export function Radar({ a, b, clubA, clubB }: { a: TeamSummary; b: TeamSummary; 
           </g>
         </g>
       </svg>
-      <div className="flex justify-center gap-[18px] text-xs text-[var(--ink-2)]">
-        <span className="flex items-center gap-1.5">
-          <i className="h-[3px] w-[18px] rounded" style={{ background: clubA.primary }} />
-          {clubA.name}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <i className="w-[18px] border-t-[3px] border-dashed" style={{ borderColor: clubB.primary }} />
-          {clubB.name}
-        </span>
-      </div>
-      <p className="small text-center text-[11px]">
-        Escala ampliada {lo}–{hi} para que se vean las diferencias.
-      </p>
+      {!bare && (
+        <>
+          <RadarLegend clubA={clubA} clubB={clubB} className="justify-center" />
+          <p className="small text-center text-[11px]">
+            Escala ampliada {lo}–{hi} para que se vean las diferencias.
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Leyenda: A con línea continua, B discontinua */
+export function RadarLegend({ clubA, clubB, className }: { clubA: Club; clubB: Club; className?: string }) {
+  return (
+    <div className={`flex gap-[18px] text-xs text-[var(--ink-2)] ${className ?? ''}`}>
+      <span className="flex items-center gap-1.5">
+        <i className="h-[3px] w-[18px] rounded" style={{ background: clubA.primary }} />
+        {clubA.name}
+      </span>
+      <span className="flex items-center gap-1.5">
+        <i className="w-[18px] border-t-[3px] border-dashed" style={{ borderColor: clubB.primary }} />
+        {clubB.name}
+      </span>
     </div>
   )
 }
@@ -103,7 +116,7 @@ export function StatRows({
   clubA: Club
   clubB: Club
 }) {
-  const [lo, hi] = scale(a.stats, b.stats)
+  const [lo, hi] = statScale(a.stats, b.stats)
   const pct = (v: number) => `${Math.max(4, ((v - lo) / (hi - lo)) * 100)}%`
   return (
     <div className="flex flex-col gap-2">

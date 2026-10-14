@@ -65,3 +65,14 @@ export function initials(name: string): string {
   if (words.length > 1) return (words[0]![0]! + words[words.length - 1]![0]!).toUpperCase()
   return (words[0] ?? '?').slice(0, 2).toUpperCase()
 }
+
+/** Escala ampliada alrededor de los valores para que se vean las diferencias */
+export function statScale(a: Stats, b: Stats): [number, number] {
+  const values = STAT_KEYS.flatMap((k) => [a[k], b[k]])
+  let lo = Math.floor((Math.min(...values) - 2) / 5) * 5
+  let hi = Math.ceil((Math.max(...values) + 1) / 5) * 5
+  if (hi - lo < 10) lo = hi - 10
+  lo = Math.max(0, lo)
+  hi = Math.min(100, Math.max(hi, lo + 10))
+  return [lo, hi]
+}

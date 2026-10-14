@@ -2104,4 +2104,44 @@
       animation: none;
     }
   }
+  /* ---- pizarra de escritorio ---- */
+  .panel {
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 10px 30px rgba(0, 0, 0, 0.35);
+    box-sizing: border-box;
+  }
+  .kpi {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 150px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi--club {
+    border-color: color-mix(in oklab, var(--club) 40%, transparent);
+    background: linear-gradient(160deg, color-mix(in oklab, var(--club) 16%, transparent), var(--glass) 60%);
+  }
+  .li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.35;
+    margin: 0;
+  }
+  .li svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
 }

@@ -30,7 +30,8 @@ export function runDraw(
 ): { ok: true; draw: Draw } | { ok: false; error: string } {
   const selection = selectionOf(players, config)
   const [sizeA] = teamSizes(selection.length, config.extraTo)
-  const [captainA, captainB] = resolveCaptains(config, new Set(selection.map((p) => p.id)), captainDefaults)
+  const inSel = new Set(selection.map((p) => p.id))
+  const [captainA, captainB] = resolveCaptains(config, inSel, captainDefaults)
   const seed = randomSeed()
   const outcome = balanceTeams({
     players: selection,
@@ -55,6 +56,10 @@ export function runDraw(
       seed,
       at: Date.now(),
       cup,
+      rules: {
+        together: config.together.filter(([x, y]) => inSel.has(x) && inSel.has(y)),
+        apart: config.apart.filter(([x, y]) => inSel.has(x) && inSel.has(y)),
+      },
     },
   }
 }

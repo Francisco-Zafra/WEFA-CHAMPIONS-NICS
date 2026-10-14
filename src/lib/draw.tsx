@@ -39,6 +39,8 @@ export interface Draw {
   at: number
   /** Si es un partido de copa, a qué cruce pertenece; null = amistoso */
   cup: CupTieRef | null
+  /** Reglas aplicadas en el sorteo (solo las de jugadores convocados) */
+  rules?: { together: PlayerPair[]; apart: PlayerPair[] }
   /** Es un partido guardado abierto tal cual (no un sorteo nuevo) */
   fromSaved?: boolean
   /** Viene de un partido ya guardado: al guardar se actualiza ese partido */

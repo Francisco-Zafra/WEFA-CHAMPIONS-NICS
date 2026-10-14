@@ -1,8 +1,10 @@
 import {
   AlertTriangle,
   ArrowLeftRight,
+  Ban,
   Check,
   Crown,
+  Link2,
   Pencil,
   Save,
   Settings2,
@@ -15,7 +17,7 @@ import {
 import { LayoutGroup, motion } from 'motion/react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Radar, StatRows } from '@/components/Comparison'
+import { Radar, RadarLegend, StatRows } from '@/components/Comparison'
 import { Pitch } from '@/components/Pitch'
 import { ShareCard } from '@/components/ShareCard'
 import { MatchWhenFields } from '@/components/MatchWhen'
@@ -27,7 +29,7 @@ import { Banner, Crest } from '@/components/ui'
 import { rebalance, type TeamSummary } from '@/domain/balance'
 import { getClub } from '@/domain/clubs'
 import { participants, roundOf, tieLabel, type Cup } from '@/domain/cup'
-import { balancePct, fmt } from '@/domain/rating'
+import { balancePct, fmt, statScale } from '@/domain/rating'
 import type { Club, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
@@ -36,13 +38,6 @@ import { useDraw, type Draw } from '@/lib/draw'
 import { runDraw } from '@/lib/runDraw'
 import { exportShareImage } from '@/lib/share'
 
-const longDate = (ms: number) =>
-  new Date(ms).toLocaleDateString('es-ES', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
 const shortDate = (ms: number) =>
   new Date(ms).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -110,8 +105,8 @@ export function PizarraPage({
   }
 
   function swap(x: string, y: string) {
-    const px = findPlayer(x)
-    const py = findPlayer(y)
+    const px = findPlayer(x)!
+    const py = findPlayer(y)!
     const sub = (p: Player) => (p.id === x ? py : p.id === y ? px : p)
     applyEdit(result.teamA.players.map(sub), result.teamB.players.map(sub), draw!.captainA, draw!.captainB)
     setSelected(null)
@@ -121,7 +116,7 @@ export function PizarraPage({
     const fromA = sideOf(id) === 'A'
     const from = fromA ? result.teamA.players : result.teamB.players
     if (from.length <= 1) return toast('Un equipo no puede quedarse sin jugadores', 'error')
-    const p = findPlayer(id)
+    const p = findPlayer(id)!
     const nextA = fromA ? result.teamA.players.filter((x) => x.id !== id) : [...result.teamA.players, p]
     const nextB = fromA ? [...result.teamB.players, p] : result.teamB.players.filter((x) => x.id !== id)
     applyEdit(nextA, nextB, draw!.captainA, draw!.captainB)
@@ -188,6 +183,20 @@ export function PizarraPage({
     }
   }
 
+  const adjustButton = (
+    <button
+      className={`btn ${editing ? 'btn--primary' : 'btn--glass'} col-span-2`}
+      type="button"
+      aria-pressed={editing}
+      onClick={() => {
+        setEditing((v) => !v)
+        setSelected(null)
+      }}
+    >
+      <ArrowLeftRight /> {editing ? 'Terminar ajustes' : 'Ajustar equipos'}
+    </button>
+  )
+
   const actions = (
     <>
       {isAdmin && (
@@ -214,22 +223,26 @@ export function PizarraPage({
             <button className="btn btn--glass" type="button" onClick={redraw}>
               <Shuffle /> Volver a sortear
             </button>
-            <button
-              className={`btn ${editing ? 'btn--primary' : 'btn--glass'} col-span-2`}
-              type="button"
-              aria-pressed={editing}
-              onClick={() => {
-                setEditing((v) => !v)
-                setSelected(null)
-              }}
-            >
-              <ArrowLeftRight /> {editing ? 'Terminar ajustes' : 'Ajustar equipos'}
-            </button>
+            {!desktop && adjustButton}
           </>
         ) : null}
       </div>
     </>
   )
+
+  const [scaleLo, scaleHi] = statScale(result.teamA.stats, result.teamB.stats)
+  const nameOf = (id: string) => findPlayer(id)?.name ?? '¿?'
+  const findCaptain = (id: string | null) => (id ? findPlayer(id) : undefined)
+  const rules = [
+    ...(draw.rules?.together ?? []).map(([x, y]) => ({
+      apart: false,
+      text: `${nameOf(x)} y ${nameOf(y)}, juntos`,
+    })),
+    ...(draw.rules?.apart ?? []).map(([x, y]) => ({
+      apart: true,
+      text: `${nameOf(x)} y ${nameOf(y)}, separados`,
+    })),
+  ]
 
   const banner = (club: Club, rating: number) => (
     <div className={`club-banner club-${club.id} lg:h-[52px]`}>
@@ -242,30 +255,35 @@ export function PizarraPage({
   return (
     <div className={`flex flex-col gap-3 lg:gap-6 ${editing ? 'pb-36' : ''}`}>
       {/* Cabecera */}
-      <header className="flex flex-col items-center gap-1.5 text-center lg:flex-row lg:flex-wrap lg:justify-between lg:gap-5 lg:text-left">
-        <div className="flex flex-col items-center gap-1.5 lg:flex-row lg:gap-[18px]">
-          <p className="eyebrow lg:hidden">
+      {desktop ? (
+        <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+          <div className="min-w-0">
+            <p className="eyebrow">
+              {draw.cup ? `Copa · ${draw.cup.cupName} · ${roundOf(draw.cup.tie).name}` : 'Amistoso'} ·{' '}
+              {shortDate(draw.at)} · {vs}
+            </p>
+            <h1 className="h-display mt-2 text-[50px]">
+              {a.name} <span className="text-[var(--muted)]">vs</span> {b.name}
+            </h1>
+          </div>
+          <div className="flex flex-wrap gap-2.5">{actions}</div>
+        </header>
+      ) : (
+        <header className="flex flex-col items-center gap-1.5 text-center">
+          <p className="eyebrow">
             {draw.cup
               ? `Copa · ${draw.cup.cupName} · ${tieLabel(draw.cup.tie)}`
               : `Amistoso · ${shortDate(draw.at)}`}
           </p>
-          <div className="flex items-center gap-3 lg:gap-[18px]">
-            <Crest club={a.id} size={desktop ? 76 : 52} />
-            <div>
-              <p className="eyebrow hidden lg:block">
-                {draw.cup ? `Copa · ${draw.cup.cupName} · ${roundOf(draw.cup.tie).name}` : 'Amistoso'} ·{' '}
-                {longDate(draw.at)} · {vs}
-              </p>
-              <h1 className="h-display text-[34px] lg:mt-1.5 lg:text-[60px]">
-                {desktop ? a.name : a.short} <span className="text-[var(--muted)]">vs</span>{' '}
-                {desktop ? b.name : b.short}
-              </h1>
-            </div>
-            <Crest club={b.id} size={desktop ? 76 : 52} />
+          <div className="flex items-center gap-3">
+            <Crest club={a.id} size={52} />
+            <h1 className="h-display text-[34px]">
+              {a.short} <span className="text-[var(--muted)]">vs</span> {b.short}
+            </h1>
+            <Crest club={b.id} size={52} />
           </div>
-        </div>
-        {desktop && <div className="flex flex-wrap gap-2.5">{actions}</div>}
-      </header>
+        </header>
+      )}
 
       {edited && (
         <div className="flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
@@ -286,74 +304,185 @@ export function PizarraPage({
         </Banner>
       )}
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start lg:gap-8">
-        <motion.div
-          key={draw.seed}
-          className="flex flex-col gap-2.5 lg:max-w-[460px] lg:flex-[1_1_400px]"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          {banner(a, result.teamA.rating)}
-          <LayoutGroup>
-            <Pitch
-              teamA={teamA}
-              teamB={teamB}
-              height={desktop ? 680 : 640}
-              edit={editing && isAdmin ? { selected, onSelect } : undefined}
-            />
-          </LayoutGroup>
-          {banner(b, result.teamB.rating)}
-        </motion.div>
+      {desktop ? (
+        <div className="flex items-stretch gap-6">
+          {/* Columna izquierda: campo */}
+          <motion.section
+            key={draw.seed}
+            className="panel flex w-[440px] shrink-0 flex-col gap-3 p-4"
+            aria-label="Alineaciones"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {banner(a, result.teamA.rating)}
+            <LayoutGroup>
+              <Pitch
+                teamA={teamA}
+                teamB={teamB}
+                height={desktop ? 600 : 640}
+                edit={editing && isAdmin ? { selected, onSelect } : undefined}
+              />
+            </LayoutGroup>
+            {banner(b, result.teamB.rating)}
+            {isAdmin && adjustButton}
+          </motion.section>
 
-        <section className="glass mt-2 flex min-w-0 flex-col gap-3.5 px-4 py-[18px] lg:mt-0 lg:flex-[999_1_420px] lg:gap-[22px] lg:rounded-3xl lg:p-7">
-          <div className="flex items-baseline justify-between lg:hidden">
-            <h2 className="h-display h-m">Comparativa</h2>
-            <span className="small">Media por stat</span>
+          {/* Columna derecha: tres filas que suman la altura del campo */}
+          <div className="grid min-w-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-5">
+            <div className="grid grid-cols-3 gap-4">
+              <TeamKpi club={a} rating={result.teamA.rating} />
+              <div className="panel kpi items-center text-center">
+                <span className="eyebrow">Diferencia</span>
+                <div
+                  className="h-display num text-[64px]"
+                  style={{
+                    color: result.withinTolerance ? 'var(--ok)' : 'var(--warn)',
+                    textShadow: '0 0 20px rgba(59,227,160,.45)',
+                  }}
+                >
+                  {fmt(result.ratingDiff)}
+                </div>
+                <div className="flex w-full flex-col gap-1.5">
+                  <div className="meter">
+                    <div className="meter__fill" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span
+                    className="text-[11px] font-bold"
+                    style={{ color: result.withinTolerance ? 'var(--ok)' : 'var(--warn)' }}
+                  >
+                    Equilibrio {pct} % · tolerancia ±{fmt(draw.tolerance)}
+                  </span>
+                </div>
+              </div>
+              <TeamKpi club={b} rating={result.teamB.rating} right />
+            </div>
+
+            <section
+              className="panel flex flex-col gap-3.5 px-6 py-[22px]"
+              aria-label="Comparativa de stats medias"
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="h-display h-m">Stats medias</h2>
+                <RadarLegend clubA={a} clubB={b} />
+              </div>
+              <div className="grid flex-1 grid-cols-2 items-center gap-7">
+                <div className="mx-auto w-full max-w-[320px]">
+                  <Radar a={result.teamA} b={result.teamB} clubA={a} clubB={b} bare />
+                </div>
+                <div className="flex flex-col gap-4">
+                  <StatRows a={result.teamA} b={result.teamB} clubA={a} clubB={b} />
+                  <p className="small text-[11px]">
+                    Radar y barras en escala {scaleLo}–{scaleHi}.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <div className="grid grid-cols-2 gap-4">
+              <section className="panel flex flex-col gap-3 px-5 py-[18px]">
+                <p className="eyebrow">Reglas del sorteo</p>
+                {rules.length === 0 ? (
+                  <p className="li">Sin reglas: reparto libre.</p>
+                ) : (
+                  rules.map((r, i) => (
+                    <div key={i} className="li">
+                      {r.apart ? (
+                        <Ban className="text-[#ff8a96]" aria-label="Separados" />
+                      ) : (
+                        <Link2 className="text-[var(--ok)]" aria-label="Juntos" />
+                      )}
+                      {r.text}
+                    </div>
+                  ))
+                )}
+                <p className="small mt-auto text-[11px]">
+                  {edited
+                    ? 'Equipos ajustados a mano a partir del sorteo.'
+                    : draw.fromSaved
+                      ? 'Equipos del partido guardado.'
+                      : result.method === 'exhaustive'
+                        ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
+                        : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
+                </p>
+              </section>
+              <section className="panel flex flex-col gap-3 px-5 py-[18px]">
+                <p className="eyebrow">Capitanes</p>
+                <CaptainLine club={a} player={findCaptain(draw.captainA)} />
+                <CaptainLine club={b} player={findCaptain(draw.captainB)} />
+              </section>
+            </div>
           </div>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center lg:gap-4">
-            <TeamAvg club={a} rating={result.teamA.rating} />
-            <div className="glass rounded-[14px] px-3 py-2 lg:rounded-[18px] lg:px-5 lg:py-3">
-              <div className="eyebrow text-[10px] lg:text-[11px]">Diferencia</div>
-              <div className="h-display num text-[30px] text-[var(--ok)] lg:text-5xl">
-                {fmt(result.ratingDiff)}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start lg:gap-8">
+          <motion.div
+            key={draw.seed}
+            className="flex flex-col gap-2.5 lg:max-w-[460px] lg:flex-[1_1_400px]"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {banner(a, result.teamA.rating)}
+            <LayoutGroup>
+              <Pitch
+                teamA={teamA}
+                teamB={teamB}
+                height={desktop ? 600 : 640}
+                edit={editing && isAdmin ? { selected, onSelect } : undefined}
+              />
+            </LayoutGroup>
+            {banner(b, result.teamB.rating)}
+          </motion.div>
+
+          <section className="glass mt-2 flex min-w-0 flex-col gap-3.5 px-4 py-[18px] lg:mt-0 lg:flex-[999_1_420px] lg:gap-[22px] lg:rounded-3xl lg:p-7">
+            <div className="flex items-baseline justify-between lg:hidden">
+              <h2 className="h-display h-m">Comparativa</h2>
+              <span className="small">Media por stat</span>
+            </div>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center lg:gap-4">
+              <TeamAvg club={a} rating={result.teamA.rating} />
+              <div className="glass rounded-[14px] px-3 py-2 lg:rounded-[18px] lg:px-5 lg:py-3">
+                <div className="eyebrow text-[10px] lg:text-[11px]">Diferencia</div>
+                <div className="h-display num text-[30px] text-[var(--ok)] lg:text-5xl">
+                  {fmt(result.ratingDiff)}
+                </div>
+              </div>
+              <TeamAvg club={b} rating={result.teamB.rating} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between gap-2">
+                <span className="label">Equilibrio</span>
+                <span
+                  className="text-xs font-bold"
+                  style={{ color: result.withinTolerance ? 'var(--ok)' : 'var(--warn)' }}
+                >
+                  {pct} % · {result.withinTolerance ? 'dentro' : 'fuera'} de la tolerancia ±
+                  {fmt(draw.tolerance)}
+                </span>
+              </div>
+              <div className="meter">
+                <div className="meter__fill" style={{ width: `${pct}%` }} />
               </div>
             </div>
-            <TeamAvg club={b} rating={result.teamB.rating} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between gap-2">
-              <span className="label">Equilibrio</span>
-              <span
-                className="text-xs font-bold"
-                style={{ color: result.withinTolerance ? 'var(--ok)' : 'var(--warn)' }}
-              >
-                {pct} % · {result.withinTolerance ? 'dentro' : 'fuera'} de la tolerancia ±
-                {fmt(draw.tolerance)}
-              </span>
+            <div className="flex flex-wrap items-center gap-7">
+              <div className="min-w-[260px] flex-[1_1_280px]">
+                <Radar a={result.teamA} b={result.teamB} clubA={a} clubB={b} />
+              </div>
+              <div className="min-w-[240px] flex-[1_1_260px]">
+                <StatRows a={result.teamA} b={result.teamB} clubA={a} clubB={b} />
+              </div>
             </div>
-            <div className="meter">
-              <div className="meter__fill" style={{ width: `${pct}%` }} />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-7">
-            <div className="min-w-[260px] flex-[1_1_280px]">
-              <Radar a={result.teamA} b={result.teamB} clubA={a} clubB={b} />
-            </div>
-            <div className="min-w-[240px] flex-[1_1_260px]">
-              <StatRows a={result.teamA} b={result.teamB} clubA={a} clubB={b} />
-            </div>
-          </div>
-          <p className="small text-[11px]">
-            {edited
-              ? 'Equipos ajustados a mano a partir del sorteo.'
-              : draw.fromSaved
-                ? 'Equipos del partido guardado.'
-                : result.method === 'exhaustive'
-                  ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
-                  : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
-          </p>
-        </section>
-      </div>
+            <p className="small text-[11px]">
+              {edited
+                ? 'Equipos ajustados a mano a partir del sorteo.'
+                : draw.fromSaved
+                  ? 'Equipos del partido guardado.'
+                  : result.method === 'exhaustive'
+                    ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
+                    : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
+            </p>
+          </section>
+        </div>
+      )}
 
       {!desktop && <div className="mt-1 flex flex-col gap-2.5">{actions}</div>}
       {isAdmin && (
@@ -371,7 +500,7 @@ export function PizarraPage({
             {selected ? (
               <>
                 <p className="text-sm">
-                  <strong>{findPlayer(selected).name}</strong>{' '}
+                  <strong>{findPlayer(selected)?.name}</strong>{' '}
                   <span className="text-[var(--muted)]">
                     · toca un jugador de {(sideOf(selected) === 'A' ? b : a).short} para intercambiarlos
                   </span>
@@ -440,6 +569,36 @@ export function PizarraPage({
         cups={cups.data}
         defaultPlace={defaultPlace}
       />
+    </div>
+  )
+}
+
+function TeamKpi({ club, rating, right }: { club: Club; rating: number; right?: boolean }) {
+  return (
+    <div className={`panel kpi kpi--club club-${club.id} ${right ? 'items-end text-right' : ''}`}>
+      <div className={`flex items-center gap-2.5 ${right ? 'flex-row-reverse' : ''}`}>
+        <Crest club={club.id} size={36} />
+        <span className="eyebrow">{club.name}</span>
+      </div>
+      <div>
+        <div className="h-display neon num text-[64px]">{fmt(rating)}</div>
+        <div className="small text-xs">Media del equipo</div>
+      </div>
+    </div>
+  )
+}
+
+function CaptainLine({ club, player }: { club: Club; player?: Player }) {
+  return (
+    <div className={`li club-${club.id}`}>
+      <Crest club={club.id} size={22} style={{ borderRadius: 6 }} />
+      <span className="flex-1 font-semibold text-[var(--ink)]">{player?.name ?? 'Sin capitán'}</span>
+      {player && (
+        <>
+          <Crown className="text-[#ffd34d]" fill="currentColor" aria-label="Capitán" />
+          <span className="neon font-[family-name:var(--display)] text-lg">{player.rating}</span>
+        </>
+      )}
     </div>
   )
 }
