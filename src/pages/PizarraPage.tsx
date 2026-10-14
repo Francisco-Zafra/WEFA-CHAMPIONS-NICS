@@ -71,13 +71,16 @@ export function PizarraPage({
       <EmptyCards
         title="Aún no hay alineaciones"
         action={
-          <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
-            <Shuffle /> Ir al sorteo
-          </Link>
+          isAdmin && (
+            <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
+              <Shuffle /> Ir al sorteo
+            </Link>
+          )
         }
       >
-        Haz un sorteo y aquí aparecerá la pizarra con los dos equipos, la comparativa y la imagen para
-        compartir.
+        {isAdmin
+          ? 'Haz un sorteo y aquí aparecerá la pizarra con los dos equipos, la comparativa y la imagen para compartir.'
+          : 'Cuando el admin haga el sorteo, aquí aparecerá la pizarra con los dos equipos.'}
       </EmptyCards>
     )
 
@@ -198,23 +201,32 @@ export function PizarraPage({
         </button>
       )}
       <div className="grid grid-cols-2 gap-2.5 lg:flex">
-        <button className="btn btn--glass" type="button" onClick={() => void share()} disabled={sharing}>
+        <button
+          className={`btn btn--glass ${isAdmin ? '' : 'col-span-2'}`}
+          type="button"
+          onClick={() => void share()}
+          disabled={sharing}
+        >
           {sharing ? <span className="spinner" /> : <Share2 />} Compartir imagen
         </button>
-        <button className="btn btn--glass" type="button" onClick={redraw}>
-          <Shuffle /> Volver a sortear
-        </button>
-        <button
-          className={`btn ${editing ? 'btn--primary' : 'btn--glass'} col-span-2`}
-          type="button"
-          aria-pressed={editing}
-          onClick={() => {
-            setEditing((v) => !v)
-            setSelected(null)
-          }}
-        >
-          <ArrowLeftRight /> {editing ? 'Terminar ajustes' : 'Ajustar equipos'}
-        </button>
+        {isAdmin ? (
+          <>
+            <button className="btn btn--glass" type="button" onClick={redraw}>
+              <Shuffle /> Volver a sortear
+            </button>
+            <button
+              className={`btn ${editing ? 'btn--primary' : 'btn--glass'} col-span-2`}
+              type="button"
+              aria-pressed={editing}
+              onClick={() => {
+                setEditing((v) => !v)
+                setSelected(null)
+              }}
+            >
+              <ArrowLeftRight /> {editing ? 'Terminar ajustes' : 'Ajustar equipos'}
+            </button>
+          </>
+        ) : null}
       </div>
     </>
   )
@@ -287,7 +299,7 @@ export function PizarraPage({
               teamA={teamA}
               teamB={teamB}
               height={desktop ? 680 : 640}
-              edit={editing ? { selected, onSelect } : undefined}
+              edit={editing && isAdmin ? { selected, onSelect } : undefined}
             />
           </LayoutGroup>
           {banner(b, result.teamB.rating)}
@@ -344,11 +356,13 @@ export function PizarraPage({
       </div>
 
       {!desktop && <div className="mt-1 flex flex-col gap-2.5">{actions}</div>}
-      <Link className="btn btn--ghost btn--sm self-center" to="/sorteo">
-        <Settings2 /> Ajustar sorteo
-      </Link>
+      {isAdmin && (
+        <Link className="btn btn--ghost btn--sm self-center" to="/sorteo">
+          <Settings2 /> Ajustar sorteo
+        </Link>
+      )}
 
-      {editing && (
+      {editing && isAdmin && (
         <div className="edit-bar">
           <div
             className="glass glass--club mx-auto flex max-w-2xl flex-col gap-2.5 rounded-[20px] p-3"

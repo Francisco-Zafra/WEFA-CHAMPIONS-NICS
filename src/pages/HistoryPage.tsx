@@ -75,15 +75,18 @@ export function HistoryPage({
 // ---------- Partidos ----------
 
 function MatchList({ matches }: { matches: Match[] }) {
+  const { isAdmin } = useAuth()
   const [open, setOpen] = useState<Match | null>(null)
   if (matches.length === 0)
     return (
       <EmptyCards
         title="Aún no hay partidos"
         action={
-          <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
-            Hacer un sorteo
-          </Link>
+          isAdmin && (
+            <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
+              Hacer un sorteo
+            </Link>
+          )
         }
       >
         Sortea equipos y pulsa «Guardar partido» en la pizarra para empezar a escribir la historia.

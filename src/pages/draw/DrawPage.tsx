@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { LayoutGroup, motion } from 'motion/react'
 import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { CardSkeletons, EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Crest, CrestGhost, Seg } from '@/components/ui'
@@ -23,6 +24,7 @@ import { CLUBS, getClub } from '@/domain/clubs'
 import { averageRating, fmt, initials, tier } from '@/domain/rating'
 import type { ClubId, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
+import { useAuth } from '@/lib/auth'
 import type { Collection } from '@/lib/data'
 import { useDraw, type DrawConfig, type DrawStep } from '@/lib/draw'
 import { runDraw, selectionOf, teamSizes } from '@/lib/runDraw'
@@ -38,7 +40,21 @@ export function DrawPage({
   captainDefaults: Map<ClubId, string>
 }) {
   const { config, step, setStep, mode, setMode, cupTie, pendingCupTie, clearCup } = useDraw()
+  const { isAdmin } = useAuth()
 
+  if (!isAdmin)
+    return (
+      <EmptyCards
+        title="El sorteo es cosa del admin"
+        action={
+          <Link className="btn btn--white mt-1.5 h-[52px]" to="/bienvenida">
+            Entrar como admin
+          </Link>
+        }
+      >
+        En modo espectador puedes ver la plantilla, la pizarra, la copa y el historial, pero no sortear.
+      </EmptyCards>
+    )
   if (players.loading) return <CardSkeletons count={4} />
   if (players.data.length < 2)
     return (

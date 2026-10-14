@@ -64,6 +64,7 @@ export function HomePage({
   cups: Collection<Cup>
 }) {
   const now = useNow()
+  const { isAdmin } = useAuth()
   // El próximo partido se recalcula cada minuto (no hace falta cada segundo)
   const minute = Math.floor(now / 60000)
   const next = useMemo(
@@ -79,9 +80,11 @@ export function HomePage({
       <EmptyCards
         title="No hay partido a la vista"
         action={
-          <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
-            <Shuffle /> Hacer un sorteo
-          </Link>
+          isAdmin && (
+            <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
+              <Shuffle /> Hacer un sorteo
+            </Link>
+          )
         }
       >
         Cuando guardéis un partido (o los equipos de un cruce de copa) aparecerá aquí con su cuenta atrás.
@@ -366,12 +369,19 @@ function Upcoming({
             Ver pizarra
           </button>
           <div className="grid grid-cols-2 gap-2.5">
-            <button className="btn btn--glass" type="button" onClick={() => void share()} disabled={sharing}>
+            <button
+              className={`btn btn--glass ${isAdmin ? '' : 'col-span-2'}`}
+              type="button"
+              onClick={() => void share()}
+              disabled={sharing}
+            >
               {sharing ? <span className="spinner" /> : <Share2 />} Compartir
             </button>
-            <button className="btn btn--glass" type="button" onClick={redo}>
-              <Shuffle /> {desktop ? 'Rehacer' : 'Rehacer sorteo'}
-            </button>
+            {isAdmin && (
+              <button className="btn btn--glass" type="button" onClick={redo}>
+                <Shuffle /> {desktop ? 'Rehacer' : 'Rehacer sorteo'}
+              </button>
+            )}
           </div>
         </div>
       </section>

@@ -16,7 +16,8 @@ export function Bracket({
 }: {
   cup: Cup
   onOpen: (tie: number) => void
-  onDraw: (tie: number) => void
+  /** Solo el admin puede sortear equipos de un cruce */
+  onDraw?: (tie: number) => void
 }) {
   const win = champion(cup)
   return (
@@ -26,7 +27,13 @@ export function Bracket({
           <h2 className="eyebrow mb-1 lg:text-center">{round.name}</h2>
           <div className="bracket__ties">
             {round.ties.map((tie) => (
-              <TieCard key={tie} cup={cup} tie={tie} onOpen={() => onOpen(tie)} onDraw={() => onDraw(tie)} />
+              <TieCard
+                key={tie}
+                cup={cup}
+                tie={tie}
+                onOpen={() => onOpen(tie)}
+                onDraw={onDraw ? () => onDraw(tie) : undefined}
+              />
             ))}
           </div>
         </section>
@@ -62,7 +69,7 @@ function TieCard({
   cup: Cup
   tie: number
   onOpen: () => void
-  onDraw: () => void
+  onDraw?: () => void
 }) {
   const t = cup.ties[tie]!
   const [a, b] = participants(cup, tie)
@@ -102,7 +109,7 @@ function TieCard({
           placeholder={from ? `Ganador ${tieLabel(from[1])}` : ''}
         />
       </button>
-      {pending && (
+      {pending && onDraw && (
         <button className="tie__action" type="button" onClick={onDraw}>
           <Shuffle /> {drawn ? 'Volver a sortear equipos' : 'Sortear equipos'}
         </button>

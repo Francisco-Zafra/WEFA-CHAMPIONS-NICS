@@ -107,6 +107,9 @@ function AccountButton() {
   )
 }
 
+/** El sorteo es solo para el admin: los espectadores no ven esa pestaña */
+const navFor = (isAdmin: boolean) => NAV.filter((n) => isAdmin || n.to !== '/sorteo')
+
 export function Layout({ children }: { children: ReactNode }) {
   const { setMode } = useDraw()
   const { isAdmin, logout } = useAuth()
@@ -121,22 +124,24 @@ export function Layout({ children }: { children: ReactNode }) {
         <Link to="/" className="mx-1.5 mb-7">
           <Wordmark large />
         </Link>
-        {NAV.map(({ to, label, icon }) => (
+        {navFor(isAdmin).map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === '/'} className="rail__item">
             <NavIcon>{icon}</NavIcon>
             {label}
           </NavLink>
         ))}
         <div className="flex-1" />
-        <Link
-          className="btn btn--primary mb-4 h-[54px]"
-          to="/sorteo"
-          onClick={() => setMode('friendly')}
-          title="Sorteo amistoso"
-          style={{ fontFamily: 'var(--display)', fontSize: 24, letterSpacing: '.06em', fontWeight: 400 }}
-        >
-          Nuevo sorteo
-        </Link>
+        {isAdmin && (
+          <Link
+            className="btn btn--primary mb-4 h-[54px]"
+            to="/sorteo"
+            onClick={() => setMode('friendly')}
+            title="Sorteo amistoso"
+            style={{ fontFamily: 'var(--display)', fontSize: 24, letterSpacing: '.06em', fontWeight: 400 }}
+          >
+            Nuevo sorteo
+          </Link>
+        )}
         <div className="flex items-center gap-2.5 border-t border-[var(--line)] px-2 pt-3">
           <span className="avatar" style={{ boxShadow: '0 0 0 2px var(--club)' }}>
             {isAdmin ? 'AD' : 'ES'}
@@ -176,8 +181,12 @@ export function Layout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Móvil: tabbar flotante */}
-      <nav className="tabbar lg:hidden" aria-label="Principal">
-        {NAV.map(({ to, label, icon }) => (
+      <nav
+        className="tabbar lg:hidden"
+        aria-label="Principal"
+        style={{ gridTemplateColumns: `repeat(${navFor(isAdmin).length}, minmax(0, 1fr))` }}
+      >
+        {navFor(isAdmin).map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === '/'} className="tab">
             <NavIcon>{icon}</NavIcon>
             {label}

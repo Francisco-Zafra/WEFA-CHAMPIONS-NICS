@@ -223,7 +223,7 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
             <Link to="/bienvenida" className="font-semibold text-[#cfe4ff] underline">
               Entra como admin
             </Link>{' '}
-            para convocar y editar.
+            para convocar, editar y sortear.
           </Banner>
         )}
 

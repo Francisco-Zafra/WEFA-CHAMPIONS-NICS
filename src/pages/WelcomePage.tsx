@@ -148,7 +148,7 @@ export function WelcomePage() {
               Entrar como espectador
             </button>
             <p className="small mt-1 text-center">
-              Sin sesión puedes ver la plantilla, sortear y consultar partidos y clasificación. Para editar y
+              Sin sesión puedes ver la plantilla, la pizarra, la copa y el historial. Para sortear, editar y
               guardar partidos, entra como admin.
             </p>
           </form>

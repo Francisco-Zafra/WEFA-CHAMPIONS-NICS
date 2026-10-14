@@ -25,7 +25,7 @@ export function TieSheet({
   cup: Cup
   tie: number | null
   onClose: () => void
-  onDraw: (tie: number) => void
+  onDraw?: (tie: number) => void
 }) {
   return (
     <Sheet
@@ -50,7 +50,7 @@ function TieDetail({
   cup: Cup
   tie: number
   onDone: () => void
-  onDraw: (tie: number) => void
+  onDraw?: (tie: number) => void
 }) {
   const { isAdmin } = useAuth()
   const toast = useToast()
@@ -138,7 +138,7 @@ function TieDetail({
         </div>
       )}
 
-      {!t.winner && (
+      {!t.winner && onDraw && (
         <button className="btn btn--glass" type="button" onClick={() => onDraw(tie)}>
           <Shuffle /> {t.teamA.length ? 'Volver a sortear equipos' : 'Sortear equipos de este cruce'}
         </button>

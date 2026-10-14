@@ -89,7 +89,7 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
         <div className="meter__fill" style={{ width: `${(played / TIE_COUNT) * 100}%` }} />
       </div>
 
-      <Bracket cup={cup} onOpen={setOpen} onDraw={(tie) => startDraw(cup, tie)} />
+      <Bracket cup={cup} onOpen={setOpen} onDraw={isAdmin ? (tie) => startDraw(cup, tie) : undefined} />
 
       {isAdmin && (
         <div className="flex justify-center pt-4">
@@ -109,10 +109,14 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
         cup={cup}
         tie={open}
         onClose={() => setOpen(null)}
-        onDraw={(tie) => {
-          setOpen(null)
-          startDraw(cup, tie)
-        }}
+        onDraw={
+          isAdmin
+            ? (tie) => {
+                setOpen(null)
+                startDraw(cup, tie)
+              }
+            : undefined
+        }
       />
     </div>
   )
