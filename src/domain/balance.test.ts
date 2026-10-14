@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { balanceTeams, binomial, type BalanceOptions } from './balance'
+import { balanceTeams, binomial, rebalance, type BalanceOptions } from './balance'
 import { SEED_PLAYERS } from './fixtures'
 import { overall } from './rating'
 
@@ -134,5 +134,22 @@ describe('binomial', () => {
     expect(binomial(12, 6)).toBe(924)
     expect(binomial(27, 14)).toBe(20058300)
     expect(binomial(5, 7)).toBe(0)
+  })
+})
+
+describe('rebalance', () => {
+  it('recalcula medias y tolerancia tras un cambio manual', () => {
+    const r = run({ players: active, tolerance: 1 })
+    const [x] = r.teamA.players
+    const [y] = r.teamB.players
+    const a = [y!, ...r.teamA.players.slice(1)]
+    const b = [x!, ...r.teamB.players.slice(1)]
+    const edited = rebalance(a, b, 1, r)
+    const avg = (ps: typeof active) => ps.reduce((acc, p) => acc + overall(p.stats), 0) / ps.length
+    expect(edited.teamA.rating).toBeCloseTo(avg(a), 6)
+    expect(edited.ratingDiff).toBeCloseTo(Math.abs(avg(a) - avg(b)), 6)
+    expect(edited.withinTolerance).toBe(edited.ratingDiff <= 1)
+    expect(edited.method).toBe(r.method)
+    expect(ids(edited.teamA.players)).toEqual(ids(a))
   })
 })

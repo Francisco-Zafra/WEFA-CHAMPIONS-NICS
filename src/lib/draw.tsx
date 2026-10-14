@@ -39,6 +39,8 @@ export interface Draw {
   at: number
   /** Si es un partido de copa, a qué cruce pertenece; null = amistoso */
   cup: CupTieRef | null
+  /** Reparto del sorteo antes de retocarlo a mano (para deshacer) */
+  original?: Pick<Draw, 'result' | 'captainA' | 'captainB'>
 }
 
 export type DrawStep = 1 | 2 | 3

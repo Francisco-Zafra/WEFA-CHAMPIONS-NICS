@@ -1771,4 +1771,57 @@
       border-top: 2px solid var(--line-2);
     }
   }
+
+  /* ---- pizarra: modo edición ---- */
+  .chip--btn {
+    appearance: none;
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .chip--btn .chip__disc {
+    transition:
+      transform 0.15s,
+      box-shadow 0.2s;
+  }
+  .chip--btn:active .chip__disc {
+    transform: scale(0.94);
+  }
+  .chip--selected {
+    z-index: 3;
+  }
+  .chip--selected .chip__disc {
+    transform: scale(1.12);
+    box-shadow:
+      0 0 0 2px rgba(5, 10, 24, 0.9),
+      0 0 0 4px #fff,
+      0 0 0 7px var(--club),
+      0 0 34px var(--club);
+  }
+  .chip--target .chip__disc::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
+    border-radius: 50%;
+    border: 2px dashed rgba(255, 255, 255, 0.7);
+    animation: spin 6s linear infinite;
+  }
+  .edit-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(94px + env(safe-area-inset-bottom));
+    z-index: 35;
+  }
+  @media (min-width: 1024px) {
+    .edit-bar {
+      left: calc(248px + 40px);
+      right: 40px;
+      bottom: 28px;
+    }
+  }
 }

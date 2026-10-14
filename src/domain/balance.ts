@@ -137,6 +137,31 @@ function summarize(players: Player[]): TeamSummary {
   return { players: sorted, rating, stats: averageStats(sorted) }
 }
 
+/**
+ * Recalcula un reparto tras retocarlo a mano: medias, stats, diferencias y si cumple la
+ * tolerancia. Conserva cómo se obtuvo el original (método y candidatos).
+ */
+export function rebalance(
+  teamA: Player[],
+  teamB: Player[],
+  tolerance: number,
+  previous: Pick<BalanceResult, 'candidates' | 'method'>,
+): BalanceResult {
+  const a = summarize(teamA)
+  const b = summarize(teamB)
+  const statDiff = STAT_KEYS.reduce((acc, k) => acc + Math.abs(a.stats[k] - b.stats[k]), 0) / STAT_KEYS.length
+  const ratingDiff = Math.abs(a.rating - b.rating)
+  return {
+    teamA: a,
+    teamB: b,
+    ratingDiff,
+    statDiff,
+    withinTolerance: ratingDiff <= tolerance + EPS,
+    candidates: previous.candidates,
+    method: previous.method,
+  }
+}
+
 export function binomial(n: number, k: number): number {
   if (k < 0 || k > n) return 0
   k = Math.min(k, n - k)

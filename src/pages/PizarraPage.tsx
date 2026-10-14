@@ -1,5 +1,18 @@
-import { AlertTriangle, Save, Settings2, Share2, Shuffle, Trophy } from 'lucide-react'
-import { motion } from 'motion/react'
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  Check,
+  Crown,
+  Pencil,
+  Save,
+  Settings2,
+  Share2,
+  Shuffle,
+  Trophy,
+  Undo2,
+  X,
+} from 'lucide-react'
+import { LayoutGroup, motion } from 'motion/react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Radar, StatRows } from '@/components/Comparison'
@@ -9,7 +22,7 @@ import { Sheet } from '@/components/Sheet'
 import { EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Banner, Crest } from '@/components/ui'
-import type { TeamSummary } from '@/domain/balance'
+import { rebalance, type TeamSummary } from '@/domain/balance'
 import { getClub } from '@/domain/clubs'
 import { participants, roundOf, tieLabel, type Cup } from '@/domain/cup'
 import { balancePct, fmt, overall } from '@/domain/rating'
@@ -39,6 +52,8 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
   const shareRef = useRef<HTMLDivElement>(null)
   const [sharing, setSharing] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [selected, setSelected] = useState<string | null>(null)
 
   if (!draw)
     return (
@@ -62,6 +77,69 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
   const teamB = { club: draw.clubB, players: result.teamB.players, captain: draw.captainB }
   const pct = balancePct(result.ratingDiff)
   const vs = `${result.teamA.players.length} contra ${result.teamB.players.length}`
+  const edited = !!draw.original
+  const sideOf = (id: string) => (result.teamA.players.some((p) => p.id === id) ? 'A' : 'B')
+  const findPlayer = (id: string) =>
+    [...result.teamA.players, ...result.teamB.players].find((p) => p.id === id)!
+
+  /** Aplica un cambio manual y recalcula todo al momento */
+  function applyEdit(nextA: Player[], nextB: Player[], capA: string | null, capB: string | null) {
+    if (!draw) return
+    setDraw({
+      ...draw,
+      result: rebalance(nextA, nextB, draw.tolerance, draw.result),
+      // Un capitán que cambia de equipo deja de serlo
+      captainA: capA && nextA.some((p) => p.id === capA) ? capA : null,
+      captainB: capB && nextB.some((p) => p.id === capB) ? capB : null,
+      original: draw.original ?? { result: draw.result, captainA: draw.captainA, captainB: draw.captainB },
+    })
+  }
+
+  function swap(x: string, y: string) {
+    const px = findPlayer(x)
+    const py = findPlayer(y)
+    const sub = (p: Player) => (p.id === x ? py : p.id === y ? px : p)
+    applyEdit(result.teamA.players.map(sub), result.teamB.players.map(sub), draw!.captainA, draw!.captainB)
+    setSelected(null)
+  }
+
+  function moveToOther(id: string) {
+    const fromA = sideOf(id) === 'A'
+    const from = fromA ? result.teamA.players : result.teamB.players
+    if (from.length <= 1) return toast('Un equipo no puede quedarse sin jugadores', 'error')
+    const p = findPlayer(id)
+    const nextA = fromA ? result.teamA.players.filter((x) => x.id !== id) : [...result.teamA.players, p]
+    const nextB = fromA ? [...result.teamB.players, p] : result.teamB.players.filter((x) => x.id !== id)
+    applyEdit(nextA, nextB, draw!.captainA, draw!.captainB)
+    setSelected(null)
+  }
+
+  function toggleCaptain(id: string) {
+    const isA = sideOf(id) === 'A'
+    const current = isA ? draw!.captainA : draw!.captainB
+    const next = current === id ? null : id
+    applyEdit(
+      result.teamA.players,
+      result.teamB.players,
+      isA ? next : draw!.captainA,
+      isA ? draw!.captainB : next,
+    )
+    setSelected(null)
+  }
+
+  function onSelect(id: string) {
+    if (!selected) setSelected(id)
+    else if (selected === id) setSelected(null)
+    else if (sideOf(selected) === sideOf(id)) setSelected(id)
+    else swap(selected, id)
+  }
+
+  function undo() {
+    if (!draw?.original) return
+    setDraw({ ...draw, ...draw.original, original: undefined })
+    setSelected(null)
+    toast('Vuelta al sorteo original', 'info')
+  }
 
   function redraw() {
     if (!draw) return
@@ -114,6 +192,17 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
         <button className="btn btn--glass" type="button" onClick={redraw}>
           <Shuffle /> Volver a sortear
         </button>
+        <button
+          className={`btn ${editing ? 'btn--primary' : 'btn--glass'} col-span-2`}
+          type="button"
+          aria-pressed={editing}
+          onClick={() => {
+            setEditing((v) => !v)
+            setSelected(null)
+          }}
+        >
+          <ArrowLeftRight /> {editing ? 'Terminar ajustes' : 'Ajustar equipos'}
+        </button>
       </div>
     </>
   )
@@ -127,7 +216,7 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
   )
 
   return (
-    <div className="flex flex-col gap-3 lg:gap-6">
+    <div className={`flex flex-col gap-3 lg:gap-6 ${editing ? 'pb-36' : ''}`}>
       {/* Cabecera */}
       <header className="flex flex-col items-center gap-1.5 text-center lg:flex-row lg:flex-wrap lg:justify-between lg:gap-5 lg:text-left">
         <div className="flex flex-col items-center gap-1.5 lg:flex-row lg:gap-[18px]">
@@ -154,9 +243,22 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
         {desktop && <div className="flex flex-wrap gap-2.5">{actions}</div>}
       </header>
 
+      {edited && (
+        <div className="flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
+          <span className="pill pill--on h-8 cursor-default">
+            <Pencil className="size-3.5" /> Editado a mano
+          </span>
+          <button className="btn btn--ghost btn--sm" type="button" onClick={undo}>
+            <Undo2 /> Deshacer cambios
+          </button>
+        </div>
+      )}
+
       {!result.withinTolerance && (
         <Banner tone="warn" icon={<AlertTriangle />}>
-          Ninguna combinación cumple la tolerancia de ±{fmt(draw.tolerance)}: esta es la más igualada posible.
+          {edited
+            ? `Con los cambios, la diferencia supera la tolerancia de ±${fmt(draw.tolerance)}.`
+            : `Ninguna combinación cumple la tolerancia de ±${fmt(draw.tolerance)}: esta es la más igualada posible.`}
         </Banner>
       )}
 
@@ -168,7 +270,14 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
           animate={{ opacity: 1, y: 0 }}
         >
           {banner(a, result.teamA.rating)}
-          <Pitch teamA={teamA} teamB={teamB} height={desktop ? 680 : 640} />
+          <LayoutGroup>
+            <Pitch
+              teamA={teamA}
+              teamB={teamB}
+              height={desktop ? 680 : 640}
+              edit={editing ? { selected, onSelect } : undefined}
+            />
+          </LayoutGroup>
           {banner(b, result.teamB.rating)}
         </motion.div>
 
@@ -211,9 +320,11 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
             </div>
           </div>
           <p className="small text-[11px]">
-            {result.method === 'exhaustive'
-              ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
-              : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
+            {edited
+              ? 'Equipos ajustados a mano a partir del sorteo.'
+              : result.method === 'exhaustive'
+                ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
+                : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
           </p>
         </section>
       </div>
@@ -222,6 +333,65 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
       <Link className="btn btn--ghost btn--sm self-center" to="/sorteo">
         <Settings2 /> Ajustar sorteo
       </Link>
+
+      {editing && (
+        <div className="edit-bar">
+          <div
+            className="glass glass--club mx-auto flex max-w-2xl flex-col gap-2.5 rounded-[20px] p-3"
+            style={{ background: 'rgba(10,20,48,.9)' }}
+          >
+            {selected ? (
+              <>
+                <p className="text-sm">
+                  <strong>{findPlayer(selected).name}</strong>{' '}
+                  <span className="text-[var(--muted)]">
+                    · toca un jugador de {(sideOf(selected) === 'A' ? b : a).short} para intercambiarlos
+                  </span>
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    className="btn btn--glass btn--sm h-11"
+                    type="button"
+                    onClick={() => moveToOther(selected)}
+                  >
+                    <ArrowLeftRight /> A {(sideOf(selected) === 'A' ? b : a).short}
+                  </button>
+                  <button
+                    className="btn btn--glass btn--sm h-11"
+                    type="button"
+                    onClick={() => toggleCaptain(selected)}
+                  >
+                    <Crown />
+                    {selected === draw.captainA || selected === draw.captainB ? 'Quitar cap.' : 'Capitán'}
+                  </button>
+                  <button
+                    className="btn btn--ghost btn--sm h-11"
+                    type="button"
+                    onClick={() => setSelected(null)}
+                  >
+                    <X /> Cancelar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <p className="small flex-1 text-[13px]">
+                  Toca un jugador y luego otro del equipo rival para{' '}
+                  <strong className="text-[var(--ink)]">intercambiarlos</strong>. Todo se recalcula al
+                  momento.
+                </p>
+                <button
+                  className="btn btn--primary btn--sm h-11"
+                  type="button"
+                  onClick={() => setEditing(false)}
+                >
+                  <Check /> Listo
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Lienzo oculto para exportar la imagen */}
       <div aria-hidden className="pointer-events-none fixed top-0 -left-[9999px]">

@@ -1,4 +1,5 @@
 import { Crown } from 'lucide-react'
+import { motion } from 'motion/react'
 import type { CSSProperties } from 'react'
 import { getClub } from '@/domain/clubs'
 import { formationLines } from '@/domain/formation'
@@ -48,13 +49,56 @@ function spots(team: PitchTeam, side: 'A' | 'B', height: number, big: boolean): 
   })
 }
 
-function Chip({ spot, captain, big }: { spot: Spot; captain: boolean; big?: boolean }) {
+/** Modo edición del campo: tocar fichas para seleccionarlas / intercambiarlas */
+export interface PitchEdit {
+  selected: string | null
+  onSelect: (playerId: string) => void
+}
+
+function Chip({
+  spot,
+  captain,
+  big,
+  edit,
+  target,
+}: {
+  spot: Spot
+  captain: boolean
+  big?: boolean
+  edit?: PitchEdit
+  /** Es del equipo rival al seleccionado: tocarla intercambia */
+  target?: boolean
+}) {
   const { player } = spot
+  const selected = edit?.selected === player.id
+  const style = { left: `${spot.x}%`, top: spot.y, x: '-50%' }
+  if (edit)
+    return (
+      <motion.button
+        type="button"
+        layoutId={`chip-${player.id}`}
+        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+        className={cx('chip chip--btn absolute', selected && 'chip--selected', target && 'chip--target')}
+        style={style}
+        aria-pressed={selected}
+        aria-label={
+          selected ? `${player.name}, seleccionado` : target ? `Intercambiar con ${player.name}` : player.name
+        }
+        onClick={() => edit.onSelect(player.id)}
+      >
+        <ChipBody player={player} captain={captain} />
+      </motion.button>
+    )
   return (
-    <div
-      className={cx('chip absolute', big && 'chip--big')}
-      style={{ left: `${spot.x}%`, top: spot.y, transform: 'translateX(-50%)' }}
-    >
+    <motion.div className={cx('chip absolute', big && 'chip--big')} style={style}>
+      <ChipBody player={player} captain={captain} />
+    </motion.div>
+  )
+}
+
+function ChipBody({ player, captain }: { player: Player; captain: boolean }) {
+  return (
+    <>
       <div className="chip__disc">
         {initials(player.name)}
         {captain && (
@@ -63,7 +107,7 @@ function Chip({ spot, captain, big }: { spot: Spot; captain: boolean; big?: bool
       </div>
       <div className="chip__name">{player.name}</div>
       <div className="chip__ovr">{Math.round(overall(player.stats))}</div>
-    </div>
+    </>
   )
 }
 
@@ -89,6 +133,7 @@ export function Pitch({
   teamB,
   height,
   big,
+  edit,
   className,
   style,
 }: {
@@ -97,16 +142,18 @@ export function Pitch({
   /** Alto en px: las fichas se colocan en px para que no se pisen */
   height: number
   big?: boolean
+  edit?: PitchEdit
   className?: string
   style?: CSSProperties
 }) {
   const a = getClub(teamA.club)
   const b = getClub(teamB.club)
+  const selectedSide = !edit?.selected ? null : teamA.players.some((p) => p.id === edit.selected) ? 'A' : 'B'
   return (
     <div
       className={cx('pitch', className)}
       style={{ ...style, height }}
-      role="img"
+      role={edit ? 'group' : 'img'}
       aria-label={`Alineaciones: ${a.name} arriba, ${b.name} abajo`}
     >
       <CrestGhost
@@ -126,12 +173,26 @@ export function Pitch({
       ))}
       <div className={`club-${teamA.club}`}>
         {spots(teamA, 'A', height, !!big).map((s) => (
-          <Chip key={s.player.id} spot={s} captain={s.player.id === teamA.captain} big={big} />
+          <Chip
+            key={s.player.id}
+            spot={s}
+            captain={s.player.id === teamA.captain}
+            big={big}
+            edit={edit}
+            target={selectedSide === 'B'}
+          />
         ))}
       </div>
       <div className={`club-${teamB.club}`}>
         {spots(teamB, 'B', height, !!big).map((s) => (
-          <Chip key={s.player.id} spot={s} captain={s.player.id === teamB.captain} big={big} />
+          <Chip
+            key={s.player.id}
+            spot={s}
+            captain={s.player.id === teamB.captain}
+            big={big}
+            edit={edit}
+            target={selectedSide === 'A'}
+          />
         ))}
       </div>
     </div>
