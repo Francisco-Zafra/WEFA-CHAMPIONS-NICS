@@ -60,6 +60,10 @@ export interface Match {
   id: string
   /** Fecha del partido, YYYY-MM-DD */
   date: string
+  /** Hora del saque inicial, HH:MM */
+  time: string | null
+  /** Campo donde se juega */
+  place: string | null
   createdAt: number
   clubA: ClubId
   clubB: ClubId

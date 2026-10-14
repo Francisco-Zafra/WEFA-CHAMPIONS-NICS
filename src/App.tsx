@@ -6,6 +6,7 @@ import { ScrollToTop } from '@/components/ScrollToTop'
 import { ToastProvider } from '@/components/Toast'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { lastCaptains } from '@/domain/captains'
+import { lastPlace } from '@/domain/nextMatch'
 import { useCups, useMatches, usePlayers } from '@/lib/data'
 import { DrawProvider, useDraw } from '@/lib/draw'
 import { wasWelcomed } from '@/lib/welcome'
@@ -14,6 +15,7 @@ import { CupPage } from '@/pages/cup/CupPage'
 import { DrawPage } from '@/pages/draw/DrawPage'
 import { Reveal } from '@/pages/draw/Reveal'
 import { HistoryPage } from '@/pages/HistoryPage'
+import { HomePage } from '@/pages/HomePage'
 import { PizarraPage } from '@/pages/PizarraPage'
 import { SquadPage } from '@/pages/SquadPage'
 import { WelcomePage } from '@/pages/WelcomePage'
@@ -22,6 +24,7 @@ function Routed() {
   const players = usePlayers()
   const matches = useMatches()
   const cups = useCups()
+  const defaultPlace = useMemo(() => lastPlace(matches.data, cups.data), [matches.data, cups.data])
   const captainDefaults = useMemo(() => lastCaptains(matches.data, cups.data), [matches.data, cups.data])
   const { user, ready } = useAuth()
   const { draw, revealing, setRevealing } = useDraw()
@@ -47,12 +50,16 @@ function Routed() {
           element={
             <Layout>
               <Routes>
-                <Route path="/" element={<SquadPage players={players} />} />
+                <Route path="/" element={<HomePage players={players} matches={matches} cups={cups} />} />
+                <Route path="/plantilla" element={<SquadPage players={players} />} />
                 <Route
                   path="/sorteo"
                   element={<DrawPage players={players} captainDefaults={captainDefaults} />}
                 />
-                <Route path="/pizarra" element={<PizarraPage players={players} cups={cups} />} />
+                <Route
+                  path="/pizarra"
+                  element={<PizarraPage players={players} cups={cups} defaultPlace={defaultPlace} />}
+                />
                 <Route path="/copa" element={<CupPage cups={cups} />} />
                 <Route path="/copa/:id" element={<CupDetailPage cups={cups} />} />
                 <Route path="/historial" element={<HistoryPage matches={matches} players={players} />} />

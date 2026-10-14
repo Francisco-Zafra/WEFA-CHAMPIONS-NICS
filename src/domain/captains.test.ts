@@ -8,6 +8,8 @@ const p = (id: string) => ({ id, name: id, rating: 80 })
 const match = (over: Partial<Match>): Match => ({
   id: Math.random().toString(),
   date: '2026-10-01',
+  time: null,
+  place: null,
   createdAt: 0,
   clubA: 'flamingo',
   clubB: 'tiburones',

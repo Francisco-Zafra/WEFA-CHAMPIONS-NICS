@@ -7,6 +7,7 @@ import { useToast } from './Toast'
 import { Wordmark } from './ui'
 
 const ICON = {
+  home: <path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" />,
   squad: (
     <>
       <rect x="3" y="4" width="11" height="15" rx="2" />
@@ -35,7 +36,8 @@ const ICON = {
 }
 
 const NAV = [
-  { to: '/', label: 'Plantilla', icon: ICON.squad },
+  { to: '/', label: 'Inicio', icon: ICON.home },
+  { to: '/plantilla', label: 'Plantilla', icon: ICON.squad },
   { to: '/sorteo', label: 'Sorteo', icon: ICON.draw },
   { to: '/pizarra', label: 'Pizarra', icon: ICON.board },
   { to: '/copa', label: 'Copa', icon: ICON.cup },

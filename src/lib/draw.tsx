@@ -39,6 +39,12 @@ export interface Draw {
   at: number
   /** Si es un partido de copa, a qué cruce pertenece; null = amistoso */
   cup: CupTieRef | null
+  /** Es un partido guardado abierto tal cual (no un sorteo nuevo) */
+  fromSaved?: boolean
+  /** Viene de un partido ya guardado: al guardar se actualiza ese partido */
+  savedMatchId?: string
+  /** Fecha, hora y campo ya conocidos (para rellenar al guardar) */
+  when?: { date: string; time: string | null; place: string | null }
   /** Reparto del sorteo antes de retocarlo a mano (para deshacer) */
   original?: Pick<Draw, 'result' | 'captainA' | 'captainB'>
 }

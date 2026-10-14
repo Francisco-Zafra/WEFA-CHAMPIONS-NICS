@@ -8,6 +8,8 @@ let nextId = 0
 const match = (over: Partial<Match>): Match => ({
   id: String(nextId++),
   date: '2026-10-01',
+  time: null,
+  place: null,
   createdAt: 0,
   clubA: 'avispas',
   clubB: 'pandas',

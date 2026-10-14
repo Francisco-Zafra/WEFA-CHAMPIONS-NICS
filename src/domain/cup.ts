@@ -23,6 +23,9 @@ export interface CupTie {
   winner: ClubId | null
   /** YYYY-MM-DD */
   date: string | null
+  /** HH:MM */
+  time: string | null
+  place: string | null
   /** Equipos sorteados para este cruce (opcional) */
   teamA: MatchPlayer[]
   teamB: MatchPlayer[]
@@ -46,6 +49,8 @@ export const emptyTie = (): CupTie => ({
   scoreB: null,
   winner: null,
   date: null,
+  time: null,
+  place: null,
   teamA: [],
   teamB: [],
   captainA: null,

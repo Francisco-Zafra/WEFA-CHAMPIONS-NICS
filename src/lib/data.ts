@@ -52,6 +52,8 @@ function toMatch(id: string, d: DocumentData): Match | null {
   return {
     id,
     date: String(d.date ?? ''),
+    time: typeof d.time === 'string' ? d.time : null,
+    place: typeof d.place === 'string' ? d.place : null,
     createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toMillis() : Date.now(),
     clubA: d.clubA,
     clubB: d.clubB,
@@ -84,6 +86,8 @@ function toCup(id: string, d: DocumentData): Cup | null {
       scoreB: toScore(t.scoreB),
       winner: isClubId(t.winner) ? t.winner : null,
       date: typeof t.date === 'string' ? t.date : null,
+      time: typeof t.time === 'string' ? t.time : null,
+      place: typeof t.place === 'string' ? t.place : null,
       teamA: toTeam(t.teamA),
       teamB: toTeam(t.teamB),
       captainA: typeof t.captainA === 'string' ? t.captainA : null,

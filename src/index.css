@@ -1099,7 +1099,7 @@
     bottom: calc(14px + env(safe-area-inset-bottom));
     height: 68px;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     align-items: center;
     padding: 0 6px;
     border-radius: 24px;
@@ -1822,6 +1822,271 @@
       left: calc(248px + 40px);
       right: 40px;
       bottom: 28px;
+    }
+  }
+
+  /* ---- inicio: próximo partido ---- */
+  .home-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 30px;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 30px 70px rgba(0, 0, 0, 0.55);
+  }
+  .home-split {
+    position: absolute;
+    inset: 0;
+  }
+  .home-split .l {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 0, 62% 0, 38% 100%, 0 100%);
+    background: linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--ca) 55%, transparent),
+      color-mix(in oklab, var(--ca-deep) 85%, transparent) 70%
+    );
+  }
+  .home-split .r {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(62% 0, 100% 0, 100% 100%, 38% 100%);
+    background: linear-gradient(
+      200deg,
+      color-mix(in oklab, var(--cb) 50%, transparent),
+      color-mix(in oklab, var(--cb-deep) 90%, transparent) 70%
+    );
+  }
+  .home-split .seam {
+    position: absolute;
+    left: 50%;
+    top: -10%;
+    width: 3px;
+    height: 120%;
+    transform: translateX(-50%) rotate(13.5deg);
+    background: linear-gradient(180deg, transparent, #fff 30%, #fff 70%, transparent);
+    box-shadow:
+      0 0 18px #fff,
+      0 0 40px rgba(255, 255, 255, 0.6);
+    animation: bolt 3.2s infinite;
+  }
+  .home-crest {
+    width: 132px;
+    height: 132px;
+    border-radius: 26%;
+  }
+  .home-crest--a {
+    animation: crestL 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+    box-shadow:
+      0 0 0 3px var(--ca),
+      0 0 50px color-mix(in oklab, var(--ca) 70%, transparent),
+      0 20px 40px rgba(0, 0, 0, 0.6);
+  }
+  .home-crest--b {
+    animation: crestR 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+    box-shadow:
+      0 0 0 3px var(--cb),
+      0 0 50px color-mix(in oklab, var(--cb) 70%, transparent),
+      0 20px 40px rgba(0, 0, 0, 0.6);
+  }
+  .home-vs {
+    font-family: var(--display);
+    font-size: 68px;
+    line-height: 1;
+    color: #fff;
+    animation: vsPulse 2.4s ease-in-out infinite;
+  }
+  .home-cd {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .home-cd > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 8px;
+    border-radius: 16px;
+    background: rgba(5, 10, 24, 0.6);
+    border: 1px solid var(--line-2);
+  }
+  .home-cd b {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 44px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .home-cd span {
+    font: 600 10px var(--sans);
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  @media (min-width: 1024px) {
+    .home-split .l {
+      clip-path: polygon(0 0, 56% 0, 44% 100%, 0 100%);
+    }
+    .home-split .r {
+      clip-path: polygon(56% 0, 100% 0, 100% 100%, 44% 100%);
+    }
+    .home-split .seam {
+      width: 4px;
+      transform: translateX(-50%) rotate(15deg);
+    }
+    .home-crest {
+      width: 200px;
+      height: 200px;
+    }
+    .home-vs {
+      font-size: 120px;
+    }
+    .home-cd b {
+      font-size: 60px;
+    }
+  }
+  .home-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--line);
+    min-width: 0;
+  }
+  .home-info svg {
+    width: 20px;
+    height: 20px;
+    color: var(--club);
+    flex: none;
+  }
+  .vs-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    gap: 2px;
+  }
+  .vs-bar > div {
+    height: 100%;
+    transition: flex 0.5s;
+  }
+  .rrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .rrow .d {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--display);
+    font-size: 13px;
+    color: var(--club-ink);
+    background: var(--club);
+    flex: none;
+    box-shadow: 0 0 12px color-mix(in oklab, var(--club) 50%, transparent);
+  }
+  .rrow .n {
+    flex: 1;
+    min-width: 0;
+    font: 600 12px var(--sans);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rrow .m {
+    font-family: var(--display);
+    font-size: 18px;
+    color: var(--club);
+  }
+  .rrow--cap {
+    background: color-mix(in oklab, var(--club) 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--club) 50%, transparent);
+  }
+  .home-team {
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    padding: 20px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--club) 18%, transparent),
+      rgba(10, 20, 48, 0.5) 55%
+    );
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--club) 40%, transparent);
+  }
+  @keyframes crestL {
+    0% {
+      transform: translateX(-60px) rotate(-14deg);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0) rotate(-8deg);
+      opacity: 1;
+    }
+  }
+  @keyframes crestR {
+    0% {
+      transform: translateX(60px) rotate(14deg);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0) rotate(8deg);
+      opacity: 1;
+    }
+  }
+  @keyframes vsPulse {
+    0%,
+    100% {
+      transform: scale(1);
+      text-shadow:
+        0 0 18px #fff,
+        0 0 40px rgba(255, 255, 255, 0.5);
+    }
+    50% {
+      transform: scale(1.08);
+      text-shadow:
+        0 0 26px #fff,
+        0 0 70px rgba(255, 255, 255, 0.8);
+    }
+  }
+  @keyframes bolt {
+    0%,
+    48%,
+    100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 1;
+    }
+    54% {
+      opacity: 0.4;
+    }
+    58% {
+      opacity: 0.9;
+    }
+    62% {
+      opacity: 0.25;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .home-split .seam,
+    .home-crest--a,
+    .home-crest--b,
+    .home-vs {
+      animation: none;
     }
   }
 }
