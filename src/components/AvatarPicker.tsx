@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { AVATARS, avatarLabel, avatarUrl, type AvatarId } from '@/domain/avatars'
 import { cx } from '@/lib/cx'
 
-/** Selector de avatar: muestra el elegido y despliega la rejilla con los 40 + «Sin avatar» */
+/** Selector de avatar: muestra el elegido y despliega la rejilla con todos + «Sin avatar» */
 export function AvatarPicker({
   value,
   onChange,

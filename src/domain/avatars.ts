@@ -1,5 +1,13 @@
-/** Avatares predefinidos (public/avatars/<id>.webp) */
+/** Avatares predefinidos (public/avatars/<id>.webp). Primero las mascotas de los clubes */
 export const AVATARS = [
+  '41_avispa',
+  '42_escarabajo',
+  '43_flamenco_2',
+  '44_jabali',
+  '45_panda_2',
+  '46_pato_2',
+  '47_pinguino_2',
+  '48_tiburon_2',
   '01_cocodrilo',
   '02_gaviota',
   '03_gato',
