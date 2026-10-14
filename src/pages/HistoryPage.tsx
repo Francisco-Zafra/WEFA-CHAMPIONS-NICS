@@ -19,12 +19,6 @@ type Tab = 'matches' | 'clubs' | 'players'
 const dayMonth = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 
-/** Temporada septiembre–agosto */
-function seasonOf(date = new Date()) {
-  const y = date.getMonth() >= 8 ? date.getFullYear() : date.getFullYear() - 1
-  return `${y}–${String(y + 1).slice(2)}`
-}
-
 export function HistoryPage({
   matches,
   players,
@@ -56,7 +50,7 @@ export function HistoryPage({
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <PageHeader eyebrow={`Temporada ${seasonOf()}`} title="Historial" />
+      <PageHeader title="Historial" />
       <Seg<Tab>
         label="Secciones del historial"
         value={tab}
