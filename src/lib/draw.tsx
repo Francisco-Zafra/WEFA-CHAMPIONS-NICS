@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import type { BalanceResult, PlayerPair } from '@/domain/balance'
+import type { CaptainChoice } from '@/domain/captains'
 import type { ClubId } from '@/domain/types'
 
 export interface DrawConfig {
@@ -7,8 +8,9 @@ export interface DrawConfig {
   overrides: Record<string, boolean>
   clubA: ClubId
   clubB: ClubId
-  captainA: string | null
-  captainB: string | null
+  /** undefined = automático (último capitán del club); null = sin capitán */
+  captainA?: CaptainChoice
+  captainB?: CaptainChoice
   /** Quién se queda el jugador extra si son impares */
   extraTo: 'A' | 'B'
   together: PlayerPair[]
@@ -71,8 +73,6 @@ const DEFAULT_CONFIG: DrawConfig = {
   overrides: {},
   clubA: 'flamingo',
   clubB: 'tiburones',
-  captainA: null,
-  captainB: null,
   extraTo: 'A',
   together: [],
   apart: [],
@@ -110,7 +110,13 @@ export function DrawProvider({ children }: { children: ReactNode }) {
         setCup({
           ref,
           // Convocados y reglas del amistoso como punto de partida; clubes los del cruce
-          config: { ...friendly, clubA: ref.clubA, clubB: ref.clubB, captainA: null, captainB: null },
+          config: {
+            ...friendly,
+            clubA: ref.clubA,
+            clubB: ref.clubB,
+            captainA: undefined,
+            captainB: undefined,
+          },
         })
         setMode('cup')
         setStep(1)

@@ -1,10 +1,11 @@
 import { AnimatePresence } from 'motion/react'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import { ToastProvider } from '@/components/Toast'
 import { AuthProvider, useAuth } from '@/lib/auth'
+import { lastCaptains } from '@/domain/captains'
 import { useCups, useMatches, usePlayers } from '@/lib/data'
 import { DrawProvider, useDraw } from '@/lib/draw'
 import { wasWelcomed } from '@/lib/welcome'
@@ -21,6 +22,7 @@ function Routed() {
   const players = usePlayers()
   const matches = useMatches()
   const cups = useCups()
+  const captainDefaults = useMemo(() => lastCaptains(matches.data, cups.data), [matches.data, cups.data])
   const { user, ready } = useAuth()
   const { draw, revealing, setRevealing } = useDraw()
   const navigate = useNavigate()
@@ -46,7 +48,10 @@ function Routed() {
             <Layout>
               <Routes>
                 <Route path="/" element={<SquadPage players={players} />} />
-                <Route path="/sorteo" element={<DrawPage players={players} />} />
+                <Route
+                  path="/sorteo"
+                  element={<DrawPage players={players} captainDefaults={captainDefaults} />}
+                />
                 <Route path="/pizarra" element={<PizarraPage players={players} cups={cups} />} />
                 <Route path="/copa" element={<CupPage cups={cups} />} />
                 <Route path="/copa/:id" element={<CupDetailPage cups={cups} />} />

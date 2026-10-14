@@ -4,6 +4,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Crown,
   Link2,
   Plus,
   Trash2,
@@ -16,6 +17,7 @@ import { CardSkeletons, EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Crest, CrestGhost, Seg } from '@/components/ui'
 import type { PlayerPair } from '@/domain/balance'
+import { resolveCaptains } from '@/domain/captains'
 import { roundOf, tieLabel } from '@/domain/cup'
 import { CLUBS, getClub } from '@/domain/clubs'
 import { averageRating, fmt, initials, overall, tier } from '@/domain/rating'
@@ -27,7 +29,14 @@ import { runDraw, selectionOf, teamSizes } from '@/lib/runDraw'
 
 const STEP_LABELS = ['Convocados', 'Clubes', 'Reglas']
 
-export function DrawPage({ players }: { players: Collection<Player> }) {
+export function DrawPage({
+  players,
+  captainDefaults,
+}: {
+  players: Collection<Player>
+  /** Último capitán de cada club (para el capitán automático) */
+  captainDefaults: Map<ClubId, string>
+}) {
   const { config, step, setStep, mode, setMode, cupTie, pendingCupTie, clearCup } = useDraw()
 
   if (players.loading) return <CardSkeletons count={4} />
@@ -97,8 +106,8 @@ export function DrawPage({ players }: { players: Collection<Player> }) {
         </div>
       )}
       {step === 1 && <StepPlayers players={players.data} />}
-      {step === 2 && <StepClubs players={players.data} />}
-      {step === 3 && <StepRules players={players.data} />}
+      {step === 2 && <StepClubs players={players.data} captainDefaults={captainDefaults} />}
+      {step === 3 && <StepRules players={players.data} captainDefaults={captainDefaults} />}
     </div>
   )
 }
@@ -264,8 +273,14 @@ function StepPlayers({ players }: { players: Player[] }) {
 
 // ---------- Paso 2 · Clubes y capitanes ----------
 
-function StepClubs({ players }: { players: Player[] }) {
-  const { config, set } = useConfig()
+function StepClubs({
+  players,
+  captainDefaults,
+}: {
+  players: Player[]
+  captainDefaults: Map<ClubId, string>
+}) {
+  const { config, set, setConfig } = useConfig()
   const { setStep, cupTie } = useDraw()
   const [editing, setEditing] = useState<'A' | 'B'>('A')
   const selection = selectionOf(players, config)
@@ -296,34 +311,58 @@ function StepClubs({ players }: { players: Player[] }) {
     )
   }
 
+  const selectedIds = new Set(selection.map((p) => p.id))
+  const [resolvedA, resolvedB] = resolveCaptains(config, selectedIds, captainDefaults)
+
   const captain = (side: 'A' | 'B') => {
     const club = side === 'A' ? config.clubA : config.clubB
     const key = side === 'A' ? 'captainA' : 'captainB'
-    const rival = side === 'A' ? config.captainB : config.captainA
-    const value = config[key] && selection.some((p) => p.id === config[key]) ? config[key] : ''
+    const choice = config[key]
+    const resolved = side === 'A' ? resolvedA : resolvedB
+    const rival = side === 'A' ? resolvedB : resolvedA
+    const last = captainDefaults.get(club)
+    const lastName = last ? players.find((p) => p.id === last)?.name : undefined
+    const auto = choice === undefined
+    // «Automático» solo se ofrece si el último capitán está convocado y no es el del rival
+    const autoAvailable = !!last && selectedIds.has(last) && last !== rival
+    const value = auto ? (resolved ? AUTO : '') : (resolved ?? '')
     return (
-      <div className={`club-${club} flex items-center gap-3`}>
-        <Crest club={club} size={40} />
-        <div className="relative min-w-0 flex-1">
-          <label className="sr" htmlFor={`cap${side}`}>
-            Capitán de {getClub(club).name}
-          </label>
-          <select
-            id={`cap${side}`}
-            className="select"
-            value={value}
-            onChange={(e) => set(key, e.target.value || null)}
-            style={{ borderColor: 'color-mix(in oklab, var(--club) 50%, transparent)' }}
-          >
-            <option value="">Sin capitán</option>
-            {selection.map((p) => (
-              <option key={p.id} value={p.id} disabled={p.id === rival}>
-                {p.id === rival ? `${p.name} (equipo rival)` : p.name}
-              </option>
-            ))}
-          </select>
-          <ChevronRight className="pointer-events-none absolute top-3.5 right-3 size-5 rotate-90 text-[var(--muted)]" />
+      <div className={`club-${club} flex flex-col gap-1.5`}>
+        <div className="flex items-center gap-3">
+          <Crest club={club} size={40} />
+          <div className="relative min-w-0 flex-1">
+            <label className="sr" htmlFor={`cap${side}`}>
+              Capitán de {getClub(club).name}
+            </label>
+            <select
+              id={`cap${side}`}
+              className="select"
+              value={value}
+              onChange={(e) => set(key, e.target.value === AUTO ? undefined : e.target.value || null)}
+              style={{ borderColor: 'color-mix(in oklab, var(--club) 50%, transparent)' }}
+            >
+              {autoAvailable && <option value={AUTO}>{lastName} · último capitán</option>}
+              <option value="">Sin capitán</option>
+              {selection.map((p) => (
+                <option key={p.id} value={p.id} disabled={p.id === rival}>
+                  {p.id === rival ? `${p.name} (equipo rival)` : p.name}
+                </option>
+              ))}
+            </select>
+            <ChevronRight className="pointer-events-none absolute top-3.5 right-3 size-5 rotate-90 text-[var(--muted)]" />
+          </div>
         </div>
+        {auto && resolved && (
+          <p className="small flex items-center gap-1.5 pl-[52px] text-xs">
+            <Crown className="size-3.5 text-[#ffd34d]" fill="currentColor" />
+            Automático: fue el último capitán de {getClub(club).short}
+          </p>
+        )}
+        {auto && !resolved && lastName && (
+          <p className="small pl-[52px] text-xs">
+            El último capitán de {getClub(club).short} ({lastName}) no está convocado.
+          </p>
+        )}
       </div>
     )
   }
@@ -357,7 +396,13 @@ function StepClubs({ players }: { players: Player[] }) {
                 type="button"
                 aria-pressed={c.id === mine}
                 disabled={c.id === other}
-                onClick={() => set(editing === 'A' ? 'clubA' : 'clubB', c.id as ClubId)}
+                onClick={() =>
+                  setConfig((cfg) =>
+                    editing === 'A'
+                      ? { ...cfg, clubA: c.id as ClubId, captainA: undefined }
+                      : { ...cfg, clubB: c.id as ClubId, captainB: undefined },
+                  )
+                }
               >
                 <span className={`crest crest--${c.id}`} aria-hidden />
                 {c.short}
@@ -403,22 +448,35 @@ function StepClubs({ players }: { players: Player[] }) {
 
 // ---------- Paso 3 · Reglas ----------
 
-const TOLERANCES = [
-  { value: '0.5', label: 'Estricta · 0,5' },
-  { value: '1', label: 'Normal · 1,0' },
-  { value: '2', label: 'Libre · 2,0' },
-]
+const AUTO = '__auto'
 
-function StepRules({ players }: { players: Player[] }) {
+const TOLERANCES = [
+  { value: '0.5', label: 'Estricta' },
+  { value: '1', label: 'Normal' },
+  { value: '2', label: 'Libre' },
+  { value: 'custom', label: 'Otra' },
+]
+const isPreset = (t: number) => TOLERANCES.some((o) => o.value === String(t))
+const fmtTolerance = (t: number) => fmt(t, Math.round(t * 10) === t * 10 ? 1 : 2)
+
+function StepRules({
+  players,
+  captainDefaults,
+}: {
+  players: Player[]
+  captainDefaults: Map<ClubId, string>
+}) {
   const { config } = useConfig()
   const { setStep, setDraw, setRevealing, cupTie } = useDraw()
   const toast = useToast()
   const selection = selectionOf(players, config)
   const [a, b] = teamSizes(selection.length, config.extraTo)
   const { set } = useConfig()
+  const [custom, setCustom] = useState(() => !isPreset(config.tolerance))
+  const [draft, setDraft] = useState(() => fmtTolerance(config.tolerance))
 
   function sortear() {
-    const out = runDraw(players, config, cupTie)
+    const out = runDraw(players, config, cupTie, captainDefaults)
     if (!out.ok) {
       toast(out.error, 'error')
       return
@@ -437,15 +495,41 @@ function StepRules({ players }: { players: Player[] }) {
       <div className="glass flex flex-col gap-2.5 p-3.5">
         <div className="flex items-baseline justify-between">
           <h2 className="h-display h-s">Tolerancia de equilibrio</h2>
-          <span className="h-display neon text-[26px]">± {fmt(config.tolerance)}</span>
+          <span className="h-display neon text-[26px]">± {fmtTolerance(config.tolerance)}</span>
         </div>
         <p className="small text-xs">Diferencia máxima entre las medias de los dos equipos.</p>
         <Seg
           label="Tolerancia"
-          value={String(config.tolerance)}
-          onChange={(v) => set('tolerance', Number(v))}
+          value={custom ? 'custom' : String(config.tolerance)}
+          onChange={(v) => {
+            if (v === 'custom') {
+              setCustom(true)
+              setDraft(fmtTolerance(config.tolerance))
+            } else {
+              setCustom(false)
+              set('tolerance', Number(v))
+            }
+          }}
           options={TOLERANCES}
         />
+        {custom && (
+          <div className="field">
+            <label htmlFor="tolerance">Diferencia máxima personalizada (0 a 10)</label>
+            <input
+              id="tolerance"
+              className="input"
+              inputMode="decimal"
+              autoFocus
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value)
+                const n = Number(e.target.value.replace(',', '.'))
+                if (e.target.value.trim() !== '' && Number.isFinite(n) && n >= 0)
+                  set('tolerance', Math.min(10, Math.round(n * 100) / 100))
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <BottomBar>

@@ -1,6 +1,7 @@
 import { balanceTeams, type BalanceError } from '@/domain/balance'
+import { resolveCaptains } from '@/domain/captains'
 import { randomSeed } from '@/domain/rng'
-import type { Player } from '@/domain/types'
+import type { ClubId, Player } from '@/domain/types'
 import type { CupTieRef, Draw, DrawConfig } from './draw'
 
 export const DRAW_ERRORS: Record<BalanceError, string> = {
@@ -24,12 +25,12 @@ export function runDraw(
   players: Player[],
   config: DrawConfig,
   cup: CupTieRef | null = null,
+  /** Último capitán de cada club, para los capitanes en automático */
+  captainDefaults: Map<ClubId, string> = new Map(),
 ): { ok: true; draw: Draw } | { ok: false; error: string } {
   const selection = selectionOf(players, config)
   const [sizeA] = teamSizes(selection.length, config.extraTo)
-  const inSelection = (id: string | null) => (id && selection.some((p) => p.id === id) ? id : null)
-  const captainA = inSelection(config.captainA)
-  const captainB = inSelection(config.captainB)
+  const [captainA, captainB] = resolveCaptains(config, new Set(selection.map((p) => p.id)), captainDefaults)
   const seed = randomSeed()
   const outcome = balanceTeams({
     players: selection,
