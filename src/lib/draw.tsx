@@ -21,6 +21,8 @@ export interface CupTieRef {
   cupId: string
   cupName: string
   tie: number
+  clubA: ClubId
+  clubB: ClubId
 }
 
 export interface Draw {
@@ -33,22 +35,31 @@ export interface Draw {
   seed: number
   /** Fecha del sorteo (ms) */
   at: number
-  /** Si es un partido de copa, a qué cruce pertenece */
+  /** Si es un partido de copa, a qué cruce pertenece; null = amistoso */
   cup: CupTieRef | null
 }
 
 export type DrawStep = 1 | 2 | 3
+export type DrawMode = 'friendly' | 'cup'
 
 interface DrawState {
+  /** Configuración del modo activo (amistoso o copa) */
   config: DrawConfig
   setConfig: (update: (c: DrawConfig) => DrawConfig) => void
   step: DrawStep
   setStep: (s: DrawStep) => void
+  mode: DrawMode
+  setMode: (m: DrawMode) => void
+  /** Cruce de copa del modo activo; null en amistoso */
+  cupTie: CupTieRef | null
+  /** Último cruce de copa elegido, aunque ahora se esté en amistoso */
+  pendingCupTie: CupTieRef | null
+  /** Entra en modo copa para un cruce (clubes fijos, sin tocar el amistoso) */
+  startCup: (ref: CupTieRef) => void
+  /** Olvida el cruce de copa y vuelve a amistoso */
+  clearCup: () => void
   draw: Draw | null
   setDraw: (d: Draw | null) => void
-  /** Modo copa: el sorteo es para este cruce (clubes fijos) */
-  cupTie: CupTieRef | null
-  setCupTie: (t: CupTieRef | null) => void
   /** Ceremonia de revelación en curso */
   revealing: boolean
   setRevealing: (v: boolean) => void
@@ -72,27 +83,50 @@ const DrawContext = createContext<DrawState | null>(null)
 
 /** Mantiene el sorteo vivo al navegar entre pestañas */
 export function DrawProvider({ children }: { children: ReactNode }) {
-  const [config, setConfigState] = useState(DEFAULT_CONFIG)
+  const [friendly, setFriendly] = useState(DEFAULT_CONFIG)
+  const [cup, setCup] = useState<{ ref: CupTieRef; config: DrawConfig } | null>(null)
+  const [mode, setMode] = useState<DrawMode>('friendly')
   const [step, setStep] = useState<DrawStep>(1)
   const [draw, setDraw] = useState<Draw | null>(null)
   const [revealing, setRevealing] = useState(false)
-  const [cupTie, setCupTie] = useState<CupTieRef | null>(null)
-  const value = useMemo<DrawState>(
-    () => ({
+
+  const value = useMemo<DrawState>(() => {
+    const inCup = mode === 'cup' && cup !== null
+    const config = inCup ? cup.config : friendly
+    return {
       config,
-      setConfig: (update) => setConfigState(update),
+      setConfig: (update) =>
+        inCup ? setCup((c) => c && { ...c, config: update(c.config) }) : setFriendly(update),
       step,
       setStep,
+      mode: inCup ? 'cup' : 'friendly',
+      setMode: (m) => {
+        setMode(m)
+        setStep(1)
+      },
+      cupTie: inCup ? cup.ref : null,
+      pendingCupTie: cup?.ref ?? null,
+      startCup: (ref) => {
+        setCup({
+          ref,
+          // Convocados y reglas del amistoso como punto de partida; clubes los del cruce
+          config: { ...friendly, clubA: ref.clubA, clubB: ref.clubB, captainA: null, captainB: null },
+        })
+        setMode('cup')
+        setStep(1)
+      },
+      clearCup: () => {
+        setCup(null)
+        setMode('friendly')
+      },
       draw,
       setDraw,
-      cupTie,
-      setCupTie,
       revealing,
       setRevealing,
       themeClub: draw?.clubA ?? config.clubA,
-    }),
-    [config, step, draw, revealing, cupTie],
-  )
+    }
+  }, [friendly, cup, mode, step, draw, revealing])
+
   return <DrawContext.Provider value={value}>{children}</DrawContext.Provider>
 }
 

@@ -28,7 +28,7 @@ import { runDraw, selectionOf, teamSizes } from '@/lib/runDraw'
 const STEP_LABELS = ['Convocados', 'Clubes', 'Reglas']
 
 export function DrawPage({ players }: { players: Collection<Player> }) {
-  const { config, step, setStep, cupTie, setCupTie } = useDraw()
+  const { config, step, setStep, mode, setMode, cupTie, pendingCupTie, clearCup } = useDraw()
 
   if (players.loading) return <CardSkeletons count={4} />
   if (players.data.length < 2)
@@ -40,6 +40,24 @@ export function DrawPage({ players }: { players: Collection<Player> }) {
 
   return (
     <div className={`club-${config.clubA} mx-auto flex max-w-2xl flex-col gap-4`}>
+      {pendingCupTie && (
+        <Seg
+          label="Tipo de partido"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'friendly', label: 'Amistoso' },
+            {
+              value: 'cup',
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  <Trophy className="size-3.5" /> Copa · {tieLabel(pendingCupTie.tie)}
+                </span>
+              ),
+            },
+          ]}
+        />
+      )}
       <div className="steps">
         {STEP_LABELS.map((label, i) => {
           const n = (i + 1) as DrawStep
@@ -70,9 +88,9 @@ export function DrawPage({ players }: { players: Collection<Player> }) {
           <button
             className="btn btn--ghost btn--icon"
             type="button"
-            aria-label="Salir del modo copa"
-            title="Salir del modo copa"
-            onClick={() => setCupTie(null)}
+            aria-label="Descartar el cruce de copa"
+            title="Descartar el cruce de copa"
+            onClick={clearCup}
           >
             <X />
           </button>

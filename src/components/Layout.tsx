@@ -106,7 +106,7 @@ function AccountButton() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { themeClub } = useDraw()
+  const { themeClub, setMode } = useDraw()
   const { isAdmin, logout } = useAuth()
   const toast = useToast()
 
@@ -129,6 +129,8 @@ export function Layout({ children }: { children: ReactNode }) {
         <Link
           className="btn btn--primary mb-4 h-[54px]"
           to="/sorteo"
+          onClick={() => setMode('friendly')}
+          title="Sorteo amistoso"
           style={{ fontFamily: 'var(--display)', fontSize: 24, letterSpacing: '.06em', fontWeight: 400 }}
         >
           Nuevo sorteo

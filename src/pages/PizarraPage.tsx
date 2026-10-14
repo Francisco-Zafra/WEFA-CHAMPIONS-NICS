@@ -64,7 +64,20 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
   const vs = `${result.teamA.players.length} contra ${result.teamB.players.length}`
 
   function redraw() {
-    const out = runDraw(players.data, config, draw?.cup ?? null)
+    if (!draw) return
+    // Repite este mismo partido: sus clubes, capitanes y tolerancia (amistoso o copa)
+    const out = runDraw(
+      players.data,
+      {
+        ...config,
+        clubA: draw.clubA,
+        clubB: draw.clubB,
+        captainA: draw.captainA,
+        captainB: draw.captainB,
+        tolerance: draw.tolerance,
+      },
+      draw.cup,
+    )
     if (!out.ok) return toast(out.error, 'error')
     setDraw(out.draw)
     setRevealing(true)
@@ -119,13 +132,15 @@ export function PizarraPage({ players, cups }: { players: Collection<Player>; cu
       <header className="flex flex-col items-center gap-1.5 text-center lg:flex-row lg:flex-wrap lg:justify-between lg:gap-5 lg:text-left">
         <div className="flex flex-col items-center gap-1.5 lg:flex-row lg:gap-[18px]">
           <p className="eyebrow lg:hidden">
-            {draw.cup ? `${draw.cup.cupName} · ${tieLabel(draw.cup.tie)}` : `Pizarra · ${shortDate(draw.at)}`}
+            {draw.cup
+              ? `Copa · ${draw.cup.cupName} · ${tieLabel(draw.cup.tie)}`
+              : `Amistoso · ${shortDate(draw.at)}`}
           </p>
           <div className="flex items-center gap-3 lg:gap-[18px]">
             <Crest club={a.id} size={desktop ? 76 : 52} />
             <div>
               <p className="eyebrow hidden lg:block">
-                {draw.cup ? `${draw.cup.cupName} · ${roundOf(draw.cup.tie).name}` : 'Pizarra'} ·{' '}
+                {draw.cup ? `Copa · ${draw.cup.cupName} · ${roundOf(draw.cup.tie).name}` : 'Amistoso'} ·{' '}
                 {longDate(draw.at)} · {vs}
               </p>
               <h1 className="h-display text-[34px] lg:mt-1.5 lg:text-[60px]">
@@ -255,7 +270,7 @@ function SaveMatchSheet({
 }) {
   const toast = useToast()
   const navigate = useNavigate()
-  const { setCupTie } = useDraw()
+  const { clearCup } = useDraw()
   const [date, setDate] = useState(isoToday)
   const [busy, setBusy] = useState(false)
   const snapshot = (t: TeamSummary) =>
@@ -283,7 +298,7 @@ function SaveMatchSheet({
     )
     await updateCup(cup.id, { ties })
     toast('Equipos guardados en el cuadro. Apunta el resultado tras el partido')
-    setCupTie(null)
+    clearCup()
     onClose()
     navigate(`/copa/${cup.id}`)
   }
