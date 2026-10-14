@@ -171,7 +171,7 @@ export function Pitch({
           style={big ? { ...s, borderWidth: s.borderWidth ? '3px 0 0' : 3, ...pick(s) } : s}
         />
       ))}
-      <div className={`club-${teamA.club}`}>
+      <div className="team-red">
         {spots(teamA, 'A', height, !!big).map((s) => (
           <Chip
             key={s.player.id}
@@ -183,7 +183,7 @@ export function Pitch({
           />
         ))}
       </div>
-      <div className={`club-${teamB.club}`}>
+      <div className="team-blue">
         {spots(teamB, 'B', height, !!big).map((s) => (
           <Chip
             key={s.player.id}

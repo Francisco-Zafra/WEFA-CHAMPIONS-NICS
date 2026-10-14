@@ -193,7 +193,7 @@ function Upcoming({
   )
 
   return (
-    <div className={`club-${up.clubA} flex flex-col gap-4 lg:gap-6`} style={vars}>
+    <div className="flex flex-col gap-4 lg:gap-6" style={vars}>
       {/* HERO */}
       <section className="home-hero -mx-1.5 min-h-[400px] lg:mx-0 lg:min-h-[440px]">
         <div className="home-split" aria-hidden>

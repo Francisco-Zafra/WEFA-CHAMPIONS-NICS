@@ -108,12 +108,12 @@ function AccountButton() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { themeClub, setMode } = useDraw()
+  const { setMode } = useDraw()
   const { isAdmin, logout } = useAuth()
   const toast = useToast()
 
   return (
-    <div className={`club-${themeClub} grain relative min-h-dvh`}>
+    <div className="club-wefa grain relative min-h-dvh">
       <div className="app-bg atmosphere" aria-hidden />
 
       {/* Escritorio: rail lateral */}

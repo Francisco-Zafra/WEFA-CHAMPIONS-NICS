@@ -73,8 +73,6 @@ interface DrawState {
   /** Ceremonia de revelación en curso */
   revealing: boolean
   setRevealing: (v: boolean) => void
-  /** Club que tiñe la interfaz (--club): el equipo A del sorteo actual */
-  themeClub: ClubId
 }
 
 const DEFAULT_CONFIG: DrawConfig = {
@@ -137,7 +135,6 @@ export function DrawProvider({ children }: { children: ReactNode }) {
       setDraw,
       revealing,
       setRevealing,
-      themeClub: draw?.clubA ?? config.clubA,
     }
   }, [friendly, cup, mode, step, draw, revealing])
 

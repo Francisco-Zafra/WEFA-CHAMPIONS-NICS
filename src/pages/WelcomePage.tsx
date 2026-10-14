@@ -7,7 +7,6 @@ import { CLUBS } from '@/domain/clubs'
 import { useAuth } from '@/lib/auth'
 import { loginErrorMessage } from '@/lib/authErrors'
 import { markWelcomed } from '@/lib/welcome'
-import { useDraw } from '@/lib/draw'
 
 /** Escudos en órbita alrededor del logo (posiciones del diseño, en un lienzo de 342×380) */
 const ORBIT = [
@@ -23,7 +22,6 @@ const ORBIT = [
 
 export function WelcomePage() {
   const { login, isAdmin } = useAuth()
-  const { themeClub } = useDraw()
   const toast = useToast()
   const navigate = useNavigate()
   const [username, setUsername] = useState('admin')
@@ -37,7 +35,7 @@ export function WelcomePage() {
   }
 
   return (
-    <div className={`club-${themeClub} grain relative min-h-dvh overflow-hidden`}>
+    <div className="club-wefa grain relative min-h-dvh overflow-hidden">
       <div className="app-bg atmosphere" aria-hidden />
       <div className="relative z-[1] mx-auto flex min-h-dvh max-w-[420px] flex-col px-6 pt-[18px] pb-[max(34px,env(safe-area-inset-bottom))]">
         <div className="floodlights" style={{ left: 18 }} aria-hidden>

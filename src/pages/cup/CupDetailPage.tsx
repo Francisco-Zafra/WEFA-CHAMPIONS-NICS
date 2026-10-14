@@ -61,7 +61,7 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
   }
 
   return (
-    <div className={`${win ? `club-${win}` : ''} flex flex-col gap-5`}>
+    <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <Link className="btn btn--glass btn--icon" to="/copa" aria-label="Volver a copas">

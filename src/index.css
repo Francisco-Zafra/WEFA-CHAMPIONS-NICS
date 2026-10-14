@@ -62,9 +62,6 @@
     --r-md: 14px;
     --r-lg: 20px;
     --r-xl: 28px;
-    --club: #ff4fb0;
-    --club-ink: #1f0612;
-    --club-deep: #5a0f36;
     color-scheme: dark;
     -webkit-tap-highlight-color: transparent;
   }
@@ -83,6 +80,24 @@
   }
 
   /* ---- paletas de club (sacadas de cada escudo) ---- */
+  /* Color de marca WEFA: fijo en toda la app (no es el de ningún club) */
+  :root,
+  .club-wefa {
+    --club: #9b7bff;
+    --club-ink: #0b0620;
+    --club-deep: #2e1f66;
+  }
+  /* En el campo: equipo de arriba rojo, el de abajo azul (siempre) */
+  .team-red {
+    --club: #ef4444;
+    --club-ink: #ffffff;
+    --club-deep: #7f1d1d;
+  }
+  .team-blue {
+    --club: #3b82f6;
+    --club-ink: #ffffff;
+    --club-deep: #1e3a8a;
+  }
   .club-avispas {
     --club: #ffc21a;
     --club-ink: #161004;

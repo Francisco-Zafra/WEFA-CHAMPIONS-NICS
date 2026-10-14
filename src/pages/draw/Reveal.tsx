@@ -135,7 +135,7 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
 
   return createPortal(
     <motion.div
-      className={`club-${draw.clubA} atmosphere grain fixed inset-0 z-[70] overflow-hidden`}
+      className="club-wefa atmosphere grain fixed inset-0 z-[70] overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

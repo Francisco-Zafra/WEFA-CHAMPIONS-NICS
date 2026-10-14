@@ -48,7 +48,7 @@ export function DrawPage({
     )
 
   return (
-    <div className={`club-${config.clubA} mx-auto flex max-w-2xl flex-col gap-4`}>
+    <div className="mx-auto flex max-w-2xl flex-col gap-4">
       {pendingCupTie && (
         <Seg
           label="Tipo de partido"
