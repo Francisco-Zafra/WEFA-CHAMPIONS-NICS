@@ -37,7 +37,7 @@ export function PlayerEditorSheet({
 export function PlayerEditorPanel({ player, onClose }: { player: Player | null; onClose: () => void }) {
   return (
     <aside
-      className="glass glass--club sticky top-8 flex w-[340px] shrink-0 flex-col gap-4 self-start rounded-3xl p-6"
+      className="glass glass--club sticky top-8 flex max-h-[calc(100dvh-4rem)] w-[340px] shrink-0 flex-col gap-4 self-start overflow-y-auto overscroll-contain [scrollbar-width:thin] rounded-3xl p-6"
       aria-label={player ? 'Editar jugador' : 'Nuevo fichaje'}
     >
       <div className="flex items-center justify-between">
