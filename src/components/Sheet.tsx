@@ -2,20 +2,24 @@ import { X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { IconButton } from './ui'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
-/** Hoja inferior en móvil, diálogo centrado en escritorio */
+/** Hoja inferior en móvil, diálogo centrado a partir de 640 px */
 export function Sheet({
   open,
   onClose,
   title,
+  eyebrow,
   children,
 }: {
   open: boolean
   onClose: () => void
   title: string
+  eyebrow?: string
   children: ReactNode
 }) {
+  const centered = useMediaQuery('(min-width: 640px)')
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -28,38 +32,58 @@ export function Sheet({
     }
   }, [open, onClose])
 
+  const motionProps = centered
+    ? {
+        initial: { opacity: 0, x: '-50%', y: '-46%', scale: 0.97 },
+        animate: { opacity: 1, x: '-50%', y: '-50%', scale: 1 },
+        exit: { opacity: 0, x: '-50%', y: '-46%', scale: 0.97 },
+        transition: { duration: 0.2 },
+      }
+    : {
+        initial: { y: '100%' },
+        animate: { y: 0 },
+        exit: { y: '100%' },
+        transition: { type: 'spring' as const, damping: 32, stiffness: 340 },
+      }
+
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+        <>
           <motion.div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            key="scrim"
+            className="scrim"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
-          <motion.div
+          <motion.section
+            key="sheet"
+            className="sheet"
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="panel bg-night-900/95 relative flex max-h-[92dvh] w-full flex-col rounded-b-none sm:max-w-lg sm:rounded-2xl"
-            initial={{ y: '100%', opacity: 0.5 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+            {...motionProps}
           >
-            <div className="flex items-center justify-between gap-2 px-5 pt-4 pb-2">
-              <h2 className="display text-3xl">{title}</h2>
-              <IconButton label="Cerrar" onClick={onClose}>
-                <X className="size-5" />
-              </IconButton>
+            <div className="sheet__grab sm:hidden" />
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+                <h2 className="h-display h-m mt-0.5">{title}</h2>
+              </div>
+              <button
+                className="btn btn--glass btn--icon"
+                type="button"
+                aria-label="Cerrar"
+                onClick={onClose}
+              >
+                <X />
+              </button>
             </div>
-            <div className="overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-              {children}
-            </div>
-          </motion.div>
-        </div>
+            {children}
+          </motion.section>
+        </>
       )}
     </AnimatePresence>,
     document.body,

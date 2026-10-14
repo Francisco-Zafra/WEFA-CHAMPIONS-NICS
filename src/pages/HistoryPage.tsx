@@ -1,17 +1,28 @@
-import { ChevronDown, Crown, Minus, Pencil, Plus, Star, Trash2, Trophy } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { Crown, Minus, Plus, Star, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Sheet } from '@/components/Sheet'
+import { EmptyCards, ErrorState } from '@/components/States'
 import { useToast } from '@/components/Toast'
-import { Button, ClubBadge, EmptyState, Segmented, SectionTitle, Spinner } from '@/components/ui'
-import { cx } from '@/lib/cx'
+import { Crest, PageHeader, Seg } from '@/components/ui'
 import { getClub } from '@/domain/clubs'
+import { initials } from '@/domain/rating'
 import { clubStandings, isPlayed, playerStandings, type Outcome } from '@/domain/standings'
 import type { Match, Player } from '@/domain/types'
 import { useAuth } from '@/lib/auth'
+import { cx } from '@/lib/cx'
 import { deleteMatch, updateMatch, type Collection } from '@/lib/data'
 
 type Tab = 'matches' | 'clubs' | 'players'
+
+const dayMonth = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+
+/** Temporada septiembre–agosto */
+function seasonOf(date = new Date()) {
+  const y = date.getMonth() >= 8 ? date.getFullYear() : date.getFullYear() - 1
+  return `${y}–${String(y + 1).slice(2)}`
+}
 
 export function HistoryPage({
   matches,
@@ -21,13 +32,32 @@ export function HistoryPage({
   players: Collection<Player>
 }) {
   const [tab, setTab] = useState<Tab>('matches')
-  const played = matches.data.filter(isPlayed).length
+
+  let content
+  if (matches.loading)
+    content = (
+      <div className="flex flex-col gap-2.5" aria-busy="true">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="skel h-[70px] rounded-[18px]" />
+        ))}
+      </div>
+    )
+  else if (matches.error)
+    content = (
+      <ErrorState title="Se ha ido la luz del estadio">
+        No hemos podido cargar los partidos. Revisa tu conexión e inténtalo de nuevo; lo que ya tenías
+        guardado no se ha perdido.
+      </ErrorState>
+    )
+  else if (tab === 'matches') content = <MatchList matches={matches.data} />
+  else if (tab === 'clubs') content = <ClubTable matches={matches.data} />
+  else content = <PlayerTable matches={matches.data} players={players.data} />
 
   return (
-    <div>
-      <SectionTitle kicker={`${played} partidos jugados`} title="Historial" />
-      <Segmented<Tab>
-        className="mb-5 sm:w-96"
+    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <PageHeader eyebrow={`Temporada ${seasonOf()}`} title="Historial" />
+      <Seg<Tab>
+        label="Secciones del historial"
         value={tab}
         onChange={setTab}
         options={[
@@ -36,21 +66,7 @@ export function HistoryPage({
           { value: 'players', label: 'Jugadores' },
         ]}
       />
-      {matches.loading ? (
-        <div className="flex justify-center py-20">
-          <Spinner className="size-10" />
-        </div>
-      ) : matches.error ? (
-        <EmptyState icon="📡" title="Sin señal">
-          No se pudo cargar el historial.
-        </EmptyState>
-      ) : tab === 'matches' ? (
-        <MatchList matches={matches.data} />
-      ) : tab === 'clubs' ? (
-        <ClubTable matches={matches.data} />
-      ) : (
-        <PlayerTable matches={matches.data} players={players.data} />
-      )}
+      {content}
     </div>
   )
 }
@@ -58,124 +74,87 @@ export function HistoryPage({
 // ---------- Partidos ----------
 
 function MatchList({ matches }: { matches: Match[] }) {
-  const [editing, setEditing] = useState<Match | null>(null)
+  const [open, setOpen] = useState<Match | null>(null)
   if (matches.length === 0)
     return (
-      <EmptyState icon="🏟️" title="Aún no hay partidos">
-        Haz un sorteo y pulsa «Guardar partido» para empezar a escribir la historia.
-      </EmptyState>
+      <EmptyCards
+        title="Aún no hay partidos"
+        action={
+          <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
+            Hacer un sorteo
+          </Link>
+        }
+      >
+        Sortea equipos y pulsa «Guardar partido» en la pizarra para empezar a escribir la historia.
+      </EmptyCards>
     )
+  const played = matches.filter(isPlayed).length
   return (
-    <>
-      <ul className="flex flex-col gap-3">
-        {matches.map((m) => (
-          <MatchCard key={m.id} match={m} onEdit={() => setEditing(m)} />
-        ))}
-      </ul>
-      <ScoreSheet match={editing} onClose={() => setEditing(null)} />
-    </>
+    <section className="flex flex-col gap-2.5">
+      <div className="flex items-baseline justify-between">
+        <h2 className="h-display h-m">Partidos</h2>
+        <span className="small">
+          {played} jugados{matches.length > played && ` · ${matches.length - played} pendientes`}
+        </span>
+      </div>
+      {matches.map((m) => (
+        <MatchRow key={m.id} match={m} onOpen={() => setOpen(m)} />
+      ))}
+      <MatchSheet match={open} onClose={() => setOpen(null)} />
+    </section>
   )
 }
 
-function MatchCard({ match, onEdit }: { match: Match; onEdit: () => void }) {
-  const { isAdmin } = useAuth()
-  const [open, setOpen] = useState(false)
+function MatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
   const a = getClub(match.clubA)
   const b = getClub(match.clubB)
   const done = isPlayed(match)
-  const date = new Date(`${match.date}T12:00:00`).toLocaleDateString('es-ES', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-  const mvp = [...match.teamA, ...match.teamB].find((p) => p.id === match.mvp)
-
+  const loseA = done && match.scoreA! < match.scoreB!
+  const loseB = done && match.scoreB! < match.scoreA!
   return (
-    <li className="panel overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full p-4 text-left"
-        aria-expanded={open}
-      >
-        <div className="mb-2 flex items-center justify-between">
-          <span className="label">{date}</span>
-          <ChevronDown className={cx('text-muted size-4 transition', open && 'rotate-180')} />
-        </div>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <ClubBadge club={a.id} className="w-10 shrink-0" />
-            <span className="display truncate text-xl sm:text-2xl">{a.name}</span>
-          </div>
-          {done ? (
-            <span className="display text-4xl tabular-nums">
-              <span className={match.scoreA! > match.scoreB! ? 'text-gold' : ''}>{match.scoreA}</span>
-              <span className="text-muted mx-1.5">-</span>
-              <span className={match.scoreB! > match.scoreA! ? 'text-gold' : ''}>{match.scoreB}</span>
-            </span>
-          ) : (
-            <span className="bg-accent/15 text-accent rounded-full px-3 py-1 text-xs font-bold uppercase">
-              Pendiente
-            </span>
-          )}
-          <div className="flex min-w-0 flex-row-reverse items-center gap-2 text-right">
-            <ClubBadge club={b.id} className="w-10 shrink-0" />
-            <span className="display truncate text-xl sm:text-2xl">{b.name}</span>
-          </div>
-        </div>
-        {mvp && (
-          <p className="text-gold mt-2 flex items-center justify-center gap-1 text-xs font-bold">
-            <Star className="size-3.5 fill-current" /> MVP: {mvp.name}
-          </p>
+    <button
+      className="match"
+      type="button"
+      onClick={onOpen}
+      aria-label={`${a.name} contra ${b.name}, ${dayMonth(match.date)}`}
+    >
+      <div className={cx('side', loseA && 'lose')}>
+        <Crest club={a.id} size={36} />
+        <span>{a.name}</span>
+      </div>
+      <div className="score">
+        {done ? (
+          <b className="num">
+            {match.scoreA} – {match.scoreB}
+          </b>
+        ) : (
+          <span className="pill pill--on h-7 text-[11px]">Pendiente</span>
         )}
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0 }}
-            animate={{ height: 'auto' }}
-            exit={{ height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="border-line grid grid-cols-2 gap-4 border-t px-4 py-3 text-sm">
-              {[
-                [match.teamA, match.captainA, a.primary],
-                [match.teamB, match.captainB, b.primary],
-              ].map(([team, captain, color], i) => (
-                <ul key={i} className={cx('flex flex-col gap-1', i === 1 && 'text-right')}>
-                  {(team as Match['teamA']).map((p) => (
-                    <li key={p.id} className={cx('flex items-center gap-1', i === 1 && 'justify-end')}>
-                      {p.id === captain && <Crown className="size-3.5" style={{ color: color as string }} />}
-                      {p.name}
-                    </li>
-                  ))}
-                </ul>
-              ))}
-            </div>
-            {isAdmin && (
-              <div className="px-4 pb-4">
-                <Button size="sm" variant="primary" onClick={onEdit}>
-                  <Pencil className="size-3.5" /> {done ? 'Editar resultado' : 'Poner resultado'}
-                </Button>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </li>
+        <span className="small text-[11px]">{dayMonth(match.date)}</span>
+      </div>
+      <div className={cx('side flex-row-reverse text-right', loseB && 'lose')}>
+        <Crest club={b.id} size={36} />
+        <span>{b.name}</span>
+      </div>
+    </button>
   )
 }
 
-function ScoreSheet({ match, onClose }: { match: Match | null; onClose: () => void }) {
+function MatchSheet({ match, onClose }: { match: Match | null; onClose: () => void }) {
   return (
-    <Sheet open={match !== null} onClose={onClose} title="Resultado">
-      {match && <ScoreForm key={match.id} match={match} onDone={onClose} />}
+    <Sheet
+      open={match !== null}
+      onClose={onClose}
+      eyebrow={match ? dayMonth(match.date) : undefined}
+      title={match && isPlayed(match) ? 'Resultado' : 'Partido'}
+    >
+      {match && <MatchDetail key={match.id} match={match} onDone={onClose} />}
     </Sheet>
   )
 }
 
-function ScoreForm({ match, onDone }: { match: Match; onDone: () => void }) {
+function MatchDetail({ match, onDone }: { match: Match; onDone: () => void }) {
+  const { isAdmin } = useAuth()
   const toast = useToast()
   const [scoreA, setScoreA] = useState(match.scoreA ?? 0)
   const [scoreB, setScoreB] = useState(match.scoreB ?? 0)
@@ -184,6 +163,7 @@ function ScoreForm({ match, onDone }: { match: Match; onDone: () => void }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const a = getClub(match.clubA)
   const b = getClub(match.clubB)
+  const mvpName = [...match.teamA, ...match.teamB].find((p) => p.id === match.mvp)?.name
 
   async function run(action: () => Promise<void>, message: string) {
     setBusy(true)
@@ -197,97 +177,155 @@ function ScoreForm({ match, onDone }: { match: Match; onDone: () => void }) {
     }
   }
 
+  const roster = (team: Match['teamA'], captain: string | null, club: typeof a, right?: boolean) => (
+    <div className={`club-${club.id} flex flex-col gap-1.5`}>
+      <div className={cx('flex items-center gap-2', right && 'flex-row-reverse')}>
+        <Crest club={club.id} size={28} />
+        <span className="h-display h-s truncate">{club.short}</span>
+      </div>
+      <ul className={cx('flex flex-col gap-1 text-sm', right && 'items-end')}>
+        {team.map((p) => (
+          <li key={p.id} className="flex items-center gap-1.5">
+            {p.id === captain && (
+              <Crown className="size-3.5 text-[#ffd34d]" fill="currentColor" aria-label="Capitán" />
+            )}
+            {p.name}
+            {p.id === match.mvp && (
+              <Star className="size-3.5 text-[var(--warn)]" fill="currentColor" aria-label="MVP" />
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+
   return (
-    <div className="flex flex-col gap-5 pt-2">
+    <div className="flex flex-col gap-4">
+      {isAdmin ? (
+        <div className="grid grid-cols-2 gap-4">
+          <Stepper club={a.id} label={a.short} value={scoreA} onChange={setScoreA} />
+          <Stepper club={b.id} label={b.short} value={scoreB} onChange={setScoreB} />
+        </div>
+      ) : (
+        isPlayed(match) && (
+          <div className="flex items-center justify-center gap-4">
+            <Crest club={a.id} size={52} />
+            <span className="h-display num text-6xl">
+              {match.scoreA} – {match.scoreB}
+            </span>
+            <Crest club={b.id} size={52} />
+          </div>
+        )
+      )}
+
+      {!isAdmin && mvpName && (
+        <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-[var(--warn)]">
+          <Star className="size-4" fill="currentColor" /> MVP: {mvpName}
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
-        <Stepper label={a.name} color={a.primary} value={scoreA} onChange={setScoreA} />
-        <Stepper label={b.name} color={b.primary} value={scoreB} onChange={setScoreB} />
+        {roster(match.teamA, match.captainA, a)}
+        {roster(match.teamB, match.captainB, b, true)}
       </div>
-      <label className="flex flex-col gap-1.5">
-        <span className="label">MVP del partido</span>
-        <select
-          value={mvp}
-          onChange={(e) => setMvp(e.target.value)}
-          className="border-line focus:border-accent bg-night-800 h-11 rounded-xl border px-3 outline-none"
-        >
-          <option value="">— Sin MVP —</option>
-          <optgroup label={a.name}>
-            {match.teamA.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label={b.name}>
-            {match.teamB.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </optgroup>
-        </select>
-      </label>
-      <div className="flex gap-2">
-        {confirmDelete ? (
-          <Button
-            variant="danger"
-            disabled={busy}
-            onClick={() => void run(() => deleteMatch(match.id), 'Partido eliminado')}
-          >
-            ¿Seguro? Eliminar
-          </Button>
-        ) : (
-          <Button variant="danger" onClick={() => setConfirmDelete(true)} aria-label="Eliminar partido">
-            <Trash2 className="size-4" />
-          </Button>
-        )}
-        <Button
-          variant="primary"
-          className="flex-1"
-          disabled={busy}
-          onClick={() =>
-            void run(() => updateMatch(match.id, { scoreA, scoreB, mvp: mvp || null }), 'Resultado guardado')
-          }
-        >
-          Guardar resultado
-        </Button>
-      </div>
+
+      {isAdmin && (
+        <>
+          <div className="field">
+            <label htmlFor="mvp">MVP del partido</label>
+            <select id="mvp" className="select" value={mvp} onChange={(e) => setMvp(e.target.value)}>
+              <option value="">Sin MVP</option>
+              <optgroup label={a.name}>
+                {match.teamA.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label={b.name}>
+                {match.teamB.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+          <div className="flex gap-2.5">
+            {confirmDelete ? (
+              <button
+                className="btn btn--danger h-[52px]"
+                type="button"
+                disabled={busy}
+                onClick={() => void run(() => deleteMatch(match.id), 'Partido eliminado')}
+              >
+                ¿Seguro? Eliminar
+              </button>
+            ) : (
+              <button
+                className="btn btn--danger btn--icon size-[52px]"
+                type="button"
+                aria-label="Eliminar partido"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 />
+              </button>
+            )}
+            <button
+              className="btn btn--primary h-[52px] flex-1"
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                void run(
+                  () => updateMatch(match.id, { scoreA, scoreB, mvp: mvp || null }),
+                  'Resultado guardado',
+                )
+              }
+            >
+              Guardar resultado
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
 
 function Stepper({
+  club,
   label,
-  color,
   value,
   onChange,
 }: {
+  club: Match['clubA']
   label: string
-  color: string
   value: number
   onChange: (v: number) => void
 }) {
   return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="display truncate text-xl" style={{ color }}>
-        {label}
-      </span>
+    <div className={`club-${club} flex flex-col items-center gap-2`}>
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => onChange(Math.max(0, value - 1))}
+        <Crest club={club} size={28} />
+        <span className="h-display h-s neon">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          className="btn btn--glass btn--icon"
+          type="button"
           aria-label={`Quitar gol a ${label}`}
+          onClick={() => onChange(Math.max(0, value - 1))}
         >
-          <Minus className="size-4" />
-        </Button>
-        <span className="display w-14 text-center text-6xl tabular-nums">{value}</span>
-        <Button
-          size="sm"
-          onClick={() => onChange(Math.min(99, value + 1))}
+          <Minus />
+        </button>
+        <span className="h-display num w-14 text-center text-6xl">{value}</span>
+        <button
+          className="btn btn--glass btn--icon"
+          type="button"
           aria-label={`Sumar gol a ${label}`}
+          onClick={() => onChange(Math.min(99, value + 1))}
         >
-          <Plus className="size-4" />
-        </Button>
+          <Plus />
+        </button>
       </div>
     </div>
   )
@@ -297,52 +335,68 @@ function Stepper({
 
 function ClubTable({ matches }: { matches: Match[] }) {
   const rows = useMemo(() => clubStandings(matches), [matches])
+  const totals = rows.reduce((t, r) => ({ w: t.w + r.won, d: t.d + r.drawn }), { w: 0, d: 0 })
   return (
-    <div className="panel overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-muted text-left text-xs">
-            <th className="p-3">#</th>
-            <th className="p-3">Club</th>
-            <Th>PJ</Th>
-            <Th>G</Th>
-            <Th>E</Th>
-            <Th>P</Th>
-            <Th className="hidden sm:table-cell">GF</Th>
-            <Th className="hidden sm:table-cell">GC</Th>
-            <Th>DG</Th>
-            <Th>Pts</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => {
-            const club = getClub(r.club)
-            return (
-              <tr key={r.club} className={cx('border-line border-t', r.played === 0 && 'opacity-45')}>
-                <td className="p-3 font-bold tabular-nums">
-                  {i === 0 && r.points > 0 ? <Trophy className="text-gold size-4" /> : i + 1}
+    <section className="glass flex flex-col gap-1.5 px-3.5 py-4">
+      <div className="flex items-baseline justify-between">
+        <h2 className="h-display h-m">Clasificación</h2>
+        <span className="small text-[11px]">
+          {totals.w} victorias · {totals.d / 2} empates
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th scope="col">Club</th>
+              <th scope="col">PJ</th>
+              <th scope="col">G</th>
+              <th scope="col">E</th>
+              <th scope="col">P</th>
+              <th scope="col" className="hidden sm:table-cell">
+                DG
+              </th>
+              <th scope="col">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr
+                key={r.club}
+                className={cx(
+                  i === 0 && r.points > 0 && `lead club-${r.club}`,
+                  r.played === 0 && 'opacity-50',
+                )}
+              >
+                <td>
+                  <div className="flex items-center gap-2">
+                    <span className="num w-3.5 text-xs text-[var(--muted)]">{i + 1}</span>
+                    <Crest club={r.club} size={28} style={{ borderRadius: 8 }} />
+                    <span className="font-semibold whitespace-nowrap text-[var(--ink)]">
+                      {getClub(r.club).name}
+                    </span>
+                  </div>
                 </td>
-                <td className="p-3">
-                  <span className="flex items-center gap-2">
-                    <ClubBadge club={r.club} className="w-7" />
-                    <span className="display text-lg whitespace-nowrap">{club.name}</span>
-                  </span>
-                </td>
-                <Td>{r.played}</Td>
-                <Td>{r.won}</Td>
-                <Td>{r.drawn}</Td>
-                <Td>{r.lost}</Td>
-                <Td className="hidden sm:table-cell">{r.goalsFor}</Td>
-                <Td className="hidden sm:table-cell">{r.goalsAgainst}</Td>
-                <Td>{r.goalsFor - r.goalsAgainst}</Td>
-                <Td className="text-gold font-extrabold">{r.points}</Td>
+                <td>{r.played}</td>
+                <td>{r.won}</td>
+                <td>{r.drawn}</td>
+                <td>{r.lost}</td>
+                <td className="hidden sm:table-cell">{r.goalsFor - r.goalsAgainst}</td>
+                <td className="pts">{r.points}</td>
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="small text-[11px]">Empate a puntos: decide la diferencia de goles.</p>
+    </section>
   )
+}
+
+const FORM: Record<Outcome, { c: string; t: string }> = {
+  W: { c: 'w', t: 'V' },
+  D: { c: 'd', t: 'E' },
+  L: { c: 'l', t: 'D' },
 }
 
 function PlayerTable({ matches, players }: { matches: Match[]; players: Player[] }) {
@@ -352,70 +406,75 @@ function PlayerTable({ matches, players }: { matches: Match[]; players: Player[]
   )
   if (rows.length === 0)
     return (
-      <EmptyState icon="📊" title="Sin estadísticas">
+      <EmptyCards title="Sin estadísticas">
         Cuando haya partidos con resultado aparecerá aquí el ranking de jugadores.
-      </EmptyState>
+      </EmptyCards>
     )
   return (
-    <div className="panel overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-muted text-left text-xs">
-            <th className="p-3">#</th>
-            <th className="p-3">Jugador</th>
-            <Th>PJ</Th>
-            <Th>G</Th>
-            <Th className="hidden sm:table-cell">E</Th>
-            <Th className="hidden sm:table-cell">P</Th>
-            <Th>% Vic</Th>
-            <Th>MVP</Th>
-            <Th className="hidden sm:table-cell">Forma</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={r.id} className="border-line border-t">
-              <td className="p-3 font-bold tabular-nums">{i + 1}</td>
-              <td className="p-3 font-semibold whitespace-nowrap">{r.name}</td>
-              <Td>{r.played}</Td>
-              <Td className="text-win font-bold">{r.won}</Td>
-              <Td className="hidden sm:table-cell">{r.drawn}</Td>
-              <Td className="hidden sm:table-cell">{r.lost}</Td>
-              <Td>{Math.round(r.winRate * 100)}%</Td>
-              <Td className="text-gold">{r.mvps || ''}</Td>
-              <td className="hidden p-3 sm:table-cell">
-                <span className="flex justify-end gap-1">
-                  {r.form.map((o, j) => (
-                    <FormDot key={j} outcome={o} />
-                  ))}
-                </span>
-              </td>
+    <section className="glass flex flex-col gap-1.5 px-3.5 py-4">
+      <div className="flex items-baseline justify-between">
+        <h2 className="h-display h-m">Jugadores</h2>
+        <span className="pill pill--on h-[30px] cursor-default">Por victorias</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th scope="col">Jugador</th>
+              <th scope="col">V</th>
+              <th scope="col">%</th>
+              <th scope="col">MVP</th>
+              <th scope="col">Racha</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const recent = [...r.form].reverse()
+              const last = recent[0]
+              let streak = 0
+              while (streak < recent.length && recent[streak] === last) streak++
+              const streakColor = last === 'W' ? '#3BE3A0' : last === 'L' ? '#FF8A96' : '#9AA6C7'
+              return (
+                <tr key={r.id}>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <span className="num w-3.5 text-xs text-[var(--muted)]">{i + 1}</span>
+                      <span className="avatar size-[30px] text-sm">{initials(r.name)}</span>
+                      <span className="font-semibold whitespace-nowrap text-[var(--ink)]">{r.name}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <strong className="text-[var(--ink)]">{r.won}</strong>
+                    <span className="text-[var(--dim)]">/{r.played}</span>
+                  </td>
+                  <td>{Math.round(r.winRate * 100)} %</td>
+                  <td className="text-[var(--warn)]">{r.mvps || ''}</td>
+                  <td>
+                    <div className="flex flex-col items-center gap-1">
+                      <div
+                        className="form"
+                        aria-label={`Últimos resultados: ${r.form.map((o) => FORM[o].t).join(' ')}`}
+                      >
+                        {recent.map((o, j) => (
+                          <i key={j} className={FORM[o].c}>
+                            {FORM[o].t}
+                          </i>
+                        ))}
+                      </div>
+                      {last && (
+                        <span className="text-[10px] font-bold" style={{ color: streakColor }}>
+                          {streak}
+                          {FORM[last].t}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
-
-const FORM: Record<Outcome, [string, string]> = {
-  W: ['V', 'bg-win text-night-950'],
-  D: ['E', 'bg-draw text-night-950'],
-  L: ['D', 'bg-loss text-night-950'],
-}
-
-function FormDot({ outcome }: { outcome: Outcome }) {
-  const [letter, cls] = FORM[outcome]
-  return (
-    <span className={cx('flex size-5 items-center justify-center rounded text-[10px] font-extrabold', cls)}>
-      {letter}
-    </span>
-  )
-}
-
-const Th = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <th className={cx('p-3 text-right', className)}>{children}</th>
-)
-const Td = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <td className={cx('p-3 text-right tabular-nums', className)}>{children}</td>
-)

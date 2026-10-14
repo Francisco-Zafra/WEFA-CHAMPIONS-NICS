@@ -1,41 +1,61 @@
-import { Plus, Search, Users } from 'lucide-react'
+import { ArrowUpDown, Info, Plus, Search } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PlayerCard } from '@/components/PlayerCard'
-import { PlayerEditor } from '@/components/PlayerEditor'
+import { PlayerEditorPanel, PlayerEditorSheet } from '@/components/PlayerEditor'
+import { CardSkeletons, EmptyCards, ErrorState } from '@/components/States'
 import { useToast } from '@/components/Toast'
-import { Button, EmptyState, Segmented, SectionTitle, Spinner, Toggle } from '@/components/ui'
-import { averageRating, overall } from '@/domain/rating'
+import { Banner, PageHeader, Switch } from '@/components/ui'
+import { overall, tier, type Tier } from '@/domain/rating'
 import type { Player } from '@/domain/types'
+import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
-import { setPlayersActive, updatePlayer, type Collection } from '@/lib/data'
+import { cx } from '@/lib/cx'
+import { updatePlayer, type Collection } from '@/lib/data'
 
-type Filter = 'all' | 'active' | 'bench'
+type Filter = 'all' | 'active' | Tier
 type Sort = 'rating' | 'name'
+
+/** null = cerrado; 'new' = alta; Player = edición */
+type Editing = null | 'new' | Player
 
 export function SquadPage({ players }: { players: Collection<Player> }) {
   const { isAdmin } = useAuth()
   const toast = useToast()
+  const desktop = useIsDesktop()
   const [filter, setFilter] = useState<Filter>('all')
   const [sort, setSort] = useState<Sort>('rating')
   const [query, setQuery] = useState('')
-  const [editing, setEditing] = useState<Player | null>(null)
-  const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState<Editing>(null)
 
   const all = players.data
-  const active = all.filter((p) => p.active)
+  const convCount = all.filter((p) => p.active).length
+  const count = (t: Tier) => all.filter((p) => tier(overall(p.stats)) === t).length
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     return all
-      .filter((p) => (filter === 'all' ? true : filter === 'active' ? p.active : !p.active))
       .filter((p) => !q || p.name.toLowerCase().includes(q))
+      .filter((p) =>
+        filter === 'all' ? true : filter === 'active' ? p.active : tier(overall(p.stats)) === filter,
+      )
       .sort((a, b) =>
         sort === 'name'
           ? a.name.localeCompare(b.name, 'es')
-          : overall(b.stats) - overall(a.stats) || a.name.localeCompare(b.name),
+          : overall(b.stats) - overall(a.stats) || a.name.localeCompare(b.name, 'es'),
       )
   }, [all, filter, sort, query])
+
+  const filters: { id: Filter; label: string }[] = [
+    { id: 'all', label: `Todos · ${all.length}` },
+    { id: 'active', label: `Convocados · ${convCount}` },
+    { id: 'gold', label: `Oro · ${count('gold')}` },
+    { id: 'silver', label: `Plata · ${count('silver')}` },
+    { id: 'bronze', label: `Bronce · ${count('bronze')}` },
+  ]
+  const sortLabel = sort === 'rating' ? 'Media ↓' : 'Nombre A–Z'
+  const editingPlayer = editing && editing !== 'new' ? editing : null
 
   async function toggleActive(p: Player, active: boolean) {
     try {
@@ -45,158 +65,206 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
     }
   }
 
-  async function bulk(active: boolean) {
-    const ids = visible.filter((p) => p.active !== active).map((p) => p.id)
-    if (ids.length === 0) return
-    try {
-      await setPlayersActive(ids, active)
-      toast(active ? `${ids.length} convocados` : `${ids.length} al banquillo`)
-    } catch {
-      toast('No se pudo actualizar', 'error')
-    }
-  }
+  const addButton = isAdmin && (
+    <button
+      className="btn btn--primary btn--sm h-11 lg:h-12 lg:px-5 lg:text-[15px]"
+      type="button"
+      onClick={() => setEditing('new')}
+    >
+      <Plus strokeWidth={2.4} /> Añadir<span className="hidden lg:inline"> jugador</span>
+    </button>
+  )
 
-  return (
-    <div>
-      <SectionTitle
-        kicker="Temporada 3.0"
-        title="Plantilla"
-        right={
+  let content
+  if (players.loading) content = <CardSkeletons />
+  else if (players.error)
+    content = (
+      <ErrorState title="Se ha ido la luz del estadio">
+        No hemos podido cargar la plantilla. Revisa tu conexión e inténtalo de nuevo.
+      </ErrorState>
+    )
+  else if (all.length === 0)
+    content = (
+      <EmptyCards
+        title="Aún no hay fichajes"
+        action={
           isAdmin && (
-            <Button variant="primary" onClick={() => setCreating(true)} className="hidden sm:inline-flex">
-              <Plus className="size-4" /> Fichar
-            </Button>
+            <button
+              className="btn btn--primary mt-1.5 h-[52px]"
+              type="button"
+              onClick={() => setEditing('new')}
+            >
+              Añadir primer jugador
+            </button>
           )
         }
-      />
-
-      <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
-        <Stat label="Plantilla" value={all.length} />
-        <Stat label="Convocados" value={active.length} accent />
-        <Stat label="Media conv." value={active.length ? averageRating(active).toFixed(1) : '–'} />
-      </div>
-
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row">
-        <label className="border-line focus-within:border-accent flex h-11 flex-1 items-center gap-2 rounded-xl border bg-white/5 px-3">
-          <Search className="text-muted size-4" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar jugador…"
-            className="w-full bg-transparent outline-none"
-            aria-label="Buscar jugador"
-          />
-        </label>
-        <Segmented<Filter>
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: 'all', label: 'Todos' },
-            { value: 'active', label: 'Convocados' },
-            { value: 'bench', label: 'Banquillo' },
-          ]}
-        />
-        <Segmented<Sort>
-          value={sort}
-          onChange={setSort}
-          options={[
-            { value: 'rating', label: 'Media' },
-            { value: 'name', label: 'A–Z' },
-          ]}
-        />
-      </div>
-
-      {isAdmin && visible.length > 0 && (
-        <div className="mb-4 flex gap-2">
-          <Button size="sm" onClick={() => void bulk(true)}>
-            Convocar {filter === 'all' && !query ? 'a todos' : 'visibles'}
-          </Button>
-          <Button size="sm" onClick={() => void bulk(false)}>
-            Al banquillo
-          </Button>
-        </div>
-      )}
-
-      {players.loading ? (
-        <div className="flex justify-center py-20">
-          <Spinner className="size-10" />
-        </div>
-      ) : players.error ? (
-        <EmptyState icon="📡" title="Sin señal">
-          No se pudo cargar la plantilla. Revisa tu conexión o las reglas de Firestore.
-        </EmptyState>
-      ) : visible.length === 0 ? (
-        <EmptyState
-          icon={<Users className="mx-auto size-12" />}
-          title={all.length ? 'Nadie por aquí' : 'Plantilla vacía'}
-        >
-          {all.length
-            ? 'Prueba con otro filtro o búsqueda.'
-            : isAdmin
-              ? 'Ficha a tu primer jugador.'
-              : 'El admin aún no ha fichado a nadie.'}
-        </EmptyState>
-      ) : (
-        <motion.div layout className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {visible.map((p) => (
-            <motion.div
-              key={p.id}
-              layout
-              initial={{ opacity: 0, scale: 0.94 }}
-              animate={{ opacity: 1, scale: 1 }}
-            >
-              <PlayerCard
-                player={p}
-                dimmed={!p.active}
-                onClick={isAdmin ? () => setEditing(p) : undefined}
-                footer={
-                  isAdmin ? (
-                    <div className="flex items-center justify-between rounded-xl bg-black/15 px-2.5 py-1.5">
-                      <span className="text-[11px] font-bold tracking-wider uppercase">
-                        {p.active ? 'Convocado' : 'Banquillo'}
-                      </span>
-                      <Toggle
-                        label={`Convocar a ${p.name}`}
-                        checked={p.active}
-                        onChange={(v) => void toggleActive(p, v)}
-                      />
-                    </div>
-                  ) : undefined
-                }
-              />
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
-
-      {isAdmin && (
+      >
+        {isAdmin
+          ? 'Añade a tus amigos con sus seis stats y la app generará su carta automáticamente.'
+          : 'El admin todavía no ha fichado a nadie.'}
+      </EmptyCards>
+    )
+  else if (visible.length === 0)
+    content = (
+      <div className="glass flex flex-col items-center gap-2.5 px-5 py-7 text-center">
+        <div className="h-display h-m">Nadie con ese nombre</div>
+        <p className="small">Prueba otra búsqueda o quita el filtro.</p>
         <button
+          className="btn btn--glass btn--sm"
           type="button"
-          aria-label="Fichar jugador"
-          onClick={() => setCreating(true)}
-          className="bg-accent text-night-950 shadow-accent/50 fixed right-4 bottom-24 z-30 flex size-14 items-center justify-center rounded-2xl shadow-lg transition active:scale-95 sm:hidden"
+          onClick={() => {
+            setQuery('')
+            setFilter('all')
+          }}
         >
-          <Plus className="size-7" />
+          Limpiar filtros
         </button>
-      )}
+      </div>
+    )
+  else
+    content = (
+      <motion.div
+        layout
+        className="grid grid-cols-2 justify-items-center gap-x-3 gap-y-4 sm:grid-cols-[repeat(auto-fill,minmax(172px,1fr))] lg:gap-x-4 lg:gap-y-7"
+      >
+        {visible.map((p) => (
+          <motion.div
+            key={p.id}
+            layout
+            className="cell"
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            {isAdmin ? (
+              <button
+                className="pc-btn"
+                type="button"
+                aria-label={`Editar ${p.name}`}
+                onClick={() => setEditing(p)}
+              >
+                <PlayerCard player={p} off={!p.active} size={desktop ? 11 : 10} />
+              </button>
+            ) : (
+              <PlayerCard player={p} off={!p.active} size={desktop ? 11 : 10} />
+            )}
+            <Switch
+              checked={p.active}
+              disabled={!isAdmin}
+              onChange={(v) => void toggleActive(p, v)}
+              label={p.active ? 'Convocado' : 'Convocar'}
+              srLabel={p.name}
+            />
+          </motion.div>
+        ))}
+      </motion.div>
+    )
 
-      <PlayerEditor
-        open={creating || editing !== null}
-        player={editing}
-        onClose={() => {
-          setCreating(false)
-          setEditing(null)
-        }}
-      />
-    </div>
-  )
-}
-
-function Stat({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
   return (
-    <div className="panel px-3 py-3 sm:px-4">
-      <p className="label">{label}</p>
-      <p className={`display mt-1 text-4xl ${accent ? 'text-accent' : ''}`}>{value}</p>
+    <div className="flex gap-8">
+      <div className="flex min-w-0 flex-1 flex-col gap-3.5 lg:gap-5">
+        <PageHeader
+          eyebrow={
+            <span className="hidden lg:inline">
+              {all.length} jugadores · {convCount} convocados
+            </span>
+          }
+          title="Plantilla"
+          right={
+            <div className="flex items-center gap-2.5">
+              <div className="search hidden w-[280px] lg:flex">
+                <Search />
+                <label className="sr" htmlFor="dk-q">
+                  Buscar jugador
+                </label>
+                <input
+                  id="dk-q"
+                  className="input"
+                  type="search"
+                  placeholder="Buscar jugador"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <button
+                className="btn btn--glass hidden lg:inline-flex"
+                type="button"
+                onClick={() => setSort((s) => (s === 'rating' ? 'name' : 'rating'))}
+              >
+                <ArrowUpDown /> {sortLabel}
+              </button>
+              {addButton}
+            </div>
+          }
+        />
+        <p className="small -mt-2 lg:hidden">
+          <span className="num">{all.length}</span> jugadores ·{' '}
+          <strong className="neon num font-bold">{convCount}</strong> convocados
+        </p>
+
+        {!isAdmin && (
+          <Banner tone="info" icon={<Info />}>
+            Estás viendo como espectador.{' '}
+            <Link to="/bienvenida" className="font-semibold text-[#cfe4ff] underline">
+              Entra como admin
+            </Link>{' '}
+            para convocar y editar.
+          </Banner>
+        )}
+
+        <div className="flex gap-2 lg:hidden">
+          <div className="search flex-1">
+            <Search />
+            <label className="sr" htmlFor="pl-q">
+              Buscar jugador
+            </label>
+            <input
+              id="pl-q"
+              className="input"
+              type="search"
+              placeholder="Buscar jugador"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <button
+            className="btn btn--glass btn--icon size-12"
+            type="button"
+            aria-label={`Orden: ${sortLabel}`}
+            title={sortLabel}
+            onClick={() => setSort((s) => (s === 'rating' ? 'name' : 'rating'))}
+          >
+            <ArrowUpDown />
+          </button>
+        </div>
+
+        <div
+          className="no-scrollbar -mx-[18px] flex gap-2 overflow-x-auto px-[18px] lg:mx-0 lg:flex-wrap lg:px-0"
+          role="group"
+          aria-label="Filtrar"
+        >
+          {filters.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={cx('pill', filter === f.id && 'pill--on')}
+              aria-pressed={filter === f.id}
+              onClick={() => setFilter(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <p className="eyebrow lg:hidden">Orden: {sortLabel}</p>
+
+        {content}
+      </div>
+
+      {desktop && editing !== null && (
+        <PlayerEditorPanel player={editingPlayer} onClose={() => setEditing(null)} />
+      )}
+      {!desktop && (
+        <PlayerEditorSheet open={editing !== null} player={editingPlayer} onClose={() => setEditing(null)} />
+      )}
     </div>
   )
 }

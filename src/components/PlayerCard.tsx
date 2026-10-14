@@ -1,98 +1,53 @@
-import type { ReactNode } from 'react'
-import { overall, tier, TIER_LABELS } from '@/domain/rating'
-import { STAT_KEYS, STAT_LABELS, type Player } from '@/domain/types'
+import type { CSSProperties } from 'react'
+import { initials, overall, tier } from '@/domain/rating'
+import { STAT_LABELS, type Player, type StatKey } from '@/domain/types'
 import { cx } from '@/lib/cx'
 
-function initials(name: string) {
-  const parts = name
-    .replace(/['’]s\b/gi, '')
-    .split(/\s+/)
-    .filter(Boolean)
-  return ((parts[0]?.[0] ?? '?') + (parts[1]?.[0] ?? '')).toUpperCase()
-}
+/** Orden de la carta en dos columnas: RIT REG / TIR DEF / PAS FÍS */
+const CARD_ORDER: StatKey[] = ['rit', 'reg', 'tir', 'def', 'pas', 'fis']
 
+/** Carta estilo FUT. `size` es el font-size base: toda la carta escala en `em` */
 export function PlayerCard({
   player,
-  onClick,
-  footer,
-  dimmed,
-  compact,
+  size = 10,
+  off,
   className,
+  style,
 }: {
   player: Pick<Player, 'name' | 'stats'>
-  onClick?: () => void
-  footer?: ReactNode
-  dimmed?: boolean
-  compact?: boolean
+  size?: number
+  off?: boolean
   className?: string
+  style?: CSSProperties
 }) {
-  const rating = overall(player.stats)
-  const t = tier(rating)
-  // div con role=button (no <button>) para poder llevar controles dentro, como el interruptor
+  const rating = Math.round(overall(player.stats))
+  const name = player.name || 'Sin nombre'
   return (
-    <div
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={
-        onClick
-          ? (e) => {
-              if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-                e.preventDefault()
-                onClick()
-              }
-            }
-          : undefined
-      }
-      className={cx(
-        `card-${t}`,
-        t === 'icon' && 'shine',
-        'relative flex w-full flex-col overflow-hidden rounded-[1.35rem] p-3 text-left shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)] transition',
-        onClick &&
-          'cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_24px_50px_-18px_rgba(0,0,0,0.95)] active:scale-[0.98]',
-        dimmed && 'opacity-45 saturate-50',
-        className,
-      )}
+    <article
+      className={cx('pc', `pc--${tier(rating)}`, off && 'pc--off', className)}
+      style={{ fontSize: size, ...style }}
+      aria-label={`${name}, media ${rating}`}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col items-start">
-          <span className={cx('display', compact ? 'text-4xl' : 'text-5xl')}>{Math.round(rating)}</span>
-          <span className="text-[10px] font-bold tracking-[0.18em] uppercase opacity-70">
-            {TIER_LABELS[t]}
-          </span>
+      <div className="pc__top">
+        <div>
+          <div className="pc__ovr">{rating}</div>
+          <div className="pc__lbl">MED</div>
         </div>
-        <span
-          className={cx(
-            'display flex items-center justify-center rounded-full bg-black/15 ring-2 ring-black/10',
-            compact ? 'size-11 text-xl' : 'size-14 text-2xl',
-          )}
-          aria-hidden
-        >
-          {initials(player.name)}
-        </span>
+        <div className="pc__mono">
+          <span>{initials(name)}</span>
+        </div>
       </div>
-
-      <div
-        className={cx(
-          'display mt-2 truncate border-b border-current/20 pb-1',
-          compact ? 'text-xl' : 'text-2xl',
-        )}
-      >
-        {player.name || 'Sin nombre'}
+      <div className="pc__name" style={{ fontSize: name.length > 12 ? '1.4em' : '2em' }}>
+        {name}
       </div>
-
-      <dl className="mt-2 grid grid-cols-3 gap-x-2 gap-y-1">
-        {STAT_KEYS.map((k) => (
-          <div key={k} className="flex items-baseline gap-1">
-            <dd className={cx('font-extrabold tabular-nums', compact ? 'text-sm' : 'text-base')}>
-              {player.stats[k]}
-            </dd>
-            <dt className="text-[10px] font-semibold opacity-65">{STAT_LABELS[k]}</dt>
+      <div className="pc__stats">
+        {CARD_ORDER.map((k) => (
+          <div key={k} className="pc__stat">
+            <b>{player.stats[k]}</b>
+            <span>{STAT_LABELS[k]}</span>
           </div>
         ))}
-      </dl>
-
-      {footer && <div className="mt-3">{footer}</div>}
-    </div>
+      </div>
+    </article>
   )
 }

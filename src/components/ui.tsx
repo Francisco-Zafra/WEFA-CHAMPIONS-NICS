@@ -1,120 +1,82 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { badgeUrl, getClub } from '@/domain/clubs'
+import type { CSSProperties, ReactNode } from 'react'
 import type { ClubId } from '@/domain/types'
-
 import { cx } from '@/lib/cx'
 
-type Variant = 'primary' | 'ghost' | 'danger' | 'gold'
-
-const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-accent text-night-950 hover:brightness-110 shadow-[0_8px_30px_-8px] shadow-accent/60',
-  gold: 'bg-gold text-night-950 hover:brightness-110 shadow-[0_8px_30px_-8px] shadow-gold/60',
-  ghost: 'bg-white/5 text-ink hover:bg-white/10 border border-line',
-  danger: 'bg-loss/15 text-loss hover:bg-loss/25 border border-loss/30',
-}
-
-export function Button({
-  variant = 'ghost',
-  size = 'md',
+/** Escudo recortado (rounded 24%) */
+export function Crest({
+  club,
+  size,
   className,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: 'sm' | 'md' | 'lg' }) {
+  style,
+}: {
+  club: ClubId
+  size: number
+  className?: string
+  style?: CSSProperties
+}) {
   return (
-    <button
-      type="button"
-      {...props}
-      className={cx(
-        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40',
-        size === 'sm' && 'h-9 px-3 text-sm',
-        size === 'md' && 'h-11 px-4 text-sm',
-        size === 'lg' && 'display h-14 px-6 text-2xl',
-        VARIANTS[variant],
-        className,
-      )}
+    <span
+      className={cx('crest', `crest--${club}`, className)}
+      style={{ width: size, height: size, ...style }}
+      aria-hidden
     />
   )
 }
 
-export function IconButton({
-  label,
-  className,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      {...props}
-      className={cx(
-        'text-muted hover:text-ink inline-flex size-10 items-center justify-center rounded-xl transition hover:bg-white/5 active:scale-95 disabled:opacity-40',
-        className,
-      )}
-    />
-  )
+/** Escudo difuminado de fondo */
+export function CrestGhost({ club, style }: { club: ClubId; style: CSSProperties }) {
+  return <span className={`crest-ghost crest--${club}`} style={style} aria-hidden />
 }
 
-export function Toggle({
+export function Switch({
   checked,
   onChange,
   label,
+  srLabel,
   disabled,
 }: {
   checked: boolean
-  onChange: (value: boolean) => void
-  label: string
+  onChange?: (value: boolean) => void
+  label: ReactNode
+  srLabel?: string
   disabled?: boolean
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={(e) => {
-        e.stopPropagation()
-        onChange(!checked)
-      }}
-      className={cx(
-        'relative h-7 w-12 shrink-0 rounded-full border transition disabled:opacity-40',
-        checked ? 'border-win/50 bg-win/80' : 'border-line bg-white/10',
-      )}
-    >
-      <span
-        className={cx(
-          'absolute top-0.5 size-[22px] rounded-full bg-white shadow transition-all',
-          checked ? 'left-[22px]' : 'left-0.5',
-        )}
+    <label className="switch">
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange?.(e.target.checked)}
       />
-    </button>
+      <span className="switch__track" />
+      {label}
+      {srLabel && <span className="sr"> · {srLabel}</span>}
+    </label>
   )
 }
 
-export function Segmented<T extends string>({
+export function Seg<T extends string>({
   value,
   onChange,
   options,
+  label,
   className,
 }: {
   value: T
   onChange: (v: T) => void
   options: { value: T; label: ReactNode }[]
+  label: string
   className?: string
 }) {
   return (
-    <div className={cx('border-line flex rounded-xl border bg-white/5 p-1', className)} role="tablist">
+    <div className={cx('seg', className)} role="group" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
-          role="tab"
-          aria-selected={value === o.value}
+          aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
-          className={cx(
-            'flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition',
-            value === o.value ? 'bg-white/15 text-ink shadow' : 'text-muted hover:text-ink',
-          )}
         >
           {o.label}
         </button>
@@ -123,65 +85,71 @@ export function Segmented<T extends string>({
   )
 }
 
-export function ClubBadge({ club, className }: { club: ClubId; className?: string }) {
-  const c = getClub(club)
+export function ShieldMark({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
-    <img
-      src={badgeUrl(club)}
-      alt={c.name}
-      draggable={false}
-      className={cx('aspect-square rounded-full object-cover', className)}
-      style={{ boxShadow: `0 0 0 2px ${c.primary}55, 0 8px 24px -6px ${c.primary}88` }}
-    />
+    <svg className={className} style={style} viewBox="0 0 34 34" aria-hidden>
+      <path
+        d="M17 2.5l12.5 4.8v8.6c0 7.7-5.4 12.9-12.5 15.6C9.9 28.8 4.5 23.6 4.5 15.9V7.3z"
+        fill="rgba(255,255,255,.06)"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M10 11l2.6 11 4.4-8 4.4 8L24 11"
+        fill="none"
+        stroke="#EEF2FF"
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 
-export function Spinner({ className }: { className?: string }) {
+export function Wordmark({ large }: { large?: boolean }) {
   return (
-    <span
-      className={cx(
-        'border-accent inline-block size-6 animate-spin rounded-full border-2 border-t-transparent',
-        className,
-      )}
-      aria-label="Cargando"
-    />
+    <span className="wordmark">
+      <ShieldMark className="wordmark__mark" style={large ? { width: 40, height: 40 } : undefined} />
+      <span className="wordmark__txt" style={large ? { fontSize: 24 } : undefined}>
+        WEFA Champions<small>NICS</small>
+      </span>
+    </span>
   )
 }
 
-export function EmptyState({
-  icon,
+export function PageHeader({
+  eyebrow,
   title,
-  children,
+  right,
 }: {
-  icon: ReactNode
-  title: string
-  children?: ReactNode
+  eyebrow?: ReactNode
+  title: ReactNode
+  right?: ReactNode
 }) {
   return (
-    <div className="panel flex flex-col items-center gap-3 px-6 py-12 text-center">
-      <div className="text-5xl">{icon}</div>
-      <h3 className="display text-3xl">{title}</h3>
-      {children && <div className="text-muted max-w-sm text-sm">{children}</div>}
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="min-w-0">
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+        <h1 className="h-display h-xl mt-1 lg:text-[72px]">{title}</h1>
+      </div>
+      {right}
     </div>
   )
 }
 
-export function SectionTitle({
-  kicker,
-  title,
-  right,
+export function Banner({
+  tone,
+  icon,
+  children,
 }: {
-  kicker?: string
-  title: string
-  right?: ReactNode
+  tone: 'info' | 'warn' | 'bad' | 'ok'
+  icon?: ReactNode
+  children: ReactNode
 }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-3">
-      <div>
-        {kicker && <p className="label mb-1">{kicker}</p>}
-        <h1 className="display text-5xl sm:text-6xl">{title}</h1>
-      </div>
-      {right}
+    <div className={`banner banner--${tone}`} role={tone === 'bad' ? 'alert' : undefined}>
+      {icon}
+      <span>{children}</span>
     </div>
   )
 }

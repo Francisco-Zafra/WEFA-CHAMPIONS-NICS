@@ -13,14 +13,14 @@ aquí no se programa, aquí se forjan equipos.
 
 ## 🏆 Qué hay en el estadio
 
-|                       |                                                                                                                                                                                 |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🃏 **Plantilla**      | Cartas estilo FUT (Icono, Oro, Plata y Bronce) con las 6 stats de cada jugador. Fichajes, bajas y convocatoria con un toque.                                                    |
-| 🎲 **Sorteo**         | Elige convocados, clubes y capitanes, y añade reglas del tipo «estos dos nunca juntos» o «estos dos siempre juntos». El algoritmo iguala la media **y** cada stat por separado. |
-| 🎬 **Ceremonia**      | Las cartas se revelan una a una con el himno de cada club.                                                                                                                      |
-| 📋 **Pizarra**        | Campo con la formación calculada a partir de las stats, radar comparativo e **imagen 1080×1350 lista para WhatsApp**.                                                           |
-| 📈 **Historial**      | Resultados, MVP, clasificación de los 8 clubes y ranking de jugadores con racha.                                                                                                |
-| 📱 **App instalable** | Se puede añadir a la pantalla de inicio del móvil y funciona sin conexión.                                                                                                      |
+|                       |                                                                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🃏 **Plantilla**      | Cartas estilo FUT (Oro, Plata y Bronce) con las 6 stats de cada jugador. Fichajes, bajas y convocatoria con un toque.                                          |
+| 🎲 **Sorteo**         | Asistente en 3 pasos: convocados, clubes y capitanes, y reglas («nunca juntos» / «siempre juntos»). El algoritmo iguala la media **y** cada stat por separado. |
+| 🎬 **Ceremonia**      | Draft: las cartas se revelan una a una, alternando equipos, con el himno de cada club y el medidor de equilibrio en vivo.                                      |
+| 📋 **Pizarra**        | Campo con la formación calculada a partir de las stats, radar comparativo e **imagen 1080×1350 lista para WhatsApp**.                                          |
+| 📈 **Historial**      | Resultados, MVP, clasificación de los 8 clubes y ranking de jugadores con racha.                                                                               |
+| 📱 **App instalable** | Se puede añadir a la pantalla de inicio del móvil y funciona sin conexión.                                                                                     |
 
 ### Los 8 clubes
 
@@ -28,7 +28,9 @@ aquí no se programa, aquí se forjan equipos.
 
 ## 🔐 Acceso
 
-Cualquiera puede ver la plantilla, sortear equipos y consultar el historial. Para **editar** (fichar jugadores, guardar partidos y poner resultados) hay que entrar con el botón **Entrar** usando el usuario `admin`. La contraseña la tiene el míster.
+Al abrir la app por primera vez aparece la pantalla de bienvenida: **Entrar como espectador** permite ver la plantilla, sortear y consultar el historial. Para **editar** (fichar jugadores, convocar, guardar partidos y poner resultados) hay que entrar como admin con el usuario `admin`. La contraseña la tiene el míster.
+
+La interfaz se tiñe con el color del club del equipo A del sorteo.
 
 ---
 

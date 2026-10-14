@@ -1,8 +1,11 @@
 import { Crown } from 'lucide-react'
-import { badgeUrl, getClub } from '@/domain/clubs'
+import type { CSSProperties } from 'react'
+import { getClub } from '@/domain/clubs'
 import { formationLines } from '@/domain/formation'
+import { initials, overall } from '@/domain/rating'
 import type { ClubId, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
+import { CrestGhost } from './ui'
 
 export interface PitchTeam {
   club: ClubId
@@ -10,90 +13,135 @@ export interface PitchTeam {
   captain: string | null
 }
 
-/**
- * Campo vertical: equipo A arriba (portero junto a la línea de fondo),
- * equipo B abajo. Todo en `em` para poder escalarlo con font-size (p.ej. imagen para compartir).
- */
+interface Spot {
+  player: Player
+  /** % del ancho (centro de la ficha) */
+  x: number
+  /** px desde arriba (borde superior de la ficha) */
+  y: number
+}
+
+/** Alto aproximado de una ficha (disco + nombre + media) y margen a la línea de fondo */
+const CHIP = { small: { h: 86, pad: 8 }, big: { h: 132, pad: 22 } }
+
+/** Separación horizontal (en % del ancho) entre fichas de una línea; las líneas alternas se abren
+ *  más para que las fichas de líneas consecutivas no se pisen (como en el diseño de exportación) */
+function spacing(k: number, wide: boolean): number {
+  if (k <= 1) return 0
+  if (k === 2) return wide ? 56 : 34
+  if (k === 3) return wide ? 36 : 27
+  return 76 / (k - 1)
+}
+
+/** A arriba con el portero junto a su portería; B abajo, en espejo */
+function spots(players: Player[], side: 'A' | 'B', height: number, big: boolean): Spot[] {
+  const { h, pad } = big ? CHIP.big : CHIP.small
+  const lines = formationLines(players)
+  const steps = Math.max(lines.length - 1, 1)
+  const near = pad
+  const far = height / 2 - h - 4
+  return lines.flatMap((line, i) => {
+    const offset = near + ((far - near) * i) / steps
+    const y = side === 'A' ? offset : height - h - offset
+    const gap = spacing(line.length, i % 2 === 0)
+    return line.map((player, j) => ({ player, y, x: 50 + (j - (line.length - 1) / 2) * gap }))
+  })
+}
+
+function Chip({ spot, captain, big }: { spot: Spot; captain: boolean; big?: boolean }) {
+  const { player } = spot
+  return (
+    <div
+      className={cx('chip absolute', big && 'chip--big')}
+      style={{ left: `${spot.x}%`, top: spot.y, transform: 'translateX(-50%)' }}
+    >
+      <div className="chip__disc">
+        {initials(player.name)}
+        {captain && (
+          <Crown className="chip__crown" fill="currentColor" strokeWidth={1.5} aria-label="Capitán" />
+        )}
+      </div>
+      <div className="chip__name">{player.name}</div>
+      <div className="chip__ovr">{Math.round(overall(player.stats))}</div>
+    </div>
+  )
+}
+
+const LINES: CSSProperties[] = [
+  { inset: '1.8%', borderRadius: 6 },
+  { left: '1.8%', right: '1.8%', top: '50%', height: 0, borderWidth: '2px 0 0' },
+  {
+    left: '37.3%',
+    width: '25.4%',
+    aspectRatio: '1',
+    top: '50%',
+    borderRadius: '50%',
+    transform: 'translateY(-50%)',
+  },
+  { left: '24.6%', width: '50.8%', top: '1.8%', height: '12.5%', borderTop: 0 },
+  { left: '37.3%', width: '25.4%', top: '1.8%', height: '5%', borderTop: 0 },
+  { left: '24.6%', width: '50.8%', bottom: '1.8%', height: '12.5%', borderBottom: 0 },
+  { left: '37.3%', width: '25.4%', bottom: '1.8%', height: '5%', borderBottom: 0 },
+]
+
 export function Pitch({
   teamA,
   teamB,
+  height,
+  big,
   className,
+  style,
 }: {
   teamA: PitchTeam
   teamB: PitchTeam
+  /** Alto en px: las fichas se colocan en px para que no se pisen */
+  height: number
+  big?: boolean
   className?: string
+  style?: CSSProperties
 }) {
+  const a = getClub(teamA.club)
+  const b = getClub(teamB.club)
   return (
     <div
-      className={cx(
-        'pitch relative isolate aspect-[3/4.3] w-full overflow-hidden rounded-[1.2em] text-[16px]',
-        className,
-      )}
+      className={cx('pitch', className)}
+      style={{ ...style, height }}
+      role="img"
+      aria-label={`Alineaciones: ${a.name} arriba, ${b.name} abajo`}
     >
-      {/* Líneas del campo */}
-      <div className="absolute inset-[0.6em] rounded-[0.8em] border-[0.15em] border-white/60" />
-      <div className="absolute inset-x-[0.6em] top-1/2 h-[0.15em] -translate-y-1/2 bg-white/50" />
-      <div className="absolute top-1/2 left-1/2 aspect-square w-[24%] -translate-x-1/2 -translate-y-1/2 rounded-full border-[0.15em] border-white/50" />
-      <div className="absolute top-1/2 left-1/2 size-[0.5em] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
-      <div className="absolute inset-x-[24%] top-[0.6em] h-[13%] border-[0.15em] border-t-0 border-white/50" />
-      <div className="absolute inset-x-[38%] top-[0.6em] h-[5%] border-[0.15em] border-t-0 border-white/50" />
-      <div className="absolute inset-x-[24%] bottom-[0.6em] h-[13%] border-[0.15em] border-b-0 border-white/50" />
-      <div className="absolute inset-x-[38%] bottom-[0.6em] h-[5%] border-[0.15em] border-b-0 border-white/50" />
-
-      {/* Escudos de fondo */}
-      <img
-        src={badgeUrl(teamA.club)}
-        alt=""
-        className="absolute top-[25%] left-1/2 w-[38%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.13] mix-blend-luminosity"
+      <CrestGhost
+        club={teamA.club}
+        style={{ width: '68%', aspectRatio: '1', left: '16%', top: '3%', opacity: 0.1 }}
       />
-      <img
-        src={badgeUrl(teamB.club)}
-        alt=""
-        className="absolute top-[75%] left-1/2 w-[38%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.13] mix-blend-luminosity"
+      <CrestGhost
+        club={teamB.club}
+        style={{ width: '68%', aspectRatio: '1', left: '16%', top: '53%', opacity: 0.1 }}
       />
-
-      <Half team={teamA} side="top" />
-      <Half team={teamB} side="bottom" />
-    </div>
-  )
-}
-
-function Half({ team, side }: { team: PitchTeam; side: 'top' | 'bottom' }) {
-  const club = getClub(team.club)
-  const lines = formationLines(team.players)
-  // Abajo, el portero va pegado a la línea de fondo inferior
-  const ordered = side === 'top' ? lines : [...lines].reverse()
-
-  return (
-    <div
-      className={cx(
-        'absolute inset-x-[0.8em] flex flex-col justify-around',
-        side === 'top' ? 'top-[1.2em] bottom-[calc(50%+0.6em)]' : 'top-[calc(50%+0.6em)] bottom-[1.2em]',
-      )}
-    >
-      {ordered.map((line, i) => (
-        <div key={i} className="flex flex-wrap items-center justify-center gap-[0.45em]">
-          {line.map((p) => (
-            <Chip key={p.id} name={p.name} captain={p.id === team.captain} bg={club.primary} ink={club.ink} />
-          ))}
-        </div>
+      {LINES.map((s, i) => (
+        <div
+          key={i}
+          className="pitch__line"
+          style={big ? { ...s, borderWidth: s.borderWidth ? '3px 0 0' : 3, ...pick(s) } : s}
+        />
       ))}
+      <div className={`club-${teamA.club}`}>
+        {spots(teamA.players, 'A', height, !!big).map((s) => (
+          <Chip key={s.player.id} spot={s} captain={s.player.id === teamA.captain} big={big} />
+        ))}
+      </div>
+      <div className={`club-${teamB.club}`}>
+        {spots(teamB.players, 'B', height, !!big).map((s) => (
+          <Chip key={s.player.id} spot={s} captain={s.player.id === teamB.captain} big={big} />
+        ))}
+      </div>
     </div>
   )
 }
 
-function Chip({ name, captain, bg, ink }: { name: string; captain: boolean; bg: string; ink: string }) {
-  return (
-    <span
-      className="inline-flex max-w-[11em] items-center gap-[0.3em] truncate rounded-full px-[0.75em] py-[0.35em] text-[0.88em] font-extrabold shadow-[0_0.3em_0.8em_rgba(0,0,0,0.45)]"
-      style={{
-        background: bg,
-        color: ink,
-        boxShadow: `0 0 0 0.12em rgba(255,255,255,0.35), 0 0.35em 0.9em rgba(0,0,0,0.5)`,
-      }}
-    >
-      {captain && <Crown className="size-[1.05em] shrink-0" strokeWidth={2.6} aria-label="Capitán" />}
-      <span className="truncate">{name}</span>
-    </span>
-  )
+/** Mantiene los lados sin borde de las áreas al engrosar las líneas */
+function pick(s: CSSProperties): CSSProperties {
+  const out: CSSProperties = {}
+  if (s.borderTop === 0) out.borderTop = 0
+  if (s.borderBottom === 0) out.borderBottom = 0
+  return out
 }

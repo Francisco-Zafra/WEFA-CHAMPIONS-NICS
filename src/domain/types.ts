@@ -36,12 +36,14 @@ export type ClubId =
 export interface Club {
   id: ClubId
   name: string
-  emoji: string
-  /** Color principal (acento) y secundario, sacados del escudo */
+  /** Nombre corto para selectores */
+  short: string
+  /** Color del club (acento), sacado del escudo; igual que .club-<id> en index.css */
   primary: string
-  secondary: string
   /** Color de texto legible sobre `primary` */
   ink: string
+  /** Variante oscura para fondos */
+  deep: string
 }
 
 /** Instantánea de un jugador en el momento del partido */

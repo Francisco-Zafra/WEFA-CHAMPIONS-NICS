@@ -6,17 +6,17 @@ export function overall(stats: Stats): number {
   return Math.round((sum / STAT_KEYS.length) * 100) / 100
 }
 
-export type Tier = 'icon' | 'gold' | 'silver' | 'bronze'
+export type Tier = 'gold' | 'silver' | 'bronze'
 
+/** Oro desde 85, plata desde 75 (sobre la media redondeada que muestra la carta) */
 export function tier(rating: number): Tier {
-  if (rating >= 90) return 'icon'
+  rating = Math.round(rating)
   if (rating >= 85) return 'gold'
   if (rating >= 75) return 'silver'
   return 'bronze'
 }
 
 export const TIER_LABELS: Record<Tier, string> = {
-  icon: 'Icono',
   gold: 'Oro',
   silver: 'Plata',
   bronze: 'Bronce',
@@ -38,4 +38,24 @@ export function averageRating(players: Player[]): number {
 export function clampStat(value: number): number {
   if (!Number.isFinite(value)) return 0
   return Math.max(0, Math.min(99, Math.round(value)))
+}
+
+/** 86,0 · formato español con decimales fijos */
+export function fmt(value: number, decimals = 1): string {
+  return value.toLocaleString('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+}
+
+/** Equilibrio 0–100 a partir de la diferencia de medias (0 → 100 %, 10 puntos → 0 %) */
+export function balancePct(ratingDiff: number): number {
+  return Math.max(0, Math.min(100, Math.round(100 - ratingDiff * 10)))
+}
+
+/** Iniciales para monogramas: «Riccardo's Boyfriend» → RB, «Guti» → GU */
+export function initials(name: string): string {
+  const words = name
+    .replace(/['’]s\b/gi, '')
+    .split(/\s+/)
+    .filter(Boolean)
+  if (words.length > 1) return (words[0]![0]! + words[words.length - 1]![0]!).toUpperCase()
+  return (words[0] ?? '?').slice(0, 2).toUpperCase()
 }

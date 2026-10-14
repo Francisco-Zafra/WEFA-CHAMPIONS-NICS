@@ -1,6 +1,6 @@
+import { AlertTriangle, Check, Info } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
-import { cx } from '@/lib/cx'
 
 type Tone = 'success' | 'error' | 'info'
 interface Toast {
@@ -10,6 +10,12 @@ interface Toast {
 }
 
 const ToastContext = createContext<((message: string, tone?: Tone) => void) | null>(null)
+
+const STYLE: Record<Tone, { cls: string; icon: ReactNode }> = {
+  success: { cls: 'banner--ok', icon: <Check /> },
+  error: { cls: 'banner--bad', icon: <AlertTriangle /> },
+  info: { cls: 'banner--info', icon: <Info /> },
+}
 
 let nextId = 0
 
@@ -25,7 +31,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 top-3 z-[60] flex flex-col items-center gap-2 px-4">
+      <div className="pointer-events-none fixed inset-x-0 top-3 z-[80] flex flex-col items-center gap-2 px-4">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
@@ -34,12 +40,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               initial={{ opacity: 0, y: -16, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -16 }}
-              className={cx(
-                'panel bg-night-800/95 max-w-md px-4 py-2.5 text-sm font-semibold',
-                t.tone === 'success' && 'text-win',
-                t.tone === 'error' && 'text-loss',
-              )}
+              className={`banner ${STYLE[t.tone].cls} max-w-md font-semibold backdrop-blur-xl`}
+              style={{ background: 'rgba(8,15,36,.92)' }}
             >
+              {STYLE[t.tone].icon}
               {t.message}
             </motion.div>
           ))}

@@ -1,63 +1,130 @@
 import type { Ref } from 'react'
 import { getClub } from '@/domain/clubs'
+import { fmt } from '@/domain/rating'
 import { Pitch, type PitchTeam } from './Pitch'
-import { ClubBadge } from './ui'
+import { Crest, CrestGhost, ShieldMark } from './ui'
 
-/** Lienzo 1080×1350 (formato vertical de Instagram/WhatsApp) que se exporta a PNG */
+/** Lienzo 1080×1350 (vertical de Instagram/WhatsApp) que se exporta a PNG */
 export function ShareCard({
   teamA,
   teamB,
+  ratingA,
+  ratingB,
   date,
   ref,
 }: {
-  teamA: PitchTeam & { rating: number }
-  teamB: PitchTeam & { rating: number }
+  teamA: PitchTeam
+  teamB: PitchTeam
+  ratingA: number
+  ratingB: number
   date: string
   ref?: Ref<HTMLDivElement>
 }) {
   const a = getClub(teamA.club)
   const b = getClub(teamB.club)
+  const diff = Math.abs(ratingA - ratingB)
+  const lights = (side: 'left' | 'right') => (
+    <div className="floodlights" style={{ [side]: 60, top: 26 }} aria-hidden>
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+    </div>
+  )
+
   return (
     <div
       ref={ref}
-      className="bg-night-950 text-ink flex flex-col font-sans"
-      style={{
-        width: 1080,
-        height: 1350,
-        padding: 56,
-        backgroundImage: `radial-gradient(900px 500px at 0% 0%, ${a.primary}33, transparent 60%), radial-gradient(900px 500px at 100% 100%, ${b.primary}33, transparent 60%)`,
-      }}
+      className={`stage atmosphere grain club-${teamA.club} flex flex-col items-center`}
+      style={{ width: 1080, height: 1350, boxSizing: 'border-box', padding: '64px 70px 56px', gap: 30 }}
     >
-      <div className="text-center">
-        <p className="display text-gold text-[52px]">WEFA CHAMPIONS NICS</p>
-        <p className="text-muted text-[22px] font-semibold tracking-[0.25em] uppercase">{date}</p>
-      </div>
+      {lights('left')}
+      {lights('right')}
+      <CrestGhost
+        club={teamA.club}
+        style={{ width: 760, height: 760, left: -220, top: 120, opacity: 0.13 }}
+      />
+      <CrestGhost
+        club={teamB.club}
+        style={{ width: 760, height: 760, right: -220, top: 620, opacity: 0.13 }}
+      />
 
-      <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-6">
-        <TeamBlock club={teamA.club} rating={teamA.rating} count={teamA.players.length} />
-        <span className="display text-[72px] text-white/60">VS</span>
-        <TeamBlock club={teamB.club} rating={teamB.rating} count={teamB.players.length} />
-      </div>
+      <header className="relative flex flex-col items-center gap-4 text-center">
+        <p className="eyebrow" style={{ fontSize: 18, letterSpacing: '.3em', color: 'var(--ink-2)' }}>
+          Noche de Champions · {date}
+        </p>
+        <div className="flex items-center gap-7">
+          <Crest
+            club={a.id}
+            size={150}
+            style={{ boxShadow: `0 0 0 2px ${a.primary}, 0 0 50px ${a.primary}80` }}
+          />
+          <div className="flex w-[520px] flex-col items-center">
+            <span
+              className="h-display"
+              style={{ fontSize: 78, color: a.primary, textShadow: `0 0 30px ${a.primary}99` }}
+            >
+              {a.name}
+            </span>
+            <span className="h-display" style={{ fontSize: 40, color: 'var(--muted)' }}>
+              vs
+            </span>
+            <span
+              className="h-display"
+              style={{ fontSize: 78, color: b.primary, textShadow: `0 0 30px ${b.primary}99` }}
+            >
+              {b.name}
+            </span>
+          </div>
+          <Crest
+            club={b.id}
+            size={150}
+            style={{ boxShadow: `0 0 0 2px ${b.primary}, 0 0 50px ${b.primary}80` }}
+          />
+        </div>
+      </header>
 
-      <div className="mt-8 flex min-h-0 flex-1 justify-center">
-        <Pitch teamA={teamA} teamB={teamB} className="h-full w-auto !text-[24px]" />
-      </div>
-    </div>
-  )
-}
+      <Pitch
+        teamA={teamA}
+        teamB={teamB}
+        big
+        height={820}
+        style={{ width: 760, flex: 'none', borderRadius: 30 }}
+      />
 
-function TeamBlock({ club, rating, count }: { club: PitchTeam['club']; rating: number; count: number }) {
-  const c = getClub(club)
-  return (
-    <div className="flex flex-col items-center gap-3 text-center">
-      <ClubBadge club={club} className="w-[120px]" />
-      <p className="display text-[52px]" style={{ color: c.primary }}>
-        {c.name}
-      </p>
-      <p className="text-[24px] font-bold">
-        Media <span className="tabular-nums">{rating.toFixed(2)}</span>
-        <span className="text-muted font-semibold"> · {count} jugadores</span>
-      </p>
+      <footer className="relative flex w-full items-center justify-between gap-6">
+        <div className="flex items-baseline gap-3">
+          <span className="h-display" style={{ fontSize: 72, color: a.primary }}>
+            {fmt(ratingA)}
+          </span>
+          <span className="eyebrow" style={{ fontSize: 14 }}>
+            Media
+          </span>
+        </div>
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="eyebrow" style={{ fontSize: 14 }}>
+            Diferencia
+          </span>
+          <span className="h-display" style={{ fontSize: 56, color: 'var(--ok)' }}>
+            {fmt(diff)}
+          </span>
+        </div>
+        <div className="flex items-baseline gap-3">
+          <span className="eyebrow" style={{ fontSize: 14 }}>
+            Media
+          </span>
+          <span className="h-display" style={{ fontSize: 72, color: b.primary }}>
+            {fmt(ratingB)}
+          </span>
+        </div>
+      </footer>
+      <div className="relative -mt-3 flex items-center gap-3">
+        <ShieldMark style={{ width: 34, height: 34, color: a.primary }} />
+        <span className="h-display" style={{ fontSize: 26, letterSpacing: '.12em' }}>
+          WEFA Champions NICS
+        </span>
+      </div>
     </div>
   )
 }
