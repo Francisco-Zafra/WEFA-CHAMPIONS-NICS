@@ -34,9 +34,9 @@ function spacing(k: number, wide: boolean): number {
 }
 
 /** A arriba con el portero junto a su portería; B abajo, en espejo */
-function spots(players: Player[], side: 'A' | 'B', height: number, big: boolean): Spot[] {
+function spots(team: PitchTeam, side: 'A' | 'B', height: number, big: boolean): Spot[] {
   const { h, pad } = big ? CHIP.big : CHIP.small
-  const lines = formationLines(players)
+  const lines = formationLines(team.players, team.captain)
   const steps = Math.max(lines.length - 1, 1)
   const near = pad
   const far = height / 2 - h - 4
@@ -125,12 +125,12 @@ export function Pitch({
         />
       ))}
       <div className={`club-${teamA.club}`}>
-        {spots(teamA.players, 'A', height, !!big).map((s) => (
+        {spots(teamA, 'A', height, !!big).map((s) => (
           <Chip key={s.player.id} spot={s} captain={s.player.id === teamA.captain} big={big} />
         ))}
       </div>
       <div className={`club-${teamB.club}`}>
-        {spots(teamB.players, 'B', height, !!big).map((s) => (
+        {spots(teamB, 'B', height, !!big).map((s) => (
           <Chip key={s.player.id} spot={s} captain={s.player.id === teamB.captain} big={big} />
         ))}
       </div>

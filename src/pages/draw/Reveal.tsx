@@ -47,11 +47,13 @@ function order(players: Player[], captain: string | null): Player[] {
   return cap ? [cap, ...rest] : rest
 }
 
-/** Draft alternando A, B, A, B… */
+/** Abren los capitanes (A y luego B); después, draft alternando A, B, A, B… */
 function draftOrder(draw: Draw): Pick[] {
   const a = order(draw.result.teamA.players, draw.captainA)
   const b = order(draw.result.teamB.players, draw.captainB)
   const out: Pick[] = []
+  if (draw.captainA && a[0]?.id === draw.captainA) out.push({ side: 'A', player: a.shift()! })
+  if (draw.captainB && b[0]?.id === draw.captainB) out.push({ side: 'B', player: b.shift()! })
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
     if (a[i]) out.push({ side: 'A', player: a[i]! })
     if (b[i]) out.push({ side: 'B', player: b[i]! })

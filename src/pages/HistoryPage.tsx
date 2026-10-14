@@ -10,6 +10,7 @@ import { initials } from '@/domain/rating'
 import { clubStandings, isPlayed, playerStandings, type Outcome } from '@/domain/standings'
 import type { Match, Player } from '@/domain/types'
 import { useAuth } from '@/lib/auth'
+import { captainFirst } from '@/domain/formation'
 import { cx } from '@/lib/cx'
 import { deleteMatch, updateMatch, type Collection } from '@/lib/data'
 
@@ -184,7 +185,7 @@ function MatchDetail({ match, onDone }: { match: Match; onDone: () => void }) {
         <span className="h-display h-s truncate">{club.short}</span>
       </div>
       <ul className={cx('flex flex-col gap-1 text-sm', right && 'items-end')}>
-        {team.map((p) => (
+        {captainFirst(team, captain).map((p) => (
           <li key={p.id} className="flex items-center gap-1.5">
             {p.id === captain && (
               <Crown className="size-3.5 text-[#ffd34d]" fill="currentColor" aria-label="Capitán" />

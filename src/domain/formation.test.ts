@@ -25,4 +25,22 @@ describe('formationLines', () => {
     const score = (p: Player) => p.stats.def + p.stats.fis * 0.5 - p.stats.tir - p.stats.reg * 0.5
     expect(Math.max(...team.map(score))).toBe(score(keeper))
   })
+
+  it('el capitán va al frente y en el centro', () => {
+    const team = SEED_PLAYERS.slice(0, 7)
+    for (const cap of team) {
+      const lines = formationLines(team, cap.id)
+      const front = lines[lines.length - 1]!
+      expect(front[Math.floor((front.length - 1) / 2)]!.id).toBe(cap.id)
+      expect(lines.flat()).toHaveLength(7)
+      expect(new Set(lines.flat().map((p) => p.id)).size).toBe(7)
+      expect(lines.map((l) => l.length)).toEqual(formationLines(team).map((l) => l.length))
+    }
+  })
+
+  it('sin capitán o con un capitán de otro equipo no cambia nada', () => {
+    const team = SEED_PLAYERS.slice(0, 6)
+    expect(formationLines(team, 'otro')).toEqual(formationLines(team))
+    expect(formationLines(team, null)).toEqual(formationLines(team))
+  })
 })

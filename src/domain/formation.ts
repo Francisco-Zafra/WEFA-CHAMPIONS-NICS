@@ -6,8 +6,32 @@ const defensiveness = (p: Player) => p.stats.def + p.stats.fis * 0.5 - p.stats.t
 /**
  * Coloca al equipo en líneas, de portería hacia delante:
  * [portero, defensas, medios, delanteros]. Las líneas vacías se omiten.
+ * El capitán, si lo hay, va siempre al frente y en el centro de la línea de delante.
  */
-export function formationLines(players: Player[]): Player[][] {
+export function formationLines(players: Player[], captain: string | null = null): Player[][] {
+  const lines = baseLines(players)
+  return captain ? captainToFront(lines, captain) : lines
+}
+
+/** Intercambia al capitán con el jugador central de la línea de delante */
+function captainToFront(lines: Player[][], captain: string): Player[][] {
+  if (lines.length < 2) return lines
+  const out = lines.map((l) => [...l])
+  const front = out[out.length - 1]!
+  const center = Math.floor((front.length - 1) / 2)
+  const li = out.findIndex((l) => l.some((p) => p.id === captain))
+  if (li === -1) return lines
+  const pi = out[li]!.findIndex((p) => p.id === captain)
+  if (li === out.length - 1) {
+    // Ya está delante: solo lo centramos
+    ;[front[pi], front[center]] = [front[center]!, front[pi]!]
+    return out
+  }
+  ;[out[li]![pi], front[center]] = [front[center]!, out[li]![pi]!]
+  return out
+}
+
+function baseLines(players: Player[]): Player[][] {
   if (players.length === 0) return []
   const sorted = [...players].sort(
     (a, b) => defensiveness(b) - defensiveness(a) || a.name.localeCompare(b.name),
@@ -32,4 +56,9 @@ export function formationLabel(players: Player[]): string {
     .slice(1)
     .map((l) => l.length)
     .join('-')
+}
+
+/** Lista con el capitán delante; el resto mantiene su orden */
+export function captainFirst<T extends { id: string }>(team: T[], captain: string | null): T[] {
+  return [...team].sort((x, y) => Number(y.id === captain) - Number(x.id === captain))
 }
