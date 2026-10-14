@@ -20,7 +20,7 @@ import type { PlayerPair } from '@/domain/balance'
 import { resolveCaptains } from '@/domain/captains'
 import { roundOf, tieLabel } from '@/domain/cup'
 import { CLUBS, getClub } from '@/domain/clubs'
-import { averageRating, fmt, initials, overall, tier } from '@/domain/rating'
+import { averageRating, fmt, initials, tier } from '@/domain/rating'
 import type { ClubId, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
 import type { Collection } from '@/lib/data'
@@ -151,7 +151,7 @@ function StepPlayers({ players }: { players: Player[] }) {
   const selected = new Set(selection.map((p) => p.id))
   const n = selection.length
   const [a, b] = teamSizes(n, 'A')
-  const byRating = [...players].sort((x, y) => overall(y.stats) - overall(x.stats))
+  const byRating = [...players].sort((x, y) => y.rating - x.rating)
 
   const toggle = (p: Player) =>
     setConfig((c) => ({ ...c, overrides: { ...c.overrides, [p.id]: !(c.overrides[p.id] ?? p.active) } }))
@@ -210,7 +210,7 @@ function StepPlayers({ players }: { players: Player[] }) {
                   </div>
                   {group.list.map((p) => {
                     const on = selected.has(p.id)
-                    const m = Math.round(overall(p.stats))
+                    const m = Math.round(p.rating)
                     return (
                       <motion.button
                         key={p.id}

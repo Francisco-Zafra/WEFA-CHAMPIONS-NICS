@@ -32,7 +32,13 @@ export function averageStats(players: Player[]): Stats {
 
 export function averageRating(players: Player[]): number {
   if (players.length === 0) return 0
-  return players.reduce((acc, p) => acc + overall(p.stats), 0) / players.length
+  return players.reduce((acc, p) => acc + p.rating, 0) / players.length
+}
+
+/** Media válida: entero de 1 a 99 */
+export function clampRating(value: number): number {
+  if (!Number.isFinite(value)) return 1
+  return Math.max(1, Math.min(99, Math.round(value)))
 }
 
 export function clampStat(value: number): number {

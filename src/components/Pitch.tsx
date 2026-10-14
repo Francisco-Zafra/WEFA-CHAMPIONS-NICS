@@ -3,7 +3,7 @@ import { motion } from 'motion/react'
 import type { CSSProperties } from 'react'
 import { getClub } from '@/domain/clubs'
 import { formationLines } from '@/domain/formation'
-import { initials, overall } from '@/domain/rating'
+import { initials } from '@/domain/rating'
 import type { ClubId, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
 import { CrestGhost } from './ui'
@@ -106,7 +106,7 @@ function ChipBody({ player, captain }: { player: Player; captain: boolean }) {
         )}
       </div>
       <div className="chip__name">{player.name}</div>
-      <div className="chip__ovr">{Math.round(overall(player.stats))}</div>
+      <div className="chip__ovr">{Math.round(player.rating)}</div>
     </>
   )
 }

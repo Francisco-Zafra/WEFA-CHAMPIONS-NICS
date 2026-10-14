@@ -25,7 +25,7 @@ import { Banner, Crest } from '@/components/ui'
 import { rebalance, type TeamSummary } from '@/domain/balance'
 import { getClub } from '@/domain/clubs'
 import { participants, roundOf, tieLabel, type Cup } from '@/domain/cup'
-import { balancePct, fmt, overall } from '@/domain/rating'
+import { balancePct, fmt } from '@/domain/rating'
 import type { Club, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
@@ -443,8 +443,7 @@ function SaveMatchSheet({
   const { clearCup } = useDraw()
   const [date, setDate] = useState(isoToday)
   const [busy, setBusy] = useState(false)
-  const snapshot = (t: TeamSummary) =>
-    t.players.map((p) => ({ id: p.id, name: p.name, rating: overall(p.stats) }))
+  const snapshot = (t: TeamSummary) => t.players.map((p) => ({ id: p.id, name: p.name, rating: p.rating }))
 
   /** Partido de copa: los equipos se guardan en su cruce del cuadro */
   async function saveToCup(ref: NonNullable<Draw['cup']>) {

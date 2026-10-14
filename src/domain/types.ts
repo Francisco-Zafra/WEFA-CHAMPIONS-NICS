@@ -23,6 +23,9 @@ export const STAT_NAMES: Record<StatKey, string> = {
 export interface Player {
   id: string
   name: string
+  /** Media del jugador, puesta a mano. Es la que cuenta para todo (reparto, equipos, categoría) */
+  rating: number
+  /** Atributos decorativos: se muestran en la carta y la comparativa, pero no cuentan */
   stats: Stats
   /** Convocado: entra por defecto en el sorteo */
   active: boolean

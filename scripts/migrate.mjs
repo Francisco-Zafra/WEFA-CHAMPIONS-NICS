@@ -72,6 +72,8 @@ const batch = writeBatch(db)
 for (const p of players) {
   batch.set(doc(db, 'players', `legacy-${p.legacyId}`), {
     name: p.name,
+    // Media manual inicial: la de sus atributos (en FTB2.0 eran todos iguales)
+    rating: Math.round(Object.values(p.stats).reduce((a, b) => a + b, 0) / 6),
     stats: p.stats,
     active: p.active,
     createdAt: serverTimestamp(),

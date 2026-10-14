@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { initials, overall, tier } from '@/domain/rating'
+import { initials, tier } from '@/domain/rating'
 import { STAT_LABELS, type Player, type StatKey } from '@/domain/types'
 import { cx } from '@/lib/cx'
 
@@ -14,13 +14,13 @@ export function PlayerCard({
   className,
   style,
 }: {
-  player: Pick<Player, 'name' | 'stats'>
+  player: Pick<Player, 'name' | 'stats' | 'rating'>
   size?: number
   off?: boolean
   className?: string
   style?: CSSProperties
 }) {
-  const rating = Math.round(overall(player.stats))
+  const rating = Math.round(player.rating)
   const name = player.name || 'Sin nombre'
   return (
     <article

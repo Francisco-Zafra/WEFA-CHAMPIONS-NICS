@@ -7,7 +7,7 @@ import { PlayerEditorPanel, PlayerEditorSheet } from '@/components/PlayerEditor'
 import { CardSkeletons, EmptyCards, ErrorState } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Banner, PageHeader, Switch } from '@/components/ui'
-import { overall, tier, type Tier } from '@/domain/rating'
+import { tier, type Tier } from '@/domain/rating'
 import type { Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
@@ -31,19 +31,17 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
 
   const all = players.data
   const convCount = all.filter((p) => p.active).length
-  const count = (t: Tier) => all.filter((p) => tier(overall(p.stats)) === t).length
+  const count = (t: Tier) => all.filter((p) => tier(p.rating) === t).length
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     return all
       .filter((p) => !q || p.name.toLowerCase().includes(q))
-      .filter((p) =>
-        filter === 'all' ? true : filter === 'active' ? p.active : tier(overall(p.stats)) === filter,
-      )
+      .filter((p) => (filter === 'all' ? true : filter === 'active' ? p.active : tier(p.rating) === filter))
       .sort((a, b) =>
         sort === 'name'
           ? a.name.localeCompare(b.name, 'es')
-          : overall(b.stats) - overall(a.stats) || a.name.localeCompare(b.name, 'es'),
+          : b.rating - a.rating || a.name.localeCompare(b.name, 'es'),
       )
   }, [all, filter, sort, query])
 

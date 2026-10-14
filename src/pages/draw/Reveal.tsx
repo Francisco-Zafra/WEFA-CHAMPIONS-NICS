@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { PlayerCard } from '@/components/PlayerCard'
 import { Crest, CrestGhost, ShieldMark } from '@/components/ui'
 import { getClub } from '@/domain/clubs'
-import { averageRating, balancePct, fmt, initials, overall } from '@/domain/rating'
+import { averageRating, balancePct, fmt, initials } from '@/domain/rating'
 import type { Player } from '@/domain/types'
 import { useAnthem } from '@/hooks/useAnthem'
 import type { Draw } from '@/lib/draw'
@@ -43,7 +43,7 @@ interface Pick {
 /** Capitán primero; el resto de menos a más media para dejar lo mejor para el final */
 function order(players: Player[], captain: string | null): Player[] {
   const cap = players.find((p) => p.id === captain)
-  const rest = players.filter((p) => p !== cap).sort((a, b) => overall(a.stats) - overall(b.stats))
+  const rest = players.filter((p) => p !== cap).sort((a, b) => a.rating - b.rating)
   return cap ? [cap, ...rest] : rest
 }
 

@@ -1,6 +1,6 @@
-import { Trash2, X } from 'lucide-react'
+import { Equal, Minus, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
-import { clampStat, overall, tier, TIER_LABELS } from '@/domain/rating'
+import { clampRating, clampStat, tier, TIER_LABELS } from '@/domain/rating'
 import { STAT_KEYS, STAT_LABELS, type Player, type PlayerInput, type Stats } from '@/domain/types'
 import { createPlayer, deletePlayer, updatePlayer } from '@/lib/data'
 import { PlayerCard } from './PlayerCard'
@@ -67,15 +67,16 @@ function PlayerEditorForm({
   const toast = useToast()
   const [form, setForm] = useState<PlayerInput>(
     player
-      ? { name: player.name, stats: player.stats, active: player.active }
-      : { name: '', stats: DEFAULT_STATS, active: true },
+      ? { name: player.name, rating: player.rating, stats: player.stats, active: player.active }
+      : { name: '', rating: 75, stats: DEFAULT_STATS, active: true },
   )
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const name = form.name.trim()
-  const rating = Math.round(overall(form.stats))
+  const rating = form.rating
   const t = tier(rating)
+  const setRating = (v: number) => setForm((f) => ({ ...f, rating: clampRating(v) }))
   const setStat = (k: keyof Stats, v: number) =>
     setForm((f) => ({ ...f, stats: { ...f.stats, [k]: clampStat(v) } }))
 
@@ -145,7 +146,65 @@ function PlayerEditorForm({
         />
       </div>
 
-      <div className="mt-3 flex flex-col gap-0.5">
+      <div className="field mt-4">
+        <label htmlFor="ed-rating">Media · la que cuenta para los equipos</label>
+        <div className="flex items-center gap-2">
+          <button
+            className="btn btn--glass btn--icon size-12"
+            type="button"
+            aria-label="Bajar media"
+            onClick={() => setRating(rating - 1)}
+          >
+            <Minus />
+          </button>
+          <input
+            id="ed-rating"
+            className="input h-display num h-12 w-20 text-center text-3xl"
+            inputMode="numeric"
+            value={rating}
+            onChange={(e) => {
+              const n = Number(e.target.value)
+              if (e.target.value !== '' && Number.isFinite(n)) setRating(n)
+            }}
+          />
+          <button
+            className="btn btn--glass btn--icon size-12"
+            type="button"
+            aria-label="Subir media"
+            onClick={() => setRating(rating + 1)}
+          >
+            <Plus />
+          </button>
+          <div className="range flex-1 grid-cols-1">
+            <input
+              type="range"
+              min={1}
+              max={99}
+              value={rating}
+              aria-label="Media"
+              onChange={(e) => setRating(Number(e.target.value))}
+              style={{ ['--v' as string]: `${(((rating - 1) / 98) * 100).toFixed(1)}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <p className="eyebrow">Atributos · solo decoración</p>
+        <button
+          className="btn btn--ghost btn--sm h-9"
+          type="button"
+          onClick={() =>
+            setForm((f) => ({
+              ...f,
+              stats: Object.fromEntries(STAT_KEYS.map((k) => [k, f.rating])) as Stats,
+            }))
+          }
+        >
+          <Equal /> Igualar a la media
+        </button>
+      </div>
+      <div className="mt-1 flex flex-col gap-0.5">
         {STAT_KEYS.map((k) => {
           const v = form.stats[k]
           return (

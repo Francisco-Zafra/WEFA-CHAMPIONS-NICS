@@ -13,7 +13,7 @@ import {
 import { useEffect, useState } from 'react'
 import { isClubId } from '@/domain/clubs'
 import { emptyTie, TIE_COUNT, type Cup, type CupInput, type CupTie } from '@/domain/cup'
-import { clampStat } from '@/domain/rating'
+import { clampRating, clampStat, overall } from '@/domain/rating'
 import {
   STAT_KEYS,
   type Match,
@@ -36,7 +36,10 @@ function toStats(raw: unknown): Stats {
 }
 
 function toPlayer(id: string, d: DocumentData): Player {
-  return { id, name: String(d.name ?? ''), stats: toStats(d.stats), active: Boolean(d.active) }
+  const stats = toStats(d.stats)
+  // Jugadores de antes de la media manual: su media es la de los atributos
+  const rating = typeof d.rating === 'number' ? clampRating(d.rating) : clampRating(overall(stats))
+  return { id, name: String(d.name ?? ''), rating, stats, active: Boolean(d.active) }
 }
 
 function toMatch(id: string, d: DocumentData): Match | null {

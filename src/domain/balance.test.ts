@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { balanceTeams, binomial, rebalance, type BalanceOptions } from './balance'
 import { SEED_PLAYERS } from './fixtures'
-import { overall } from './rating'
+import {} from './rating'
 
 const active = SEED_PLAYERS.filter((p) => p.active)
 const ids = (players: { id: string }[]) => players.map((p) => p.id).sort()
@@ -36,7 +36,7 @@ describe('balanceTeams', () => {
     const r = run({ players: active, tolerance: 0.5 })
     expect(r.withinTolerance).toBe(true)
     expect(r.ratingDiff).toBeLessThanOrEqual(0.5)
-    const avg = (ps: typeof active) => ps.reduce((a, p) => a + overall(p.stats), 0) / ps.length
+    const avg = (ps: typeof active) => ps.reduce((a, p) => a + p.rating, 0) / ps.length
     expect(Math.abs(avg(r.teamA.players) - avg(r.teamB.players))).toBeCloseTo(r.ratingDiff, 6)
   })
 
@@ -145,7 +145,7 @@ describe('rebalance', () => {
     const a = [y!, ...r.teamA.players.slice(1)]
     const b = [x!, ...r.teamB.players.slice(1)]
     const edited = rebalance(a, b, 1, r)
-    const avg = (ps: typeof active) => ps.reduce((acc, p) => acc + overall(p.stats), 0) / ps.length
+    const avg = (ps: typeof active) => ps.reduce((acc, p) => acc + p.rating, 0) / ps.length
     expect(edited.teamA.rating).toBeCloseTo(avg(a), 6)
     expect(edited.ratingDiff).toBeCloseTo(Math.abs(avg(a) - avg(b)), 6)
     expect(edited.withinTolerance).toBe(edited.ratingDiff <= 1)

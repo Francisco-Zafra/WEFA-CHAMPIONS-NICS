@@ -1,4 +1,4 @@
-import { averageStats, overall } from './rating'
+import { averageStats } from './rating'
 import { createRng, shuffle, type Rng } from './rng'
 import { STAT_KEYS, type Player, type Stats } from './types'
 
@@ -96,7 +96,7 @@ export function balanceTeams(opts: BalanceOptions): BalanceOutcome {
   const problem: Problem = {
     n,
     sizeA: opts.sizeA,
-    ratings: players.map((p) => overall(p.stats)),
+    ratings: players.map((p) => p.rating),
     stats: players.map((p) => STAT_KEYS.map((k) => p.stats[k])),
     fixed,
     together: toPairs(opts.together),
@@ -132,8 +132,8 @@ export function balanceTeams(opts: BalanceOptions): BalanceOutcome {
 }
 
 function summarize(players: Player[]): TeamSummary {
-  const sorted = [...players].sort((a, b) => overall(b.stats) - overall(a.stats))
-  const rating = sorted.reduce((acc, p) => acc + overall(p.stats), 0) / (sorted.length || 1)
+  const sorted = [...players].sort((a, b) => b.rating - a.rating)
+  const rating = sorted.reduce((acc, p) => acc + p.rating, 0) / (sorted.length || 1)
   return { players: sorted, rating, stats: averageStats(sorted) }
 }
 
