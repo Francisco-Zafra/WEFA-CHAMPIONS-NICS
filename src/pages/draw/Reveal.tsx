@@ -11,8 +11,9 @@ import { useAnthem } from '@/hooks/useAnthem'
 import type { Draw } from '@/lib/draw'
 
 /** Tiempos a velocidad 1×; el selector de velocidad los divide */
-/** Carta boca abajo antes de revelarse (suspense) */
-const HIDDEN_MS = 2600
+/** Carta boca abajo: entra girando (SPIN_MS) y se queda quieta el resto (suspense) */
+const SPIN_MS = 1200
+const HIDDEN_MS = 3400
 const FLIP_MS = 700
 const SHOW_MS = 1900
 const FLY_MS = 750
@@ -183,12 +184,19 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
                   }
                 >
                   {/* Giro en dos mitades: el reverso se pone de canto y entra la cara */}
-                  <AnimatePresence mode="wait" initial={false}>
+                  <AnimatePresence mode="wait">
                     {phase === 'hidden' ? (
                       <motion.div
                         key="back"
-                        exit={reduced ? { opacity: 0 } : { rotateY: 90 }}
-                        transition={{ duration: ms(FLIP_MS) / 2000, ease: 'easeIn' }}
+                        // Entra dando vueltas hasta quedarse boca abajo; al revelar se pone de canto
+                        initial={reduced ? { opacity: 0 } : { rotateY: -720 }}
+                        animate={reduced ? { opacity: 1 } : { rotateY: 0 }}
+                        exit={
+                          reduced
+                            ? { opacity: 0 }
+                            : { rotateY: 90, transition: { duration: ms(FLIP_MS) / 2000, ease: 'easeIn' } }
+                        }
+                        transition={{ duration: ms(SPIN_MS) / 1000, ease: [0.2, 0.9, 0.25, 1] }}
                       >
                         <CardBack club={targetClub} />
                       </motion.div>
