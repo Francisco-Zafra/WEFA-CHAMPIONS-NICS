@@ -40,17 +40,32 @@ if (args.has('--emulator')) {
   console.log('→ Usando emuladores locales')
 }
 
+function fail(message) {
+  console.error(`✗ ${message}`)
+  process.exit(1)
+}
+
 if (args.has('--create-admin')) {
   try {
     await createUserWithEmailAndPassword(auth, email, password)
     console.log(`✓ Cuenta creada: ${username}`)
   } catch (e) {
+    if (e.code === 'auth/admin-restricted-operation')
+      fail(
+        `El registro está desactivado en Firebase. Crea la cuenta en la consola ` +
+          `(Authentication → Usuarios → Añadir usuario: ${email}) y repite sin --create-admin.`,
+      )
     if (e.code !== 'auth/email-already-in-use') throw e
     console.log(`· La cuenta ${username} ya existía`)
   }
 }
 
-await signInWithEmailAndPassword(auth, email, password)
+try {
+  await signInWithEmailAndPassword(auth, email, password)
+} catch (e) {
+  if (e.code === 'auth/invalid-credential') fail(`No existe la cuenta ${email} o la contraseña no coincide.`)
+  throw e
+}
 console.log(`✓ Sesión iniciada como ${username}`)
 
 const batch = writeBatch(db)
