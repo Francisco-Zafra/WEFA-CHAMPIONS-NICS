@@ -563,6 +563,17 @@
     letter-spacing: 0.06em;
     opacity: 0.78;
   }
+  .pc--back {
+    display: grid;
+    place-items: center;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 50% 42%, color-mix(in oklab, var(--club) 30%, transparent), transparent 60%),
+      linear-gradient(158deg, var(--night-600), var(--night-800));
+  }
+  .pc--back::before {
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--club) 55%, transparent);
+  }
   .pc--off {
     filter: grayscale(0.85) brightness(0.55) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4));
   }

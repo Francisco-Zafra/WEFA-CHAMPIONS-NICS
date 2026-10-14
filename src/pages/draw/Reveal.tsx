@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { PlayerCard } from '@/components/PlayerCard'
-import { Crest, CrestGhost } from '@/components/ui'
+import { Crest, CrestGhost, ShieldMark } from '@/components/ui'
 import { getClub } from '@/domain/clubs'
 import { averageRating, balancePct, fmt, initials, overall } from '@/domain/rating'
 import type { Player } from '@/domain/types'
@@ -11,7 +11,10 @@ import { useAnthem } from '@/hooks/useAnthem'
 import type { Draw } from '@/lib/draw'
 
 /** Tiempos a velocidad 1×; el selector de velocidad los divide */
-const SHOW_MS = 1700
+/** Carta boca abajo antes de revelarse (suspense) */
+const HIDDEN_MS = 2600
+const FLIP_MS = 700
+const SHOW_MS = 1900
 const FLY_MS = 750
 const START_MS = 700
 const END_MS = 1500
@@ -63,7 +66,7 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
   const total = picks.length
   /** Cartas ya colocadas en su equipo */
   const [landed, setLanded] = useState(0)
-  const [phase, setPhase] = useState<'wait' | 'show' | 'fly'>('wait')
+  const [phase, setPhase] = useState<'wait' | 'hidden' | 'show' | 'fly'>('wait')
   const [speed, setSpeed] = useState<Speed>(readSpeed)
   const ms = (base: number) => base / speed
   const current = picks[landed]
@@ -85,14 +88,23 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
     }
     const next =
       phase === 'wait'
-        ? () => setPhase('show')
-        : phase === 'show'
-          ? () => setPhase('fly')
-          : () => {
-              setLanded((n) => n + 1)
-              setPhase('show')
-            }
-    const base = phase === 'wait' ? START_MS : phase === 'show' ? SHOW_MS : FLY_MS
+        ? () => setPhase('hidden')
+        : phase === 'hidden'
+          ? () => setPhase('show')
+          : phase === 'show'
+            ? () => setPhase('fly')
+            : () => {
+                setLanded((n) => n + 1)
+                setPhase('hidden')
+              }
+    const base =
+      phase === 'wait'
+        ? START_MS
+        : phase === 'hidden'
+          ? HIDDEN_MS
+          : phase === 'show'
+            ? FLIP_MS + SHOW_MS
+            : FLY_MS
     const t = setTimeout(next, base / speed)
     return () => clearTimeout(t)
   }, [phase, finished, fadeOut, onDone, speed])
@@ -143,31 +155,59 @@ export function Reveal({ draw, onDone }: { draw: Draw; onDone: () => void }) {
               </>
             )}
           </p>
-          <div className="relative h-[220px] w-[156px]" style={{ perspective: 900 }}>
+          <div className="relative h-[220px] w-[156px]">
             <AnimatePresence>
               {current && phase !== 'wait' && (
                 <motion.div
                   key={current.player.id}
                   className="absolute inset-0"
-                  initial={reduced ? { opacity: 0 } : { rotateY: 180, scale: 0.6, opacity: 0 }}
+                  style={{ perspective: 900 }}
+                  initial={{ scale: 0.6, opacity: 0, y: 0 }}
                   animate={
                     phase === 'fly' && !reduced
-                      ? { y: current.side === 'A' ? -260 : 260, scale: 0.42, opacity: 0, rotateY: 0 }
-                      : { rotateY: 0, scale: 1, opacity: 1, y: 0 }
+                      ? { y: current.side === 'A' ? -260 : 260, scale: 0.42, opacity: 0 }
+                      : phase === 'hidden' && !reduced
+                        ? { scale: [1, 1.04, 1], opacity: 1, y: 0 }
+                        : { scale: 1, opacity: 1, y: 0 }
                   }
                   exit={{ opacity: 0 }}
                   transition={
                     phase === 'fly'
                       ? { duration: ms(FLY_MS) / 1000, ease: [0.2, 0.9, 0.25, 1] }
-                      : { type: 'spring', duration: ms(900) / 1000, bounce: 0.3 }
+                      : phase === 'hidden'
+                        ? {
+                            scale: { duration: ms(1200) / 1000, repeat: Infinity, ease: 'easeInOut' },
+                            opacity: { duration: 0.3 },
+                          }
+                        : { type: 'spring', duration: ms(600) / 1000, bounce: 0.3 }
                   }
                 >
-                  <PlayerCard player={current.player} />
-                  {(current.player.id === draw.captainA || current.player.id === draw.captainB) && (
-                    <p className="h-display mt-2 flex items-center justify-center gap-1.5 text-xl text-[#ffd34d]">
-                      <Crown className="size-4" fill="currentColor" /> Capitán
-                    </p>
-                  )}
+                  {/* Giro en dos mitades: el reverso se pone de canto y entra la cara */}
+                  <AnimatePresence mode="wait" initial={false}>
+                    {phase === 'hidden' ? (
+                      <motion.div
+                        key="back"
+                        exit={reduced ? { opacity: 0 } : { rotateY: 90 }}
+                        transition={{ duration: ms(FLIP_MS) / 2000, ease: 'easeIn' }}
+                      >
+                        <CardBack club={targetClub} />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="front"
+                        initial={reduced ? { opacity: 0 } : { rotateY: -90 }}
+                        animate={reduced ? { opacity: 1 } : { rotateY: 0 }}
+                        transition={{ duration: ms(FLIP_MS) / 2000, ease: 'easeOut' }}
+                      >
+                        <PlayerCard player={current.player} />
+                        {(current.player.id === draw.captainA || current.player.id === draw.captainB) && (
+                          <p className="h-display mt-2 flex items-center justify-center gap-1.5 text-xl text-[#ffd34d]">
+                            <Crown className="size-4" fill="currentColor" /> Capitán
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )}
               {finished && (
@@ -307,6 +347,20 @@ function Zone({
         ))}
       </div>
       {!top && band}
+    </div>
+  )
+}
+
+/** Reverso de la carta: escudo WEFA en el color del equipo al que va */
+function CardBack({ club }: { club: Draw['clubA'] }) {
+  return (
+    <div className={`club-${club} pc pc--back`} aria-label="Carta boca abajo">
+      <div className="flex flex-col items-center gap-2">
+        <ShieldMark
+          style={{ width: 84, height: 84, color: 'var(--club)', filter: 'drop-shadow(0 0 18px var(--club))' }}
+        />
+        <span className="h-display neon text-4xl">?</span>
+      </div>
     </div>
   )
 }
