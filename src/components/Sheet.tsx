@@ -60,7 +60,7 @@ export function Sheet({
           />
           <motion.section
             key="sheet"
-            className="sheet"
+            className="sheet scroll-pretty"
             role="dialog"
             aria-modal="true"
             aria-label={title}
