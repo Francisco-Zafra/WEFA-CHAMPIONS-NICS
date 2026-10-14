@@ -2242,12 +2242,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* Corona dentro de la carta: centrada en el borde de arriba, sobre la foto */
   .pk__crown {
     position: absolute;
-    top: -17px;
+    top: 1px;
     left: 50%;
-    width: 17px;
-    height: 17px;
+    width: 15px;
+    height: 15px;
     transform: translateX(-50%);
     color: #ffd34d;
     z-index: 2;
@@ -2298,9 +2299,9 @@
     font-size: 22px;
   }
   .pk--big .pk__crown {
-    top: -28px;
-    width: 28px;
-    height: 28px;
+    top: 2px;
+    width: 23px;
+    height: 23px;
   }
   .pk--big .pk__c {
     top: 8px;

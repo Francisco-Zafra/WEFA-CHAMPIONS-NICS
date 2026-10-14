@@ -14,7 +14,7 @@ describe('formationLines', () => {
 
   it('usa pocas líneas y reparte los sobrantes hacia atrás', () => {
     expect(formationLabel(SEED_PLAYERS.slice(0, 6))).toBe('3-2')
-    expect(formationLabel(SEED_PLAYERS.slice(0, 5))).toBe('2-2')
+    expect(formationLabel(SEED_PLAYERS.slice(0, 5))).toBe('3-1')
     expect(formationLabel(SEED_PLAYERS.slice(0, 4))).toBe('3')
     expect(formationLabel(SEED_PLAYERS.slice(0, 9))).toBe('4-4')
     expect(formationLabel(SEED_PLAYERS.slice(0, 11))).toBe('4-3-3')

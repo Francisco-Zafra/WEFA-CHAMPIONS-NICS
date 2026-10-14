@@ -20,6 +20,8 @@ interface Spot {
   x: number
   /** px desde arriba (borde superior de la carta) */
   y: number
+  /** Escala de la carta (< 1 si la mitad del campo no da para cartas apiladas) */
+  scale: number
 }
 
 /** Tamaño de la mini-carta, margen a la línea de fondo y ancho aproximado del campo */
@@ -54,14 +56,15 @@ function spots(team: PitchTeam, side: 'A' | 'B', height: number, big: boolean): 
     const collide = xs.some((x) => prev.some((px) => (Math.abs(x - px) / 100) * pitchW < w + 4))
     ys.push(ys[i - 1]! + (collide ? h + 2 : Math.round(h * 0.55)))
   })
-  // Si no cabe en medio campo, se comprime
-  const limit = height / 2 - h - 4
-  const last = ys[ys.length - 1] ?? pad
-  const k = last > limit && last > pad ? (limit - pad) / (last - pad) : 1
+  // Si no cabe en medio campo, se reduce todo (posiciones y cartas) en la misma proporción,
+  // así las cartas apiladas siguen sin pisarse
+  const available = height / 2 - 4 - pad
+  const needed = (ys[ys.length - 1] ?? pad) - pad + h
+  const k = needed > available ? available / needed : 1
   return lines.flatMap(({ line, xs }, i) => {
     const offset = pad + (ys[i]! - pad) * k
-    const y = side === 'A' ? offset : height - h - offset
-    return line.map((player, j) => ({ player, y, x: xs[j]! }))
+    const y = side === 'A' ? offset : height - h * k - offset
+    return line.map((player, j) => ({ player, y, x: xs[j]!, scale: k }))
   })
 }
 
@@ -90,7 +93,7 @@ function Card({
 }) {
   const { player } = spot
   const selected = edit?.selected === player.id
-  const style = { left: `${spot.x}%`, top: spot.y, x: '-50%' }
+  const style = { left: `${spot.x}%`, top: spot.y, x: '-50%', scale: spot.scale, originY: 0 }
   const label = `${player.name}, media ${player.rating}${captain ? ', capitán' : ''}`
   const body = (
     <>

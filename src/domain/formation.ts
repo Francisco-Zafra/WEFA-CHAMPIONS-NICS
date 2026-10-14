@@ -41,7 +41,9 @@ function baseLines(players: Player[]): Player[][] {
   // Pocas líneas para que las cartas del campo no se apilen: hasta 3 jugadores, una línea;
   // hasta 8, dos (la de atrás con el que sobra); más, tres
   const rows = m <= 3 ? 1 : m <= 8 ? 2 : 3
-  const sizes = Array.from({ length: rows }, (_, r) => Math.floor(m / rows) + (r < m % rows ? 1 : 0))
+  // Con 4 de campo (5 por equipo) queda mejor 3-1 que 2-2: un 1-3-1 contando al portero
+  const sizes =
+    m === 4 ? [3, 1] : Array.from({ length: rows }, (_, r) => Math.floor(m / rows) + (r < m % rows ? 1 : 0))
   const lines: Player[][] = [[keeper!]]
   let i = 0
   for (const size of sizes) {
