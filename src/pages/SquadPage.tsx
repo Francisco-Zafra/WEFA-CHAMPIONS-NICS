@@ -1,5 +1,5 @@
 import { ArrowUpDown, Info, Plus, Search } from 'lucide-react'
-import { motion } from 'motion/react'
+import { LayoutGroup, motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PlayerCard } from '@/components/PlayerCard'
@@ -121,16 +121,13 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
         </button>
       </div>
     )
-  else
-    content = (
-      <motion.div
-        layout
-        className="grid grid-cols-2 justify-items-center gap-x-3 gap-y-4 sm:grid-cols-[repeat(auto-fill,minmax(172px,1fr))] lg:gap-x-4 lg:gap-y-7"
-      >
-        {visible.map((p) => (
+  else {
+    const grid = (list: Player[]) => (
+      <div className="grid grid-cols-2 justify-items-center gap-x-3 gap-y-4 sm:grid-cols-[repeat(auto-fill,minmax(172px,1fr))] lg:gap-x-4 lg:gap-y-7">
+        {list.map((p) => (
           <motion.div
             key={p.id}
-            layout
+            layoutId={p.id}
             className="cell"
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -156,8 +153,29 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
             />
           </motion.div>
         ))}
-      </motion.div>
+      </div>
     )
+    const called = visible.filter((p) => p.active)
+    const bench = visible.filter((p) => !p.active)
+    content = (
+      <LayoutGroup>
+        <div className="flex flex-col gap-8">
+          {called.length > 0 && (
+            <section className="flex flex-col gap-3" aria-label="Convocados">
+              <SectionHead title="Convocados" count={called.length} accent />
+              {grid(called)}
+            </section>
+          )}
+          {bench.length > 0 && (
+            <section className="flex flex-col gap-3" aria-label="No convocados">
+              <SectionHead title="No convocados" count={bench.length} />
+              {grid(bench)}
+            </section>
+          )}
+        </div>
+      </LayoutGroup>
+    )
+  }
 
   return (
     <div className="flex gap-8">
@@ -265,6 +283,16 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
       {!desktop && (
         <PlayerEditorSheet open={editing !== null} player={editingPlayer} onClose={() => setEditing(null)} />
       )}
+    </div>
+  )
+}
+
+function SectionHead({ title, count, accent }: { title: string; count: number; accent?: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      <h2 className="h-display h-m">{title}</h2>
+      <span className={`h-display num text-2xl ${accent ? 'neon' : 'text-[var(--muted)]'}`}>{count}</span>
+      <span className="h-px flex-1 bg-[var(--line)]" aria-hidden />
     </div>
   )
 }
