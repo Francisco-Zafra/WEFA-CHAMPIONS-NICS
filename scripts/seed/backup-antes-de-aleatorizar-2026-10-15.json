@@ -1,0 +1,338 @@
+[
+  {
+    "id": "legacy-12",
+    "name": "Alexis",
+    "stats": {
+      "fis": 63,
+      "tir": 63,
+      "pas": 63,
+      "reg": 63,
+      "def": 63,
+      "rit": 63
+    }
+  },
+  {
+    "id": "legacy-11",
+    "name": "Álvaro",
+    "stats": {
+      "fis": 81,
+      "tir": 81,
+      "pas": 81,
+      "reg": 81,
+      "def": 81,
+      "rit": 81
+    }
+  },
+  {
+    "id": "legacy-13",
+    "name": "Anto",
+    "stats": {
+      "rit": 88,
+      "def": 88,
+      "pas": 88,
+      "reg": 88,
+      "fis": 88,
+      "tir": 88
+    }
+  },
+  {
+    "id": "legacy-14",
+    "name": "Dani",
+    "stats": {
+      "fis": 83,
+      "tir": 83,
+      "reg": 83,
+      "pas": 83,
+      "def": 83,
+      "rit": 83
+    }
+  },
+  {
+    "id": "legacy-15",
+    "name": "Davide",
+    "stats": {
+      "fis": 75,
+      "tir": 75,
+      "reg": 75,
+      "pas": 75,
+      "def": 75,
+      "rit": 75
+    }
+  },
+  {
+    "id": "pFarzHQx8xWbaLQuVaAm",
+    "name": "Felix Amigo Pablo",
+    "stats": {
+      "def": 81,
+      "rit": 87,
+      "reg": 82,
+      "pas": 86,
+      "fis": 87,
+      "tir": 82
+    }
+  },
+  {
+    "id": "legacy-16",
+    "name": "Fran",
+    "stats": {
+      "def": 89,
+      "rit": 89,
+      "pas": 89,
+      "reg": 92,
+      "fis": 83,
+      "tir": 92
+    }
+  },
+  {
+    "id": "legacy-17",
+    "name": "Guti",
+    "stats": {
+      "fis": 94,
+      "tir": 94,
+      "def": 94,
+      "rit": 94,
+      "pas": 94,
+      "reg": 94
+    }
+  },
+  {
+    "id": "legacy-2",
+    "name": "Guti's Boyfriend",
+    "stats": {
+      "fis": 83,
+      "tir": 83,
+      "def": 83,
+      "rit": 83,
+      "reg": 83,
+      "pas": 83
+    }
+  },
+  {
+    "id": "legacy-18",
+    "name": "Guti's Tella",
+    "stats": {
+      "fis": 70,
+      "tir": 70,
+      "def": 70,
+      "rit": 70,
+      "pas": 70,
+      "reg": 70
+    }
+  },
+  {
+    "id": "legacy-19",
+    "name": "Héctor",
+    "stats": {
+      "fis": 72,
+      "tir": 72,
+      "rit": 72,
+      "def": 72,
+      "pas": 72,
+      "reg": 72
+    }
+  },
+  {
+    "id": "legacy-3",
+    "name": "Ignacio A",
+    "stats": {
+      "def": 82,
+      "rit": 82,
+      "reg": 82,
+      "pas": 82,
+      "fis": 82,
+      "tir": 82
+    }
+  },
+  {
+    "id": "legacy-4",
+    "name": "Ignacio P",
+    "stats": {
+      "fis": 87,
+      "tir": 87,
+      "pas": 87,
+      "reg": 87,
+      "def": 87,
+      "rit": 87
+    }
+  },
+  {
+    "id": "legacy-20",
+    "name": "Ignacio's Boyfriend",
+    "stats": {
+      "def": 88,
+      "rit": 88,
+      "pas": 88,
+      "reg": 88,
+      "fis": 88,
+      "tir": 88
+    }
+  },
+  {
+    "id": "legacy-21",
+    "name": "Iman",
+    "stats": {
+      "fis": 63,
+      "tir": 63,
+      "def": 63,
+      "rit": 63,
+      "pas": 63,
+      "reg": 63
+    }
+  },
+  {
+    "id": "legacy-5",
+    "name": "Jacobo",
+    "stats": {
+      "rit": 83,
+      "def": 83,
+      "pas": 83,
+      "reg": 83,
+      "fis": 83,
+      "tir": 83
+    }
+  },
+  {
+    "id": "legacy-22",
+    "name": "Jacobo's Boyfriend",
+    "stats": {
+      "pas": 81,
+      "reg": 81,
+      "def": 81,
+      "rit": 81,
+      "fis": 81,
+      "tir": 81
+    }
+  },
+  {
+    "id": "legacy-23",
+    "name": "Jose",
+    "stats": {
+      "reg": 71,
+      "pas": 71,
+      "def": 71,
+      "rit": 71,
+      "fis": 71,
+      "tir": 71
+    }
+  },
+  {
+    "id": "legacy-24",
+    "name": "Letizia",
+    "stats": {
+      "fis": 63,
+      "tir": 63,
+      "pas": 63,
+      "reg": 63,
+      "rit": 63,
+      "def": 63
+    }
+  },
+  {
+    "id": "legacy-25",
+    "name": "Lola",
+    "stats": {
+      "fis": 63,
+      "tir": 63,
+      "def": 63,
+      "rit": 63,
+      "pas": 63,
+      "reg": 63
+    }
+  },
+  {
+    "id": "legacy-6",
+    "name": "Pablo",
+    "stats": {
+      "rit": 79,
+      "def": 79,
+      "pas": 79,
+      "reg": 79,
+      "fis": 79,
+      "tir": 79
+    }
+  },
+  {
+    "id": "legacy-26",
+    "name": "Pablo's Boyfriend",
+    "stats": {
+      "fis": 86,
+      "tir": 86,
+      "def": 86,
+      "rit": 86,
+      "reg": 86,
+      "pas": 86
+    }
+  },
+  {
+    "id": "legacy-27",
+    "name": "Rafa",
+    "stats": {
+      "reg": 70,
+      "pas": 70,
+      "rit": 70,
+      "def": 70,
+      "fis": 70,
+      "tir": 70
+    }
+  },
+  {
+    "id": "legacy-7",
+    "name": "Riccardo",
+    "stats": {
+      "fis": 95,
+      "tir": 95,
+      "rit": 95,
+      "def": 95,
+      "pas": 95,
+      "reg": 95
+    }
+  },
+  {
+    "id": "legacy-8",
+    "name": "Riccardo's Boyfriend",
+    "stats": {
+      "def": 91,
+      "rit": 91,
+      "reg": 91,
+      "pas": 91,
+      "fis": 91,
+      "tir": 91
+    }
+  },
+  {
+    "id": "legacy-28",
+    "name": "Samir",
+    "stats": {
+      "fis": 92,
+      "tir": 92,
+      "pas": 92,
+      "reg": 92,
+      "def": 92,
+      "rit": 92
+    }
+  },
+  {
+    "id": "legacy-9",
+    "name": "Sergio",
+    "stats": {
+      "def": 91,
+      "rit": 91,
+      "pas": 91,
+      "reg": 91,
+      "fis": 91,
+      "tir": 91
+    }
+  },
+  {
+    "id": "legacy-10",
+    "name": "Younes",
+    "stats": {
+      "rit": 76,
+      "def": 76,
+      "reg": 76,
+      "pas": 76,
+      "fis": 76,
+      "tir": 76
+    }
+  }
+]

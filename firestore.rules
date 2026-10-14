@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Lectura pública. Solo la cuenta admin puede escribir.
+// El login "admin" de la app se traduce al email admin@wefa-nics.app.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'admin@wefa-nics.app';
+    }
+
+    function validStat(v) {
+      return v is int && v >= 0 && v <= 99;
+    }
+
+    function validPlayer(d) {
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 40
+        && d.active is bool
+        && (!('rating' in d) || (d.rating is int && d.rating >= 1 && d.rating <= 99))
+        && (!('avatar' in d) || d.avatar == null || (d.avatar is string && d.avatar.size() <= 40))
+        && d.stats.keys().hasOnly(['rit', 'tir', 'pas', 'reg', 'def', 'fis'])
+        && validStat(d.stats.rit) && validStat(d.stats.tir) && validStat(d.stats.pas)
+        && validStat(d.stats.reg) && validStat(d.stats.def) && validStat(d.stats.fis);
+    }
+
+    match /players/{id} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validPlayer(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /matches/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /cups/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
