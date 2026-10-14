@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore'
 import { useEffect, useState } from 'react'
 import { isClubId } from '@/domain/clubs'
+import { emptyTie, TIE_COUNT, type Cup, type CupInput, type CupTie } from '@/domain/cup'
 import { clampStat } from '@/domain/rating'
 import {
   STAT_KEYS,
@@ -25,6 +26,7 @@ import { db } from './firebase'
 
 const players = collection(db, 'players')
 const matches = collection(db, 'matches')
+const cups = collection(db, 'cups')
 
 // ---------- Conversión segura desde Firestore ----------
 
@@ -57,6 +59,40 @@ function toMatch(id: string, d: DocumentData): Match | null {
     scoreA: score(d.scoreA),
     scoreB: score(d.scoreB),
     mvp: d.mvp ?? null,
+  }
+}
+
+const toTeam = (raw: unknown) =>
+  Array.isArray(raw)
+    ? raw.map((p) => ({ id: String(p.id), name: String(p.name), rating: Number(p.rating) || 0 }))
+    : []
+
+const toScore = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+
+function toCup(id: string, d: DocumentData): Cup | null {
+  const seeds = Array.isArray(d.seeds) ? d.seeds.filter(isClubId) : []
+  if (seeds.length !== 8) return null
+  const raw: unknown[] = Array.isArray(d.ties) ? d.ties : []
+  const ties: CupTie[] = Array.from({ length: TIE_COUNT }, (_, i) => {
+    const t = (raw[i] ?? {}) as Record<string, unknown>
+    return {
+      ...emptyTie(),
+      scoreA: toScore(t.scoreA),
+      scoreB: toScore(t.scoreB),
+      winner: isClubId(t.winner) ? t.winner : null,
+      date: typeof t.date === 'string' ? t.date : null,
+      teamA: toTeam(t.teamA),
+      teamB: toTeam(t.teamB),
+      captainA: typeof t.captainA === 'string' ? t.captainA : null,
+      captainB: typeof t.captainB === 'string' ? t.captainB : null,
+    }
+  })
+  return {
+    id,
+    name: String(d.name ?? 'Copa'),
+    createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toMillis() : Date.now(),
+    seeds,
+    ties,
   }
 }
 
@@ -143,4 +179,33 @@ export function updateMatch(id: string, input: Partial<MatchInput>) {
 
 export function deleteMatch(id: string) {
   return deleteDoc(doc(matches, id))
+}
+
+export function useCups(): Collection<Cup> {
+  return useCollection((onData, onError) =>
+    onSnapshot(
+      cups,
+      (snap) =>
+        onData(
+          snap.docs
+            .map((d) => toCup(d.id, d.data()))
+            .filter((c): c is Cup => c !== null)
+            .sort((a, b) => b.createdAt - a.createdAt),
+        ),
+      onError,
+    ),
+  )
+}
+
+export async function createCup(input: CupInput): Promise<string> {
+  const ref = await addDoc(cups, { ...input, createdAt: serverTimestamp() })
+  return ref.id
+}
+
+export function updateCup(id: string, input: Partial<CupInput>) {
+  return updateDoc(doc(cups, id), input)
+}
+
+export function deleteCup(id: string) {
+  return deleteDoc(doc(cups, id))
 }

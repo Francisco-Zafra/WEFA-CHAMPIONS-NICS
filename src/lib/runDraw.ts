@@ -1,7 +1,7 @@
 import { balanceTeams, type BalanceError } from '@/domain/balance'
 import { randomSeed } from '@/domain/rng'
 import type { Player } from '@/domain/types'
-import type { Draw, DrawConfig } from './draw'
+import type { CupTieRef, Draw, DrawConfig } from './draw'
 
 export const DRAW_ERRORS: Record<BalanceError, string> = {
   'not-enough-players': 'Necesitas al menos 2 convocados.',
@@ -23,6 +23,7 @@ export function teamSizes(n: number, extraTo: 'A' | 'B'): [number, number] {
 export function runDraw(
   players: Player[],
   config: DrawConfig,
+  cup: CupTieRef | null = null,
 ): { ok: true; draw: Draw } | { ok: false; error: string } {
   const selection = selectionOf(players, config)
   const [sizeA] = teamSizes(selection.length, config.extraTo)
@@ -52,6 +53,7 @@ export function runDraw(
       tolerance: config.tolerance,
       seed,
       at: Date.now(),
+      cup,
     },
   }
 }

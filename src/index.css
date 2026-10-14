@@ -1088,7 +1088,7 @@
     bottom: calc(14px + env(safe-area-inset-bottom));
     height: 68px;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: center;
     padding: 0 6px;
     border-radius: 24px;
@@ -1605,6 +1605,159 @@
     .orb,
     .skel {
       animation: none;
+    }
+  }
+
+  /* ---- copa: cuadro eliminatorio ---- */
+  .bracket {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .bracket__ties {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .tie {
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    overflow: hidden;
+  }
+  .tie--next {
+    border-color: color-mix(in oklab, var(--club) 55%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--club) 20%, transparent),
+      0 10px 30px color-mix(in oklab, var(--club) 16%, transparent);
+  }
+  .tie__body {
+    appearance: none;
+    border: 0;
+    background: none;
+    width: 100%;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .tie__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    padding: 2px 8px 2px 4px;
+    border-radius: 10px;
+  }
+  .tie__row--won {
+    background: linear-gradient(90deg, color-mix(in oklab, var(--club) 26%, transparent), transparent);
+    box-shadow: inset 3px 0 0 var(--club);
+  }
+  .tie__row--lost {
+    color: var(--dim);
+  }
+  .tie__row--lost .crest {
+    filter: saturate(0.4) brightness(0.6);
+  }
+  .tie__row--tbd {
+    color: var(--dim);
+  }
+  .tie__crest-tbd {
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border-radius: 8px;
+    border: 1.5px dashed rgba(170, 190, 255, 0.3);
+    display: grid;
+    place-items: center;
+    font-family: var(--display);
+    font-size: 16px;
+  }
+  .tie__action {
+    appearance: none;
+    border: 0;
+    border-top: 1px solid var(--line);
+    width: 100%;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 0 0 17px 17px;
+    background: color-mix(in oklab, var(--club) 14%, transparent);
+    color: var(--ink);
+    font: 600 13px var(--sans);
+    cursor: pointer;
+  }
+  .tie__action svg {
+    width: 16px;
+    height: 16px;
+    color: var(--club);
+  }
+  .champ {
+    position: relative;
+    overflow: hidden;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    text-align: center;
+  }
+  .champ .halo {
+    left: 50%;
+    top: 50%;
+    margin: -100px 0 0 -100px;
+  }
+  @media (min-width: 1024px) {
+    .bracket {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 0.9fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .bracket__round {
+      display: flex;
+      flex-direction: column;
+    }
+    .bracket__ties {
+      flex: 1;
+      justify-content: space-around;
+      gap: 16px;
+    }
+    .bracket__round--champ > .champ {
+      flex: 1;
+      max-height: 260px;
+      margin: auto 0;
+    }
+    /* Conectores hacia la ronda siguiente */
+    .bracket__round:not(.bracket__round--champ) .tie {
+      position: relative;
+      overflow: visible;
+    }
+    .bracket__round:not(.bracket__round--champ) .tie::after {
+      content: '';
+      position: absolute;
+      right: -15px;
+      top: 50%;
+      width: 14px;
+      border-top: 2px solid var(--line-2);
+    }
+    .bracket__round:not(.bracket__round--qf) .tie::before {
+      content: '';
+      position: absolute;
+      left: -15px;
+      top: 50%;
+      width: 14px;
+      border-top: 2px solid var(--line-2);
     }
   }
 }

@@ -5,9 +5,11 @@ import { Layout } from '@/components/Layout'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import { ToastProvider } from '@/components/Toast'
 import { AuthProvider, useAuth } from '@/lib/auth'
-import { useMatches, usePlayers } from '@/lib/data'
+import { useCups, useMatches, usePlayers } from '@/lib/data'
 import { DrawProvider, useDraw } from '@/lib/draw'
 import { wasWelcomed } from '@/lib/welcome'
+import { CupDetailPage } from '@/pages/cup/CupDetailPage'
+import { CupPage } from '@/pages/cup/CupPage'
 import { DrawPage } from '@/pages/draw/DrawPage'
 import { Reveal } from '@/pages/draw/Reveal'
 import { HistoryPage } from '@/pages/HistoryPage'
@@ -18,6 +20,7 @@ import { WelcomePage } from '@/pages/WelcomePage'
 function Routed() {
   const players = usePlayers()
   const matches = useMatches()
+  const cups = useCups()
   const { user, ready } = useAuth()
   const { draw, revealing, setRevealing } = useDraw()
   const navigate = useNavigate()
@@ -44,7 +47,9 @@ function Routed() {
               <Routes>
                 <Route path="/" element={<SquadPage players={players} />} />
                 <Route path="/sorteo" element={<DrawPage players={players} />} />
-                <Route path="/pizarra" element={<PizarraPage players={players} />} />
+                <Route path="/pizarra" element={<PizarraPage players={players} cups={cups} />} />
+                <Route path="/copa" element={<CupPage cups={cups} />} />
+                <Route path="/copa/:id" element={<CupDetailPage cups={cups} />} />
                 <Route path="/historial" element={<HistoryPage matches={matches} players={players} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

@@ -23,6 +23,12 @@ const ICON = {
       <circle cx="12" cy="12" r="2.5" />
     </>
   ),
+  cup: (
+    <>
+      <path d="M3 5h5v5H3M3 14h5v5H3M8 7.5h3v9H8M11 12h3" />
+      <rect x="14" y="9" width="7" height="6" rx="1.5" />
+    </>
+  ),
   history: (
     <path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M9 17h6" />
   ),
@@ -32,6 +38,7 @@ const NAV = [
   { to: '/', label: 'Plantilla', icon: ICON.squad },
   { to: '/sorteo', label: 'Sorteo', icon: ICON.draw },
   { to: '/pizarra', label: 'Pizarra', icon: ICON.board },
+  { to: '/copa', label: 'Copa', icon: ICON.cup },
   { to: '/historial', label: 'Historial', icon: ICON.history },
 ]
 

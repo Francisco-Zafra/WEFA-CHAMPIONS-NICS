@@ -16,6 +16,13 @@ export interface DrawConfig {
   tolerance: number
 }
 
+/** Cruce de copa que se está sorteando */
+export interface CupTieRef {
+  cupId: string
+  cupName: string
+  tie: number
+}
+
 export interface Draw {
   result: BalanceResult
   clubA: ClubId
@@ -26,6 +33,8 @@ export interface Draw {
   seed: number
   /** Fecha del sorteo (ms) */
   at: number
+  /** Si es un partido de copa, a qué cruce pertenece */
+  cup: CupTieRef | null
 }
 
 export type DrawStep = 1 | 2 | 3
@@ -37,6 +46,9 @@ interface DrawState {
   setStep: (s: DrawStep) => void
   draw: Draw | null
   setDraw: (d: Draw | null) => void
+  /** Modo copa: el sorteo es para este cruce (clubes fijos) */
+  cupTie: CupTieRef | null
+  setCupTie: (t: CupTieRef | null) => void
   /** Ceremonia de revelación en curso */
   revealing: boolean
   setRevealing: (v: boolean) => void
@@ -64,6 +76,7 @@ export function DrawProvider({ children }: { children: ReactNode }) {
   const [step, setStep] = useState<DrawStep>(1)
   const [draw, setDraw] = useState<Draw | null>(null)
   const [revealing, setRevealing] = useState(false)
+  const [cupTie, setCupTie] = useState<CupTieRef | null>(null)
   const value = useMemo<DrawState>(
     () => ({
       config,
@@ -72,11 +85,13 @@ export function DrawProvider({ children }: { children: ReactNode }) {
       setStep,
       draw,
       setDraw,
+      cupTie,
+      setCupTie,
       revealing,
       setRevealing,
       themeClub: draw?.clubA ?? config.clubA,
     }),
-    [config, step, draw, revealing],
+    [config, step, draw, revealing, cupTie],
   )
   return <DrawContext.Provider value={value}>{children}</DrawContext.Provider>
 }

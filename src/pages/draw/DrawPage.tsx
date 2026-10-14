@@ -1,9 +1,21 @@
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Ban, Link2, Plus, Trash2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  Ban,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Link2,
+  Plus,
+  Trash2,
+  Trophy,
+  X,
+} from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { CardSkeletons, EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Crest, CrestGhost, Seg } from '@/components/ui'
 import type { PlayerPair } from '@/domain/balance'
+import { roundOf, tieLabel } from '@/domain/cup'
 import { CLUBS, getClub } from '@/domain/clubs'
 import { averageRating, fmt, initials, overall, tier } from '@/domain/rating'
 import type { ClubId, Player } from '@/domain/types'
@@ -15,7 +27,7 @@ import { runDraw, selectionOf, teamSizes } from '@/lib/runDraw'
 const STEP_LABELS = ['Convocados', 'Clubes', 'Reglas']
 
 export function DrawPage({ players }: { players: Collection<Player> }) {
-  const { config, step, setStep } = useDraw()
+  const { config, step, setStep, cupTie, setCupTie } = useDraw()
 
   if (players.loading) return <CardSkeletons count={4} />
   if (players.data.length < 2)
@@ -44,6 +56,27 @@ export function DrawPage({ players }: { players: Collection<Player> }) {
           )
         })}
       </div>
+      {cupTie && (
+        <div className="glass glass--club flex items-center gap-3 px-3.5 py-2.5">
+          <Trophy className="size-5 shrink-0 text-[var(--club)]" />
+          <div className="min-w-0 flex-1">
+            <p className="eyebrow text-[10px]">Partido de copa · {roundOf(cupTie.tie).name}</p>
+            <p className="truncate text-sm font-semibold">
+              {cupTie.cupName} · {tieLabel(cupTie.tie)}: {getClub(config.clubA).name} vs{' '}
+              {getClub(config.clubB).name}
+            </p>
+          </div>
+          <button
+            className="btn btn--ghost btn--icon"
+            type="button"
+            aria-label="Salir del modo copa"
+            title="Salir del modo copa"
+            onClick={() => setCupTie(null)}
+          >
+            <X />
+          </button>
+        </div>
+      )}
       {step === 1 && <StepPlayers players={players.data} />}
       {step === 2 && <StepClubs players={players.data} />}
       {step === 3 && <StepRules players={players.data} />}
@@ -189,7 +222,7 @@ function StepPlayers({ players }: { players: Player[] }) {
 
 function StepClubs({ players }: { players: Player[] }) {
   const { config, set } = useConfig()
-  const { setStep } = useDraw()
+  const { setStep, cupTie } = useDraw()
   const [editing, setEditing] = useState<'A' | 'B'>('A')
   const selection = selectionOf(players, config)
   const n = selection.length
@@ -202,7 +235,8 @@ function StepClubs({ players }: { players: Player[] }) {
       <button
         className={`slot club-${id}`}
         type="button"
-        aria-pressed={editing === side}
+        aria-pressed={!cupTie && editing === side}
+        disabled={!!cupTie}
         onClick={() => setEditing(side)}
       >
         <CrestGhost
@@ -266,25 +300,29 @@ function StepClubs({ players }: { players: Player[] }) {
         {slot('B')}
       </div>
 
-      <div className="glass flex flex-col gap-3 p-4">
-        <p className="eyebrow">Escudo del equipo {editing}</p>
-        <div className="picker" role="group" aria-label={`Escudo del equipo ${editing}`}>
-          {CLUBS.map((c) => (
-            <button
-              key={c.id}
-              className={`crest-opt club-${mine}`}
-              type="button"
-              aria-pressed={c.id === mine}
-              disabled={c.id === other}
-              onClick={() => set(editing === 'A' ? 'clubA' : 'clubB', c.id as ClubId)}
-            >
-              <span className={`crest crest--${c.id}`} aria-hidden />
-              {c.short}
-              {c.id === other && <span className="taken">Equipo {editing === 'A' ? 'B' : 'A'}</span>}
-            </button>
-          ))}
+      {cupTie ? (
+        <p className="small text-center text-xs">Los clubes los fija el cruce de copa.</p>
+      ) : (
+        <div className="glass flex flex-col gap-3 p-4">
+          <p className="eyebrow">Escudo del equipo {editing}</p>
+          <div className="picker" role="group" aria-label={`Escudo del equipo ${editing}`}>
+            {CLUBS.map((c) => (
+              <button
+                key={c.id}
+                className={`crest-opt club-${mine}`}
+                type="button"
+                aria-pressed={c.id === mine}
+                disabled={c.id === other}
+                onClick={() => set(editing === 'A' ? 'clubA' : 'clubB', c.id as ClubId)}
+              >
+                <span className={`crest crest--${c.id}`} aria-hidden />
+                {c.short}
+                {c.id === other && <span className="taken">Equipo {editing === 'A' ? 'B' : 'A'}</span>}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="glass flex flex-col gap-3 p-4">
         <p className="eyebrow">Capitanes</p>
@@ -329,14 +367,14 @@ const TOLERANCES = [
 
 function StepRules({ players }: { players: Player[] }) {
   const { config } = useConfig()
-  const { setStep, setDraw, setRevealing } = useDraw()
+  const { setStep, setDraw, setRevealing, cupTie } = useDraw()
   const toast = useToast()
   const selection = selectionOf(players, config)
   const [a, b] = teamSizes(selection.length, config.extraTo)
   const { set } = useConfig()
 
   function sortear() {
-    const out = runDraw(players, config)
+    const out = runDraw(players, config, cupTie)
     if (!out.ok) {
       toast(out.error, 'error')
       return

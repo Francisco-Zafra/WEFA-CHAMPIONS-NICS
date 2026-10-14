@@ -13,14 +13,15 @@ aquí no se programa, aquí se forjan equipos.
 
 ## 🏆 Qué hay en el estadio
 
-|                       |                                                                                                                                                                |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🃏 **Plantilla**      | Cartas estilo FUT (Oro, Plata y Bronce) con las 6 stats de cada jugador. Fichajes, bajas y convocatoria con un toque.                                          |
-| 🎲 **Sorteo**         | Asistente en 3 pasos: convocados, clubes y capitanes, y reglas («nunca juntos» / «siempre juntos»). El algoritmo iguala la media **y** cada stat por separado. |
-| 🎬 **Ceremonia**      | Draft: las cartas se revelan una a una, alternando equipos, con el himno de cada club y el medidor de equilibrio en vivo.                                      |
-| 📋 **Pizarra**        | Campo con la formación calculada a partir de las stats, radar comparativo e **imagen 1080×1350 lista para WhatsApp**.                                          |
-| 📈 **Historial**      | Resultados, MVP, clasificación de los 8 clubes y ranking de jugadores con racha.                                                                               |
-| 📱 **App instalable** | Se puede añadir a la pantalla de inicio del móvil y funciona sin conexión.                                                                                     |
+|                       |                                                                                                                                                                                                                                                            |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🃏 **Plantilla**      | Cartas estilo FUT (Oro, Plata y Bronce) con las 6 stats de cada jugador. Fichajes, bajas y convocatoria con un toque.                                                                                                                                      |
+| 🎲 **Sorteo**         | Asistente en 3 pasos: convocados, clubes y capitanes, y reglas («nunca juntos» / «siempre juntos»). El algoritmo iguala la media **y** cada stat por separado.                                                                                             |
+| 🎬 **Ceremonia**      | Draft: las cartas se revelan una a una, alternando equipos, con el himno de cada club y el medidor de equilibrio en vivo.                                                                                                                                  |
+| 📋 **Pizarra**        | Campo con la formación calculada a partir de las stats, radar comparativo e **imagen 1080×1350 lista para WhatsApp**.                                                                                                                                      |
+| 🏆 **Copa**           | Cuadro eliminatorio de los 8 clubes (cuartos, semis y final) jugado jornada a jornada: cada cruce tiene su propio sorteo de equipos, se apuntan los resultados (con empate, el admin elige quién pasa) y queda el palmarés. Va aparte de la clasificación. |
+| 📈 **Historial**      | Resultados, MVP, clasificación de los 8 clubes y ranking de jugadores con racha.                                                                                                                                                                           |
+| 📱 **App instalable** | Se puede añadir a la pantalla de inicio del móvil y funciona sin conexión.                                                                                                                                                                                 |
 
 ### Los 8 clubes
 

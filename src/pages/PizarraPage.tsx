@@ -1,4 +1,4 @@
-import { AlertTriangle, Save, Settings2, Share2, Shuffle } from 'lucide-react'
+import { AlertTriangle, Save, Settings2, Share2, Shuffle, Trophy } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -11,11 +11,12 @@ import { useToast } from '@/components/Toast'
 import { Banner, Crest } from '@/components/ui'
 import type { TeamSummary } from '@/domain/balance'
 import { getClub } from '@/domain/clubs'
+import { participants, roundOf, tieLabel, type Cup } from '@/domain/cup'
 import { balancePct, fmt, overall } from '@/domain/rating'
 import type { Club, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
-import { createMatch, type Collection } from '@/lib/data'
+import { createMatch, updateCup, type Collection } from '@/lib/data'
 import { useDraw, type Draw } from '@/lib/draw'
 import { runDraw } from '@/lib/runDraw'
 import { exportShareImage } from '@/lib/share'
@@ -30,7 +31,7 @@ const longDate = (ms: number) =>
 const shortDate = (ms: number) =>
   new Date(ms).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
-export function PizarraPage({ players }: { players: Collection<Player> }) {
+export function PizarraPage({ players, cups }: { players: Collection<Player>; cups: Collection<Cup> }) {
   const { draw, config, setDraw, setRevealing } = useDraw()
   const { isAdmin } = useAuth()
   const toast = useToast()
@@ -63,7 +64,7 @@ export function PizarraPage({ players }: { players: Collection<Player> }) {
   const vs = `${result.teamA.players.length} contra ${result.teamB.players.length}`
 
   function redraw() {
-    const out = runDraw(players.data, config)
+    const out = runDraw(players.data, config, draw?.cup ?? null)
     if (!out.ok) return toast(out.error, 'error')
     setDraw(out.draw)
     setRevealing(true)
@@ -90,7 +91,7 @@ export function PizarraPage({ players }: { players: Collection<Player> }) {
           type="button"
           onClick={() => setSaveOpen(true)}
         >
-          <Save /> Guardar partido
+          {draw.cup ? <Trophy /> : <Save />} {draw.cup ? 'Guardar en la copa' : 'Guardar partido'}
         </button>
       )}
       <div className="grid grid-cols-2 gap-2.5 lg:flex">
@@ -117,12 +118,15 @@ export function PizarraPage({ players }: { players: Collection<Player> }) {
       {/* Cabecera */}
       <header className="flex flex-col items-center gap-1.5 text-center lg:flex-row lg:flex-wrap lg:justify-between lg:gap-5 lg:text-left">
         <div className="flex flex-col items-center gap-1.5 lg:flex-row lg:gap-[18px]">
-          <p className="eyebrow lg:hidden">Pizarra · {shortDate(draw.at)}</p>
+          <p className="eyebrow lg:hidden">
+            {draw.cup ? `${draw.cup.cupName} · ${tieLabel(draw.cup.tie)}` : `Pizarra · ${shortDate(draw.at)}`}
+          </p>
           <div className="flex items-center gap-3 lg:gap-[18px]">
             <Crest club={a.id} size={desktop ? 76 : 52} />
             <div>
               <p className="eyebrow hidden lg:block">
-                Pizarra · {longDate(draw.at)} · {vs}
+                {draw.cup ? `${draw.cup.cupName} · ${roundOf(draw.cup.tie).name}` : 'Pizarra'} ·{' '}
+                {longDate(draw.at)} · {vs}
               </p>
               <h1 className="h-display text-[34px] lg:mt-1.5 lg:text-[60px]">
                 {desktop ? a.name : a.short} <span className="text-[var(--muted)]">vs</span>{' '}
@@ -216,7 +220,7 @@ export function PizarraPage({ players }: { players: Collection<Player> }) {
         />
       </div>
 
-      <SaveMatchSheet open={saveOpen} onClose={() => setSaveOpen(false)} draw={draw} />
+      <SaveMatchSheet open={saveOpen} onClose={() => setSaveOpen(false)} draw={draw} cups={cups.data} />
     </div>
   )
 }
@@ -238,17 +242,56 @@ const isoToday = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function SaveMatchSheet({ open, onClose, draw }: { open: boolean; onClose: () => void; draw: Draw }) {
+function SaveMatchSheet({
+  open,
+  onClose,
+  draw,
+  cups,
+}: {
+  open: boolean
+  onClose: () => void
+  draw: Draw
+  cups: Cup[]
+}) {
   const toast = useToast()
   const navigate = useNavigate()
+  const { setCupTie } = useDraw()
   const [date, setDate] = useState(isoToday)
   const [busy, setBusy] = useState(false)
   const snapshot = (t: TeamSummary) =>
     t.players.map((p) => ({ id: p.id, name: p.name, rating: overall(p.stats) }))
 
+  /** Partido de copa: los equipos se guardan en su cruce del cuadro */
+  async function saveToCup(ref: NonNullable<Draw['cup']>) {
+    const cup = cups.find((c) => c.id === ref.cupId)
+    if (!cup) return toast('Esa copa ya no existe', 'error')
+    const [a, b] = participants(cup, ref.tie)
+    if (a !== draw.clubA || b !== draw.clubB)
+      return toast('El cruce ha cambiado: vuelve a sortear desde la copa', 'error')
+    if (cup.ties[ref.tie]!.winner) return toast('Ese cruce ya tiene resultado', 'error')
+    const ties = cup.ties.map((t, i) =>
+      i === ref.tie
+        ? {
+            ...t,
+            date,
+            teamA: snapshot(draw.result.teamA),
+            teamB: snapshot(draw.result.teamB),
+            captainA: draw.captainA,
+            captainB: draw.captainB,
+          }
+        : t,
+    )
+    await updateCup(cup.id, { ties })
+    toast('Equipos guardados en el cuadro. Apunta el resultado tras el partido')
+    setCupTie(null)
+    onClose()
+    navigate(`/copa/${cup.id}`)
+  }
+
   async function save() {
     setBusy(true)
     try {
+      if (draw.cup) return await saveToCup(draw.cup)
       await createMatch({
         date,
         clubA: draw.clubA,
@@ -272,10 +315,17 @@ function SaveMatchSheet({ open, onClose, draw }: { open: boolean; onClose: () =>
   }
 
   return (
-    <Sheet open={open} onClose={onClose} eyebrow="Pizarra" title="Guardar partido">
+    <Sheet
+      open={open}
+      onClose={onClose}
+      eyebrow={draw.cup ? `${draw.cup.cupName} · ${tieLabel(draw.cup.tie)}` : 'Pizarra'}
+      title={draw.cup ? 'Guardar en la copa' : 'Guardar partido'}
+    >
       <div className="flex flex-col gap-4">
         <p className="small">
-          Se guardan los equipos tal cual. El marcador y el MVP los pones después del partido.
+          {draw.cup
+            ? 'Los equipos se guardan en el cruce del cuadro. El resultado lo apuntas en la copa después del partido.'
+            : 'Se guardan los equipos tal cual. El marcador y el MVP los pones después del partido.'}
         </p>
         <div className="field">
           <label htmlFor="match-date">Fecha del partido</label>
