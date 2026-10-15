@@ -55,6 +55,7 @@ export function redrawUpcoming(
   up: UpcomingMatch,
   players: Player[],
   base: DrawConfig,
+  pairs: Map<string, number> = new Map(),
 ): { ok: true; draw: Draw } | { ok: false; error: string } {
   const ids = new Set([...up.teamA, ...up.teamB].map((p) => p.id))
   const config: DrawConfig = {
@@ -66,7 +67,7 @@ export function redrawUpcoming(
     captainB: up.captainB,
     extraTo: up.teamA.length >= up.teamB.length ? 'A' : 'B',
   }
-  const out = runDraw(players, config, cupRefOf(up))
+  const out = runDraw(players, config, cupRefOf(up), undefined, pairs)
   if (!out.ok) return out
   return { ok: true, draw: { ...out.draw, ...savedBits(up) } }
 }

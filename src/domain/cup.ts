@@ -1,6 +1,6 @@
 import { CLUBS } from './clubs'
 import { shuffle, type Rng } from './rng'
-import type { ClubId, MatchPlayer } from './types'
+import type { ClubId, Match, MatchPlayer } from './types'
 
 /**
  * Copa eliminatoria de 8 clubes: 7 cruces.
@@ -175,6 +175,91 @@ function resetDownstream(ties: CupTie[], tie: number) {
     // Los participantes cambian: el sorteo de equipos de ese cruce tampoco vale
     ties[next] = emptyTie()
   }
+}
+
+/** Da la vuelta a un cruce: el equipo A pasa a ser el B (resultado, equipos y capitanes) */
+const flipTie = (t: CupTie): CupTie => ({
+  ...t,
+  scoreA: t.scoreB,
+  scoreB: t.scoreA,
+  teamA: t.teamB,
+  teamB: t.teamA,
+  captainA: t.captainB,
+  captainB: t.captainA,
+})
+
+export interface Reseed {
+  ties: CupTie[]
+  /** Cruces jugados cuyo resultado se pierde */
+  lostResults: number
+  /** Cruces sin jugar cuyos equipos sorteados se pierden */
+  lostTeams: number
+}
+
+/**
+ * Rehace el cuadro con otro orden de clubes. Cada cruce conserva su resultado y sus equipos si
+ * sigue enfrentando a los mismos dos clubes en la misma ronda (dándoles la vuelta si cambian de
+ * lado), con su fecha incluida; si no, se vacía, y con él lo que dependía de su ganador.
+ */
+export function reseed(cup: Pick<Cup, 'seeds' | 'ties'>, seeds: ClubId[]): Reseed {
+  const ties: CupTie[] = []
+  const next = { seeds, ties }
+  const used = new Set<number>()
+  for (let i = 0; i < TIE_COUNT; i++) {
+    const [a, b] = participants(next, i)
+    let tie = emptyTie()
+    if (a && b)
+      for (const j of roundOf(i).ties) {
+        const [oa, ob] = participants(cup, j)
+        const same = oa === a && ob === b
+        if (!same && !(oa === b && ob === a)) continue
+        tie = same ? { ...cup.ties[j]! } : flipTie(cup.ties[j]!)
+        used.add(j)
+        break
+      }
+    ties.push(tie)
+  }
+  let lostResults = 0
+  let lostTeams = 0
+  cup.ties.forEach((t, i) => {
+    if (used.has(i)) return
+    if (t.winner) lostResults++
+    else if (t.teamA.length > 0) lostTeams++
+  })
+  return { ties, lostResults, lostTeams }
+}
+
+/**
+ * Cruces jugados de todas las copas convertidos en partidos, para contarlos en estadísticas,
+ * fichas y duelos junto a los amistosos (los cruces sin equipos guardados solo cuentan para clubes)
+ */
+export function cupMatches(cups: Cup[]): Match[] {
+  const out: Match[] = []
+  for (const cup of cups)
+    cup.ties.forEach((t, i) => {
+      if (!t.winner || t.scoreA === null || t.scoreB === null) return
+      const [a, b] = participants(cup, i)
+      if (!a || !b) return
+      out.push({
+        id: `${cup.id}:${i}`,
+        date: t.date ?? '',
+        time: t.time,
+        place: t.place,
+        createdAt: cup.createdAt + i,
+        clubA: a,
+        clubB: b,
+        captainA: t.captainA,
+        captainB: t.captainB,
+        teamA: t.teamA,
+        teamB: t.teamB,
+        scoreA: t.scoreA,
+        scoreB: t.scoreB,
+        mvp: null,
+        winner: t.winner,
+        cup: { id: cup.id, name: cup.name, label: tieLabel(i) },
+      })
+    })
+  return out
 }
 
 /** Títulos por club en las copas terminadas */

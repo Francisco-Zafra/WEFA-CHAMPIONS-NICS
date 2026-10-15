@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { Crest, Seg } from '@/components/ui'
+import { Kit } from '@/components/Kit'
 import { getClub } from '@/domain/clubs'
 import { clearResult, isReady, participants, roundOf, setResult, tieLabel, type Cup } from '@/domain/cup'
 import type { ClubId, MatchPlayer } from '@/domain/types'
@@ -133,8 +134,8 @@ function TieDetail({
 
       {t.teamA.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
-          <Lineup club={a} team={t.teamA} captain={t.captainA} />
-          <Lineup club={b} team={t.teamB} captain={t.captainB} right />
+          <Lineup club={a} side="A" team={t.teamA} captain={t.captainA} />
+          <Lineup club={b} side="B" team={t.teamB} captain={t.captainB} />
         </div>
       )}
 
@@ -230,19 +231,24 @@ function Stepper({ club, value, onChange }: { club: ClubId; value: number; onCha
 
 function Lineup({
   club,
+  side,
   team,
   captain,
-  right,
 }: {
   club: ClubId
+  side: 'A' | 'B'
   team: MatchPlayer[]
   captain: string | null
-  right?: boolean
 }) {
+  const right = side === 'B'
   return (
     <div className={cx(`club-${club} flex flex-col gap-1.5`, right && 'items-end text-right')}>
-      <span className="eyebrow" style={{ color: 'var(--club)' }}>
+      <span
+        className={cx('eyebrow flex items-center gap-1.5', right && 'flex-row-reverse')}
+        style={{ color: 'var(--club)' }}
+      >
         {getClub(club).short}
+        <Kit side={side} className="size-3.5" />
       </span>
       <ul className={cx('flex flex-col gap-1 text-sm', right && 'items-end')}>
         {captainFirst(team, captain).map((p) => (

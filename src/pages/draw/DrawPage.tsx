@@ -17,7 +17,8 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CardSkeletons, EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
-import { Crest, CrestGhost, Seg } from '@/components/ui'
+import { Crest, CrestGhost, Seg, Switch } from '@/components/ui'
+import { Kit } from '@/components/Kit'
 import type { PlayerPair } from '@/domain/balance'
 import { resolveCaptains } from '@/domain/captains'
 import { roundOf, tieLabel } from '@/domain/cup'
@@ -26,6 +27,7 @@ import { averageRating, fmt, tier } from '@/domain/rating'
 import type { ClubId, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
 import { useAuth } from '@/lib/auth'
+import { useDrawHistory } from '@/lib/drawHistory'
 import type { Collection } from '@/lib/data'
 import { useDraw, type DrawConfig, type DrawStep } from '@/lib/draw'
 import { runDraw, selectionOf, teamSizes } from '@/lib/runDraw'
@@ -319,7 +321,8 @@ function StepClubs({
           club={id}
           style={{ width: 200, height: 200, top: -40, [side === 'A' ? 'left' : 'right']: -30 }}
         />
-        <span className="eyebrow" style={{ color: 'var(--club)' }}>
+        <span className="eyebrow flex items-center gap-1.5" style={{ color: 'var(--club)' }}>
+          <Kit side={side} className="size-3.5" />
           Equipo {side} · {side === 'A' ? 'arriba' : 'abajo'}
         </span>
         <Crest club={id} size={92} />
@@ -489,11 +492,12 @@ function StepRules({
   const selection = selectionOf(players, config)
   const [a, b] = teamSizes(selection.length, config.extraTo)
   const { set } = useConfig()
+  const pairs = useDrawHistory()
   const [custom, setCustom] = useState(() => !isPreset(config.tolerance))
   const [draft, setDraft] = useState(() => fmtTolerance(config.tolerance))
 
   function sortear() {
-    const out = runDraw(players, config, cupTie, captainDefaults)
+    const out = runDraw(players, config, cupTie, captainDefaults, pairs)
     if (!out.ok) {
       toast(out.error, 'error')
       return
@@ -508,6 +512,21 @@ function StepRules({
 
       <RuleBox kind="apart" selection={selection} />
       <RuleBox kind="together" selection={selection} />
+
+      <div className="glass flex items-center justify-between gap-3 p-3.5">
+        <div className="min-w-0">
+          <h2 className="h-display h-s">Variedad</h2>
+          <p className="small text-xs">
+            Evita repetir equipos y parejas de las últimas alineaciones (sin salirse de la tolerancia).
+          </p>
+        </div>
+        <Switch
+          checked={config.variety}
+          onChange={(v) => set('variety', v)}
+          label={config.variety ? 'Sí' : 'No'}
+          srLabel="Variedad"
+        />
+      </div>
 
       <div className="glass flex flex-col gap-2.5 p-3.5">
         <div className="flex items-baseline justify-between">

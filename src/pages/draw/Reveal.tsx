@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { PlayerCard } from '@/components/PlayerCard'
 import { Crest, CrestGhost, ShieldMark } from '@/components/ui'
+import { Kit } from '@/components/Kit'
 import { avatarUrl } from '@/domain/avatars'
 import { getClub } from '@/domain/clubs'
 import { averageRating, balancePct, fmt, initials } from '@/domain/rating'
@@ -302,7 +303,8 @@ function Zone({
       <Crest club={clubId} size={34} />
       <div>
         <div className="h-display h-s">{club.name}</div>
-        <div className="small text-[11px]">
+        <div className="small flex items-center gap-1 text-[11px]">
+          <Kit side={side} className="size-3" />
           Equipo {side} · media{' '}
           <span className="num text-[var(--ink)]">
             {revealed.length ? fmt(averageRating(revealed)) : '–'}

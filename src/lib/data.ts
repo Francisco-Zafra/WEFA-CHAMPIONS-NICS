@@ -15,6 +15,7 @@ import { isAvatarId } from '@/domain/avatars'
 import { isClubId } from '@/domain/clubs'
 import { emptyTie, TIE_COUNT, type Cup, type CupInput, type CupTie } from '@/domain/cup'
 import { clampRating, clampStat, overall } from '@/domain/rating'
+import type { Vote } from '@/domain/votes'
 import {
   STAT_KEYS,
   type Match,
@@ -23,11 +24,14 @@ import {
   type PlayerInput,
   type Stats,
 } from '@/domain/types'
-import { db } from './firebase'
+import { signInAnonymously } from 'firebase/auth'
+import { setDoc } from 'firebase/firestore'
+import { auth, db } from './firebase'
 
 const players = collection(db, 'players')
 const matches = collection(db, 'matches')
 const cups = collection(db, 'cups')
+const votes = collection(db, 'votes')
 
 // ---------- Conversión segura desde Firestore ----------
 
@@ -66,6 +70,8 @@ function toMatch(id: string, d: DocumentData): Match | null {
     scoreA: score(d.scoreA),
     scoreB: score(d.scoreB),
     mvp: d.mvp ?? null,
+    resultAt: typeof d.resultAt === 'number' ? d.resultAt : null,
+    votingClosed: d.votingClosed === true,
   }
 }
 
@@ -217,4 +223,43 @@ export function updateCup(id: string, input: Partial<CupInput>) {
 
 export function deleteCup(id: string) {
   return deleteDoc(doc(cups, id))
+}
+
+// ---------- Votación del MVP ----------
+
+export function useVotes(): Collection<Vote> {
+  return useCollection((onData, onError) =>
+    onSnapshot(
+      votes,
+      (snap) =>
+        onData(
+          snap.docs.map((d) => {
+            const v = d.data()
+            return {
+              id: d.id,
+              matchId: String(v.matchId ?? ''),
+              uid: String(v.uid ?? ''),
+              playerId: String(v.playerId ?? ''),
+              at: typeof v.at === 'number' ? v.at : 0,
+            }
+          }),
+        ),
+      onError,
+    ),
+  )
+}
+
+/**
+ * Vota al MVP de un partido. Sin cuentas: cada navegador usa una sesión anónima de Firebase y
+ * las reglas solo dejan un voto por partido y sesión (el id del voto es `partido_uid`).
+ */
+export async function castVote(matchId: string, playerId: string): Promise<void> {
+  const user = auth.currentUser ?? (await signInAnonymously(auth)).user
+  await setDoc(doc(votes, `${matchId}_${user.uid}`), { matchId, uid: user.uid, playerId, at: Date.now() })
+}
+
+export function deleteVotesOf(ids: string[]) {
+  const batch = writeBatch(db)
+  for (const id of ids) batch.delete(doc(votes, id))
+  return batch.commit()
 }

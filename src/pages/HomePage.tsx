@@ -1,4 +1,4 @@
-import { CalendarClock, Clock, Crown, MapPin, Pencil, Share2, Shuffle } from 'lucide-react'
+import { CalendarClock, Clock, Crown, MapPin, Pencil, Share2, Shuffle, Star } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MatchWhenFields } from '@/components/MatchWhen'
@@ -7,6 +7,7 @@ import { PlayerCard } from '@/components/PlayerCard'
 import { ShareCard } from '@/components/ShareCard'
 import { Sheet } from '@/components/Sheet'
 import { EmptyCards } from '@/components/States'
+import { Kit } from '@/components/Kit'
 import { useToast } from '@/components/Toast'
 import { CrestGhost } from '@/components/ui'
 import { avatarUrl } from '@/domain/avatars'
@@ -19,11 +20,43 @@ import { tieLabel } from '@/domain/cup'
 import type { Club, Match, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
+import { useDrawHistory } from '@/lib/drawHistory'
+import { timeLeft, votingDeadline, votingStatus } from '@/domain/votes'
+import { useClock, useVoteData } from '@/lib/votesContext'
 import { cx } from '@/lib/cx'
 import { updateCup, updateMatch, type Collection } from '@/lib/data'
 import { useDraw } from '@/lib/draw'
 import { exportShareImage } from '@/lib/share'
 import { drawFromUpcoming, redrawUpcoming, teamPlayers } from '@/lib/upcomingDraw'
+
+/** Aviso de votación de MVP abierta que aún no has votado */
+function VoteBanner({ matches }: { matches: Match[] }) {
+  const { user } = useAuth()
+  const votes = useVoteData()
+  const now = useClock()
+  const open = matches
+    .filter((m) => votingStatus(m, now) === 'open')
+    .filter((m) => !(user && votes.data.some((v) => v.matchId === m.id && v.uid === user.uid)))
+    .sort((a, b) => (b.resultAt ?? 0) - (a.resultAt ?? 0))[0]
+  if (!open) return null
+  const a = getClub(open.clubA)
+  const b = getClub(open.clubB)
+  return (
+    <Link
+      to={`/historial?votar=${open.id}`}
+      className="glass glass--club flex items-center gap-3 px-4 py-3 text-[var(--ink)] no-underline"
+    >
+      <Star className="size-6 shrink-0 text-[var(--warn)]" fill="currentColor" />
+      <div className="min-w-0 flex-1">
+        <p className="eyebrow text-[10px]">Votación del MVP abierta</p>
+        <p className="truncate text-sm font-semibold">
+          {a.short} {open.scoreA}–{open.scoreB} {b.short} · cierra en {timeLeft(votingDeadline(open)!, now)}
+        </p>
+      </div>
+      <span className="btn btn--primary btn--sm shrink-0">Votar</span>
+    </Link>
+  )
+}
 
 const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const MONTHS = [
@@ -76,23 +109,33 @@ export function HomePage({
   if (matches.loading || cups.loading)
     return <div className="skel h-[400px] rounded-[30px]" aria-busy="true" />
 
+  const banner = <VoteBanner matches={matches.data} />
+
   if (!next)
     return (
-      <EmptyCards
-        title="No hay partido a la vista"
-        action={
-          isAdmin && (
-            <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
-              <Shuffle /> Hacer un sorteo
-            </Link>
-          )
-        }
-      >
-        Cuando guardéis un partido (o los equipos de un cruce de copa) aparecerá aquí con su cuenta atrás.
-      </EmptyCards>
+      <>
+        {banner}
+        <EmptyCards
+          title="No hay partido a la vista"
+          action={
+            isAdmin && (
+              <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
+                <Shuffle /> Hacer un sorteo
+              </Link>
+            )
+          }
+        >
+          Cuando guardéis un partido (o los equipos de un cruce de copa) aparecerá aquí con su cuenta atrás.
+        </EmptyCards>
+      </>
     )
 
-  return <Upcoming up={next} now={now} players={players.data} matches={matches.data} cups={cups.data} />
+  return (
+    <div className="flex flex-col gap-4">
+      {banner}
+      <Upcoming up={next} now={now} players={players.data} matches={matches.data} cups={cups.data} />
+    </div>
+  )
 }
 
 function Upcoming({
@@ -109,6 +152,7 @@ function Upcoming({
   cups: Cup[]
 }) {
   const { isAdmin } = useAuth()
+  const pairs = useDrawHistory()
   const { config, setDraw, setRevealing } = useDraw()
   const toast = useToast()
   const navigate = useNavigate()
@@ -147,7 +191,7 @@ function Upcoming({
   }
 
   function redo() {
-    const out = redrawUpcoming(up, players, config)
+    const out = redrawUpcoming(up, players, config, pairs)
     if (!out.ok) return toast(out.error, 'error')
     setDraw(out.draw)
     setRevealing(true)
@@ -166,7 +210,13 @@ function Upcoming({
     }
   }
 
-  const teamName = (club: Club, rating: number, captain: string | null, align: 'left' | 'right') => (
+  const teamName = (
+    club: Club,
+    side: 'A' | 'B',
+    rating: number,
+    captain: string | null,
+    align: 'left' | 'right',
+  ) => (
     <div style={{ textAlign: align }} className="min-w-0">
       <div
         className="h-display text-[28px] lg:text-[64px]"
@@ -175,6 +225,7 @@ function Upcoming({
         {club.name}
       </div>
       <div className="text-xs font-semibold text-white/85 lg:text-[15px]">
+        <Kit side={side} className="mr-1 inline size-3.5 align-[-2px] lg:size-4" />
         {capName(captain) && (
           <>
             Capitán {capName(captain)}{' '}
@@ -241,16 +292,16 @@ function Upcoming({
           </h1>
           {desktop ? (
             <div className="mt-7 grid w-full grid-cols-[minmax(0,1fr)_auto_auto_auto_minmax(0,1fr)] items-center gap-7">
-              {teamName(a, ratingA, up.captainA, 'right')}
+              {teamName(a, 'A', ratingA, up.captainA, 'right')}
               {crests}
-              {teamName(b, ratingB, up.captainB, 'left')}
+              {teamName(b, 'B', ratingB, up.captainB, 'left')}
             </div>
           ) : (
             <>
               <div className="mt-7 flex items-center gap-1.5">{crests}</div>
               <div className="mt-[22px] grid w-full grid-cols-2 gap-3">
-                {teamName(a, ratingA, up.captainA, 'left')}
-                {teamName(b, ratingB, up.captainB, 'right')}
+                {teamName(a, 'A', ratingA, up.captainA, 'left')}
+                {teamName(b, 'B', ratingB, up.captainB, 'right')}
               </div>
             </>
           )}
@@ -317,72 +368,75 @@ function Upcoming({
           )}
         </div>
 
-        <section className="glass flex flex-col gap-2 px-4 py-3.5 lg:flex-[1_1_260px] lg:justify-center lg:rounded-[18px]">
-          <div className="flex items-center justify-between">
-            <span className="label">Equilibrio del sorteo</span>
-            <span className="text-[13px] font-bold text-[var(--ok)]">
-              {balancePct(diff)} % · Δ {fmt(diff)}
-            </span>
-          </div>
-          <div className="vs-bar" aria-hidden>
-            <div
-              style={{
-                flex: ratingA,
-                background: `linear-gradient(90deg, ${a.deep}, ${a.primary})`,
-                boxShadow: `0 0 12px ${a.primary}99`,
-              }}
-            />
-            <div
-              style={{
-                flex: ratingB,
-                background: `linear-gradient(90deg, ${b.primary}, ${b.deep})`,
-                boxShadow: `0 0 12px ${b.primary}99`,
-              }}
-            />
-          </div>
-          <div className="small flex justify-between gap-2 text-xs">
-            {duel ? (
-              <>
-                <span>
-                  Último duelo:{' '}
-                  <strong className="text-[var(--ink)]">
-                    {duel.goalsA === duel.goalsB
-                      ? `Empate ${duel.goalsA}–${duel.goalsB}`
-                      : `${(duel.goalsA > duel.goalsB ? a : b).short} ${Math.max(duel.goalsA, duel.goalsB)}–${Math.min(duel.goalsA, duel.goalsB)}`}
-                  </strong>
-                </span>
-                <span>{shortDate(duel.date)}</span>
-              </>
-            ) : (
-              <span>
-                Primer duelo entre {a.short} y {b.short}
+        {/* En escritorio: equilibrio, pizarra y acciones apilados en una columna */}
+        <div className="flex flex-col gap-4 lg:flex-[1_1_300px] lg:justify-end lg:gap-2.5">
+          <section className="glass flex flex-col gap-2 px-4 py-3.5 lg:gap-1.5 lg:rounded-[18px] lg:px-3.5 lg:py-2.5">
+            <div className="flex items-center justify-between">
+              <span className="label">Equilibrio del sorteo</span>
+              <span className="text-[13px] font-bold text-[var(--ok)]">
+                {balancePct(diff)} % · Δ {fmt(diff)}
               </span>
-            )}
-          </div>
-        </section>
+            </div>
+            <div className="vs-bar" aria-hidden>
+              <div
+                style={{
+                  flex: ratingA,
+                  background: `linear-gradient(90deg, ${a.deep}, ${a.primary})`,
+                  boxShadow: `0 0 12px ${a.primary}99`,
+                }}
+              />
+              <div
+                style={{
+                  flex: ratingB,
+                  background: `linear-gradient(90deg, ${b.primary}, ${b.deep})`,
+                  boxShadow: `0 0 12px ${b.primary}99`,
+                }}
+              />
+            </div>
+            <div className="small flex justify-between gap-2 text-xs">
+              {duel ? (
+                <>
+                  <span>
+                    Último duelo:{' '}
+                    <strong className="text-[var(--ink)]">
+                      {duel.goalsA === duel.goalsB
+                        ? `Empate ${duel.goalsA}–${duel.goalsB}`
+                        : `${(duel.goalsA > duel.goalsB ? a : b).short} ${Math.max(duel.goalsA, duel.goalsB)}–${Math.min(duel.goalsA, duel.goalsB)}`}
+                    </strong>
+                  </span>
+                  <span>{shortDate(duel.date)}</span>
+                </>
+              ) : (
+                <span>
+                  Primer duelo entre {a.short} y {b.short}
+                </span>
+              )}
+            </div>
+          </section>
 
-        <div className="flex flex-col gap-2.5 lg:flex-[1_1_220px] lg:justify-end">
-          <button
-            className="btn btn--hero h-[66px] text-[32px] lg:h-[72px]"
-            type="button"
-            onClick={openPizarra}
-          >
-            Ver pizarra
-          </button>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="flex flex-col gap-2.5">
             <button
-              className={`btn btn--glass ${isAdmin ? '' : 'col-span-2'}`}
+              className="btn btn--hero h-[66px] text-[32px] lg:h-[72px]"
               type="button"
-              onClick={() => void share()}
-              disabled={sharing}
+              onClick={openPizarra}
             >
-              {sharing ? <span className="spinner" /> : <Share2 />} Compartir
+              Ver pizarra
             </button>
-            {isAdmin && (
-              <button className="btn btn--glass" type="button" onClick={redo}>
-                <Shuffle /> {desktop ? 'Rehacer' : 'Rehacer sorteo'}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                className={`btn btn--glass ${isAdmin ? '' : 'col-span-2'}`}
+                type="button"
+                onClick={() => void share()}
+                disabled={sharing}
+              >
+                {sharing ? <span className="spinner" /> : <Share2 />} Compartir
               </button>
-            )}
+              {isAdmin && (
+                <button className="btn btn--glass" type="button" onClick={redo}>
+                  <Shuffle /> {desktop ? 'Rehacer' : 'Rehacer sorteo'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -390,8 +444,8 @@ function Upcoming({
       {/* ALINEACIONES */}
       {desktop ? (
         <>
-          <TeamCards club={a} players={teamA} captain={up.captainA} rating={ratingA} />
-          <TeamCards club={b} players={teamB} captain={up.captainB} rating={ratingB} />
+          <TeamCards club={a} side="A" players={teamA} captain={up.captainA} rating={ratingA} />
+          <TeamCards club={b} side="B" players={teamB} captain={up.captainB} rating={ratingB} />
         </>
       ) : (
         <section className="flex flex-col gap-3 pt-1">
@@ -402,8 +456,8 @@ function Upcoming({
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
-            <Roster club={a} players={teamA} captain={up.captainA} />
-            <Roster club={b} players={teamB} captain={up.captainB} />
+            <Roster club={a} side="A" players={teamA} captain={up.captainA} />
+            <Roster club={b} side="B" players={teamB} captain={up.captainB} />
           </div>
         </section>
       )}
@@ -425,13 +479,27 @@ function Upcoming({
   )
 }
 
-function Roster({ club, players, captain }: { club: Club; players: Player[]; captain: string | null }) {
+function Roster({
+  club,
+  side,
+  players,
+  captain,
+}: {
+  club: Club
+  side: 'A' | 'B'
+  players: Player[]
+  captain: string | null
+}) {
   const sorted = captainFirst(
     [...players].sort((x, y) => y.rating - x.rating),
     captain,
   )
   return (
     <div className={`club-${club.id} flex flex-col gap-1.5`}>
+      <div className="flex items-center gap-1.5 px-1 text-xs font-semibold text-[var(--ink-2)]">
+        <Kit side={side} className="size-3.5" />
+        <span className="truncate">{club.short}</span>
+      </div>
       {sorted.map((p) => (
         <div key={p.id} className={cx('rrow', p.id === captain && 'rrow--cap')}>
           <span className="d">{p.avatar ? <img src={avatarUrl(p.avatar)} alt="" /> : initials(p.name)}</span>
@@ -448,11 +516,13 @@ function Roster({ club, players, captain }: { club: Club; players: Player[]; cap
 
 function TeamCards({
   club,
+  side,
   players,
   captain,
   rating,
 }: {
   club: Club
+  side: 'A' | 'B'
   players: Player[]
   captain: string | null
   rating: number
@@ -465,7 +535,9 @@ function TeamCards({
     <section className={`club-${club.id} home-team`}>
       <div className="flex items-center gap-3">
         <span className={`crest crest--${club.id}`} style={{ width: 40, height: 40 }} aria-hidden />
-        <h2 className="h-display h-m flex-1">{club.name} · alineación</h2>
+        <h2 className="h-display h-m">{club.name} · alineación</h2>
+        <Kit side={side} className="size-5" />
+        <span className="flex-1" />
         <span className="h-display neon text-[30px]">{fmt(rating)}</span>
       </div>
       <div className="flex flex-wrap gap-[18px]">

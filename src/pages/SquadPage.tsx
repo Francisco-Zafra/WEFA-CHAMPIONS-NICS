@@ -2,13 +2,14 @@ import { ArrowUpDown, Info, Plus, Search } from 'lucide-react'
 import { LayoutGroup, motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CalibrationButton } from '@/components/Calibration'
 import { PlayerCard } from '@/components/PlayerCard'
 import { PlayerEditorPanel, PlayerEditorSheet } from '@/components/PlayerEditor'
 import { CardSkeletons, EmptyCards, ErrorState } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Banner, PageHeader, Switch } from '@/components/ui'
 import { tier, type Tier } from '@/domain/rating'
-import type { Player } from '@/domain/types'
+import type { Match, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
 import { cx } from '@/lib/cx'
@@ -20,7 +21,7 @@ type Sort = 'rating' | 'name'
 /** null = cerrado; 'new' = alta; Player = edición */
 type Editing = null | 'new' | Player
 
-export function SquadPage({ players }: { players: Collection<Player> }) {
+export function SquadPage({ players, matches }: { players: Collection<Player>; matches: Collection<Match> }) {
   const { isAdmin } = useAuth()
   const toast = useToast()
   const desktop = useIsDesktop()
@@ -142,6 +143,9 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
             ) : (
               <PlayerCard player={p} off={!p.active} size={desktop ? 11 : 10} />
             )}
+            <Link to={`/jugador/${p.id}`} className="small -mt-1 text-xs underline-offset-2 hover:underline">
+              Ver ficha
+            </Link>
             <Switch
               checked={p.active}
               disabled={!isAdmin}
@@ -216,6 +220,10 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
           <span className="num">{all.length}</span> jugadores ·{' '}
           <strong className="neon num font-bold">{convCount}</strong> convocados
         </p>
+
+        {isAdmin && !matches.loading && all.length > 0 && (
+          <CalibrationButton matches={matches.data} players={all} />
+        )}
 
         {!isAdmin && (
           <Banner tone="info" icon={<Info />}>

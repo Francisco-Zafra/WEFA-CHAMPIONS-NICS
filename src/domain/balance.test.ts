@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { balanceTeams, binomial, rebalance, type BalanceOptions } from './balance'
+import { pairKey } from './variety'
 import { SEED_PLAYERS } from './fixtures'
 import {} from './rating'
 
@@ -151,5 +152,57 @@ describe('rebalance', () => {
     expect(edited.withinTolerance).toBe(edited.ratingDiff <= 1)
     expect(edited.method).toBe(r.method)
     expect(ids(edited.teamA.players)).toEqual(ids(a))
+  })
+})
+
+describe('variedad', () => {
+  const teamsOf = (r: ReturnType<typeof run>) => [
+    r.teamA.players.map((p) => p.id),
+    r.teamB.players.map((p) => p.id),
+  ]
+  /** Historial: el reparto de `base` repetido como última alineación */
+  const historyOf = (teams: string[][]) => {
+    const h = new Map<string, number>()
+    for (const t of teams)
+      for (let i = 0; i < t.length; i++)
+        for (let j = i + 1; j < t.length; j++) h.set(pairKey(t[i]!, t[j]!), 1)
+    return h
+  }
+  const together = (teams: string[][], a: string[][]) => {
+    let n = 0
+    for (const t of a)
+      for (let i = 0; i < t.length; i++)
+        for (let j = i + 1; j < t.length; j++)
+          if (teams.some((x) => x.includes(t[i]!) && x.includes(t[j]!))) n++
+    return n
+  }
+
+  it('evita repetir las parejas de la alineación anterior', () => {
+    const base = teamsOf(run({ players: active, tolerance: 1.5, seed: 3 }))
+    const history = historyOf(base)
+    let withV = 0
+    let without = 0
+    for (let s = 0; s < 12; s++) {
+      withV += together(base, teamsOf(run({ players: active, tolerance: 1.5, seed: s, variety: 1, history })))
+      without += together(base, teamsOf(run({ players: active, tolerance: 1.5, seed: s })))
+    }
+    // Con 6 contra 6 el mínimo inevitable son 12 parejas repetidas por sorteo (3+3 de cada equipo
+    // anterior); sin variedad el azar suele dar más. Con variedad se llega siempre al mínimo.
+    expect(withV).toBeLessThan(without)
+    expect(withV).toBe(12 * 12)
+  })
+
+  it('sigue respetando la tolerancia', () => {
+    const history = historyOf(teamsOf(run({ players: active, tolerance: 1, seed: 1 })))
+    const r = run({ players: active, tolerance: 0.5, seed: 4, variety: 1, history })
+    expect(r.ratingDiff).toBeLessThanOrEqual(0.5)
+    expect(r.repeat).toBeDefined()
+  })
+
+  it('sin historial o con variedad 0 no cambia nada', () => {
+    const a = run({ players: active, seed: 9 })
+    const b = run({ players: active, seed: 9, variety: 1, history: new Map() })
+    expect(ids(a.teamA.players)).toEqual(ids(b.teamA.players))
+    expect(a.repeat).toBeUndefined()
   })
 })

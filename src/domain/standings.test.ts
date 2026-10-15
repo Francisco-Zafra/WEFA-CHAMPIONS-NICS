@@ -64,3 +64,13 @@ describe('playerStandings', () => {
     expect(rows.find((r) => r.id === 'c')!.form).toEqual(['L', 'D', 'W'])
   })
 })
+
+describe('desempate de copa', () => {
+  it('un empate con ganador cuenta como victoria y derrota', () => {
+    const cupTie = match({ scoreA: 2, scoreB: 2, winner: 'pandas', clubA: 'avispas', clubB: 'pandas' })
+    const rows = clubStandings([cupTie])
+    expect(rows.find((r) => r.club === 'pandas')).toMatchObject({ won: 1, drawn: 0, points: 3 })
+    expect(rows.find((r) => r.club === 'avispas')).toMatchObject({ lost: 1, drawn: 0 })
+    expect(playerStandings([cupTie]).find((r) => r.id === 'c')!.form).toEqual(['W'])
+  })
+})

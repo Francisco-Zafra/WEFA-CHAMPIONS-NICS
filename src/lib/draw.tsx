@@ -16,6 +16,8 @@ export interface DrawConfig {
   together: PlayerPair[]
   apart: PlayerPair[]
   tolerance: number
+  /** Evitar repetir equipos y parejas de las últimas alineaciones */
+  variety: boolean
 }
 
 /** Cruce de copa que se está sorteando */
@@ -85,6 +87,7 @@ const DEFAULT_CONFIG: DrawConfig = {
   together: [],
   apart: [],
   tolerance: 1,
+  variety: true,
 }
 
 const DrawContext = createContext<DrawState | null>(null)

@@ -19,6 +19,7 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Radar, RadarLegend, StatRows } from '@/components/Comparison'
 import { Pitch } from '@/components/Pitch'
+import { Kit } from '@/components/Kit'
 import { ShareCard } from '@/components/ShareCard'
 import { MatchWhenFields } from '@/components/MatchWhen'
 import { initialWhen, whenToSave } from '@/lib/when'
@@ -33,6 +34,7 @@ import { balancePct, fmt, statScale } from '@/domain/rating'
 import type { Club, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
+import { useDrawHistory } from '@/lib/drawHistory'
 import { createMatch, updateCup, updateMatch, type Collection } from '@/lib/data'
 import { useDraw, type Draw } from '@/lib/draw'
 import { runDraw } from '@/lib/runDraw'
@@ -53,6 +55,7 @@ export function PizarraPage({
 }) {
   const { draw, config, setDraw, setRevealing } = useDraw()
   const { isAdmin } = useAuth()
+  const pairs = useDrawHistory()
   const toast = useToast()
   const desktop = useIsDesktop()
   const shareRef = useRef<HTMLDivElement>(null)
@@ -164,6 +167,8 @@ export function PizarraPage({
         tolerance: draw.tolerance,
       },
       draw.cup,
+      undefined,
+      pairs,
     )
     if (!out.ok) return toast(out.error, 'error')
     setDraw(out.draw)
@@ -244,10 +249,12 @@ export function PizarraPage({
     })),
   ]
 
-  const banner = (club: Club, rating: number) => (
+  const banner = (club: Club, side: 'A' | 'B', rating: number) => (
     <div className={`club-banner club-${club.id} lg:h-[52px]`}>
       <Crest club={club.id} size={desktop ? 34 : 32} />
-      <span className="h-display h-s flex-1">{club.name}</span>
+      <span className="h-display h-s">{club.name}</span>
+      <Kit side={side} className="size-[18px]" />
+      <span className="flex-1" />
       <span className="h-display neon num text-[26px] lg:text-[28px]">{fmt(rating)}</span>
     </div>
   )
@@ -314,7 +321,7 @@ export function PizarraPage({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {banner(a, result.teamA.rating)}
+            {banner(a, 'A', result.teamA.rating)}
             <LayoutGroup>
               <Pitch
                 teamA={teamA}
@@ -323,14 +330,14 @@ export function PizarraPage({
                 edit={editing && isAdmin ? { selected, onSelect } : undefined}
               />
             </LayoutGroup>
-            {banner(b, result.teamB.rating)}
+            {banner(b, 'B', result.teamB.rating)}
             {isAdmin && adjustButton}
           </motion.section>
 
           {/* Columna derecha: tres filas que suman la altura del campo */}
           <div className="grid min-w-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-5">
             <div className="grid grid-cols-3 gap-4">
-              <TeamKpi club={a} rating={result.teamA.rating} />
+              <TeamKpi club={a} side="A" rating={result.teamA.rating} />
               <div className="panel kpi items-center text-center">
                 <span className="eyebrow">Diferencia</span>
                 <div
@@ -354,7 +361,7 @@ export function PizarraPage({
                   </span>
                 </div>
               </div>
-              <TeamKpi club={b} rating={result.teamB.rating} right />
+              <TeamKpi club={b} side="B" rating={result.teamB.rating} right />
             </div>
 
             <section
@@ -400,9 +407,11 @@ export function PizarraPage({
                     ? 'Equipos ajustados a mano a partir del sorteo.'
                     : draw.fromSaved
                       ? 'Equipos del partido guardado.'
-                      : result.method === 'exhaustive'
-                        ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
-                        : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
+                      : result.repeat !== undefined
+                        ? 'Variedad aplicada: se evitan las parejas de las últimas alineaciones.'
+                        : result.method === 'exhaustive'
+                          ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
+                          : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
                 </p>
               </section>
               <section className="panel flex flex-col gap-3 px-5 py-[18px]">
@@ -421,7 +430,7 @@ export function PizarraPage({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {banner(a, result.teamA.rating)}
+            {banner(a, 'A', result.teamA.rating)}
             <LayoutGroup>
               <Pitch
                 teamA={teamA}
@@ -430,7 +439,7 @@ export function PizarraPage({
                 edit={editing && isAdmin ? { selected, onSelect } : undefined}
               />
             </LayoutGroup>
-            {banner(b, result.teamB.rating)}
+            {banner(b, 'B', result.teamB.rating)}
           </motion.div>
 
           <section className="glass mt-2 flex min-w-0 flex-col gap-3.5 px-4 py-[18px] lg:mt-0 lg:flex-[999_1_420px] lg:gap-[22px] lg:rounded-3xl lg:p-7">
@@ -439,14 +448,14 @@ export function PizarraPage({
               <span className="small">Media por stat</span>
             </div>
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center lg:gap-4">
-              <TeamAvg club={a} rating={result.teamA.rating} />
+              <TeamAvg club={a} side="A" rating={result.teamA.rating} />
               <div className="glass rounded-[14px] px-3 py-2 lg:rounded-[18px] lg:px-5 lg:py-3">
                 <div className="eyebrow text-[10px] lg:text-[11px]">Diferencia</div>
                 <div className="h-display num text-[30px] text-[var(--ok)] lg:text-5xl">
                   {fmt(result.ratingDiff)}
                 </div>
               </div>
-              <TeamAvg club={b} rating={result.teamB.rating} />
+              <TeamAvg club={b} side="B" rating={result.teamB.rating} />
             </div>
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between gap-2">
@@ -573,12 +582,23 @@ export function PizarraPage({
   )
 }
 
-function TeamKpi({ club, rating, right }: { club: Club; rating: number; right?: boolean }) {
+function TeamKpi({
+  club,
+  side,
+  rating,
+  right,
+}: {
+  club: Club
+  side: 'A' | 'B'
+  rating: number
+  right?: boolean
+}) {
   return (
     <div className={`panel kpi kpi--club club-${club.id} ${right ? 'items-end text-right' : ''}`}>
       <div className={`flex items-center gap-2.5 ${right ? 'flex-row-reverse' : ''}`}>
         <Crest club={club.id} size={36} />
         <span className="eyebrow">{club.name}</span>
+        <Kit side={side} className="size-4" />
       </div>
       <div>
         <div className="h-display neon num text-[64px]">{fmt(rating)}</div>
@@ -603,11 +623,12 @@ function CaptainLine({ club, player }: { club: Club; player?: Player }) {
   )
 }
 
-function TeamAvg({ club, rating }: { club: Club; rating: number }) {
+function TeamAvg({ club, side, rating }: { club: Club; side: 'A' | 'B'; rating: number }) {
   return (
     <div className={`club-${club.id}`}>
       <div className="h-display neon num text-[44px] lg:text-[72px]">{fmt(rating)}</div>
-      <div className="small text-[11px] lg:text-[13px]">
+      <div className="small flex items-center gap-1 text-[11px] lg:text-[13px]">
+        <Kit side={side} className="size-3 lg:size-3.5" />
         <span className="hidden lg:inline">Media </span>
         {club.name}
       </div>

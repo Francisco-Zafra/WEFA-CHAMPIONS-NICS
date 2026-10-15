@@ -30,7 +30,13 @@ export interface PlayerRow {
 export const isPlayed = (m: Match): m is Match & { scoreA: number; scoreB: number } =>
   m.scoreA !== null && m.scoreB !== null
 
-const outcome = (gf: number, ga: number): Outcome => (gf > ga ? 'W' : gf < ga ? 'L' : 'D')
+/** Resultado para un lado del partido; en copa, el empate lo decide quién pasó */
+export function resultFor(m: Match & { scoreA: number; scoreB: number }, side: 'A' | 'B'): Outcome {
+  const [gf, ga] = side === 'A' ? [m.scoreA, m.scoreB] : [m.scoreB, m.scoreA]
+  if (gf !== ga) return gf > ga ? 'W' : 'L'
+  if (m.winner) return m.winner === (side === 'A' ? m.clubA : m.clubB) ? 'W' : 'L'
+  return 'D'
+}
 
 const chronological = (matches: Match[]) =>
   matches.filter(isPlayed).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)
@@ -43,13 +49,13 @@ export function clubStandings(matches: Match[]): ClubRow[] {
     ]),
   )
   for (const m of chronological(matches)) {
-    for (const [club, gf, ga] of [
-      [m.clubA, m.scoreA, m.scoreB],
-      [m.clubB, m.scoreB, m.scoreA],
+    for (const [club, gf, ga, side] of [
+      [m.clubA, m.scoreA, m.scoreB, 'A'],
+      [m.clubB, m.scoreB, m.scoreA, 'B'],
     ] as const) {
       const row = rows.get(club)
       if (!row) continue
-      const o = outcome(gf, ga)
+      const o = resultFor(m, side)
       row.played++
       row.goalsFor += gf
       row.goalsAgainst += ga
@@ -90,11 +96,11 @@ export function playerStandings(matches: Match[], names: Map<string, string> = n
     return r
   }
   for (const m of chronological(matches)) {
-    for (const [team, gf, ga] of [
-      [m.teamA, m.scoreA, m.scoreB],
-      [m.teamB, m.scoreB, m.scoreA],
+    for (const [team, side] of [
+      [m.teamA, 'A'],
+      [m.teamB, 'B'],
     ] as const) {
-      const o = outcome(gf, ga)
+      const o = resultFor(m, side)
       for (const p of team) {
         const r = row(p.id, p.name)
         r.played++
