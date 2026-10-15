@@ -1,6 +1,7 @@
 import { Crown, Minus, Plus, Star, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { MvpVoting } from '@/components/MvpVoting'
 import { Sheet } from '@/components/Sheet'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { EmptyCards, ErrorState } from '@/components/States'
@@ -12,9 +13,11 @@ import type { Match, Player } from '@/domain/types'
 import { useAuth } from '@/lib/auth'
 import { captainFirst } from '@/domain/formation'
 import { cx } from '@/lib/cx'
-import { deleteMatch, updateMatch, type Collection } from '@/lib/data'
+import { deleteMatch, deleteVotesOf, updateMatch, type Collection } from '@/lib/data'
+import { rivalries } from '@/domain/profile'
+import { useVoteData } from '@/lib/votesContext'
 
-type Tab = 'matches' | 'clubs' | 'players'
+type Tab = 'matches' | 'clubs' | 'players' | 'duels'
 
 const dayMonth = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
@@ -44,8 +47,9 @@ export function HistoryPage({
         guardado no se ha perdido.
       </ErrorState>
     )
-  else if (tab === 'matches') content = <MatchList matches={matches.data} />
+  else if (tab === 'matches') content = <MatchList matches={matches.data} players={players.data} />
   else if (tab === 'clubs') content = <ClubTable matches={matches.data} />
+  else if (tab === 'duels') content = <DuelList matches={matches.data} />
   else content = <PlayerTable matches={matches.data} players={players.data} />
 
   return (
@@ -59,6 +63,7 @@ export function HistoryPage({
           { value: 'matches', label: 'Partidos' },
           { value: 'clubs', label: 'Clubes' },
           { value: 'players', label: 'Jugadores' },
+          { value: 'duels', label: 'Duelos' },
         ]}
       />
       {content}
@@ -68,9 +73,17 @@ export function HistoryPage({
 
 // ---------- Partidos ----------
 
-function MatchList({ matches }: { matches: Match[] }) {
+function MatchList({ matches, players }: { matches: Match[]; players: Player[] }) {
   const { isAdmin } = useAuth()
-  const [open, setOpen] = useState<Match | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [params, setParams] = useSearchParams()
+  // El enlace «Votar» de Inicio (?votar=id) abre ese partido; el abierto sigue los datos en directo
+  const wanted = params.get('votar')
+  const current = matches.find((m) => m.id === (openId ?? wanted)) ?? null
+  const close = () => {
+    setOpenId(null)
+    if (wanted) setParams({}, { replace: true })
+  }
   if (matches.length === 0)
     return (
       <EmptyCards
@@ -96,9 +109,9 @@ function MatchList({ matches }: { matches: Match[] }) {
         </span>
       </div>
       {matches.map((m) => (
-        <MatchRow key={m.id} match={m} onOpen={() => setOpen(m)} />
+        <MatchRow key={m.id} match={m} onOpen={() => setOpenId(m.id)} />
       ))}
-      <MatchSheet match={open} onClose={() => setOpen(null)} />
+      <MatchSheet match={current} players={players} onClose={close} />
     </section>
   )
 }
@@ -138,7 +151,15 @@ function MatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
   )
 }
 
-function MatchSheet({ match, onClose }: { match: Match | null; onClose: () => void }) {
+function MatchSheet({
+  match,
+  players,
+  onClose,
+}: {
+  match: Match | null
+  players: Player[]
+  onClose: () => void
+}) {
   return (
     <Sheet
       open={match !== null}
@@ -146,13 +167,14 @@ function MatchSheet({ match, onClose }: { match: Match | null; onClose: () => vo
       eyebrow={match ? dayMonth(match.date) : undefined}
       title={match && isPlayed(match) ? 'Resultado' : 'Partido'}
     >
-      {match && <MatchDetail key={match.id} match={match} onDone={onClose} />}
+      {match && <MatchDetail key={match.id} match={match} players={players} onDone={onClose} />}
     </Sheet>
   )
 }
 
-function MatchDetail({ match, onDone }: { match: Match; onDone: () => void }) {
+function MatchDetail({ match, players, onDone }: { match: Match; players: Player[]; onDone: () => void }) {
   const { isAdmin } = useAuth()
+  const votes = useVoteData()
   const toast = useToast()
   const [scoreA, setScoreA] = useState(match.scoreA ?? 0)
   const [scoreB, setScoreB] = useState(match.scoreB ?? 0)
@@ -227,6 +249,8 @@ function MatchDetail({ match, onDone }: { match: Match; onDone: () => void }) {
         {roster(match.teamB, match.captainB, b, true)}
       </div>
 
+      <MvpVoting match={match} votes={votes.data} players={players} />
+
       {isAdmin && (
         <>
           <div className="field">
@@ -255,7 +279,13 @@ function MatchDetail({ match, onDone }: { match: Match; onDone: () => void }) {
                 className="btn btn--danger h-[52px]"
                 type="button"
                 disabled={busy}
-                onClick={() => void run(() => deleteMatch(match.id), 'Partido eliminado')}
+                onClick={() =>
+                  void run(async () => {
+                    await deleteMatch(match.id)
+                    const ids = votes.data.filter((v) => v.matchId === match.id).map((v) => v.id)
+                    if (ids.length) await deleteVotesOf(ids).catch(() => undefined)
+                  }, 'Partido eliminado')
+                }
               >
                 ¿Seguro? Eliminar
               </button>
@@ -275,7 +305,14 @@ function MatchDetail({ match, onDone }: { match: Match; onDone: () => void }) {
               disabled={busy}
               onClick={() =>
                 void run(
-                  () => updateMatch(match.id, { scoreA, scoreB, mvp: mvp || null }),
+                  () =>
+                    updateMatch(match.id, {
+                      scoreA,
+                      scoreB,
+                      mvp: mvp || null,
+                      // Apuntar el resultado abre la votación del MVP (72 h)
+                      resultAt: match.resultAt ?? Date.now(),
+                    }),
                   'Resultado guardado',
                 )
               }
@@ -442,7 +479,12 @@ function PlayerTable({ matches, players }: { matches: Match[]; players: Player[]
                         player={{ name: r.name, avatar: avatars.get(r.id) ?? null }}
                         className="size-[30px] text-sm"
                       />
-                      <span className="font-semibold whitespace-nowrap text-[var(--ink)]">{r.name}</span>
+                      <Link
+                        to={`/jugador/${r.id}`}
+                        className="font-semibold whitespace-nowrap text-[var(--ink)] no-underline"
+                      >
+                        {r.name}
+                      </Link>
                     </div>
                   </td>
                   <td>
@@ -477,6 +519,65 @@ function PlayerTable({ matches, players }: { matches: Match[]; players: Player[]
           </tbody>
         </table>
       </div>
+    </section>
+  )
+}
+
+// ---------- Duelos entre clubes ----------
+
+function DuelList({ matches }: { matches: Match[] }) {
+  const rows = useMemo(() => rivalries(matches), [matches])
+  if (rows.length === 0)
+    return (
+      <EmptyCards title="Sin duelos todavía">
+        Cuando se jueguen amistosos con resultado, aquí verás el cara a cara entre cada pareja de clubes.
+      </EmptyCards>
+    )
+  return (
+    <section className="flex flex-col gap-2.5">
+      <div className="flex items-baseline justify-between">
+        <h2 className="h-display h-m">Cara a cara</h2>
+        <span className="small text-xs">Solo amistosos</span>
+      </div>
+      {rows.map((r) => {
+        const a = getClub(r.a)
+        const b = getClub(r.b)
+        const lead = r.winsA === r.winsB ? null : r.winsA > r.winsB ? a : b
+        return (
+          <article key={`${r.a}|${r.b}`} className="glass flex flex-col gap-3 p-3.5">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <div className={`club-${a.id} flex min-w-0 items-center gap-2`}>
+                <Crest club={a.id} size={38} />
+                <span className="h-display truncate text-xl">{a.short}</span>
+              </div>
+              <span className="h-display num text-3xl">
+                <span className={r.winsA > r.winsB ? 'text-[var(--ok)]' : ''}>{r.winsA}</span>
+                <span className="text-[var(--muted)]"> – </span>
+                <span className={r.winsB > r.winsA ? 'text-[var(--ok)]' : ''}>{r.winsB}</span>
+              </span>
+              <div className={`club-${b.id} flex min-w-0 flex-row-reverse items-center gap-2 text-right`}>
+                <Crest club={b.id} size={38} />
+                <span className="h-display truncate text-xl">{b.short}</span>
+              </div>
+            </div>
+            <div className="vs-bar" aria-hidden>
+              <div style={{ flex: Math.max(r.winsA, 0.2), background: a.primary }} />
+              <div style={{ flex: Math.max(r.drawn, 0.0001), background: '#8d97b5' }} />
+              <div style={{ flex: Math.max(r.winsB, 0.2), background: b.primary }} />
+            </div>
+            <p className="small flex flex-wrap justify-between gap-x-3 text-xs">
+              <span>
+                {r.played} {r.played === 1 ? 'partido' : 'partidos'} · {r.drawn}{' '}
+                {r.drawn === 1 ? 'empate' : 'empates'} · goles {r.goalsA}–{r.goalsB}
+              </span>
+              <span>
+                Último: {r.lastScore[0]}–{r.lastScore[1]} ({dayMonth(r.lastDate)})
+                {lead && <> · domina {lead.short}</>}
+              </span>
+            </p>
+          </article>
+        )
+      })}
     </section>
   )
 }

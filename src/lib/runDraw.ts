@@ -27,6 +27,8 @@ export function runDraw(
   cup: CupTieRef | null = null,
   /** Último capitán de cada club, para los capitanes en automático */
   captainDefaults: Map<ClubId, string> = new Map(),
+  /** Coincidencias recientes entre jugadores, para la variedad */
+  pairs: Map<string, number> = new Map(),
 ): { ok: true; draw: Draw } | { ok: false; error: string } {
   const selection = selectionOf(players, config)
   const [sizeA] = teamSizes(selection.length, config.extraTo)
@@ -42,6 +44,8 @@ export function runDraw(
     apart: config.apart,
     tolerance: config.tolerance,
     seed,
+    variety: config.variety ? 1 : 0,
+    history: pairs,
   })
   if (!outcome.ok) return { ok: false, error: DRAW_ERRORS[outcome.error] }
   return {

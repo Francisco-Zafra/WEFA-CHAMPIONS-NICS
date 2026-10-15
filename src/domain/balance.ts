@@ -1,4 +1,5 @@
 import { averageStats } from './rating'
+import { pairKey } from './variety'
 import { createRng, shuffle, type Rng } from './rng'
 import { STAT_KEYS, type Player, type Stats } from './types'
 
@@ -17,6 +18,13 @@ export interface BalanceOptions {
   /** Diferencia máxima de media entre equipos */
   tolerance: number
   seed: number
+  /**
+   * Variedad: peso (0 = desactivada) con el que se penaliza juntar a quienes ya coincidieron
+   * en equipo en partidos recientes. Requiere `history` (ver domain/variety.ts)
+   */
+  variety?: number
+  /** Cuánto han coincidido recientemente en equipo (clave `idA|idB`, ver pairKey) */
+  history?: Map<string, number>
 }
 
 export interface TeamSummary {
@@ -34,6 +42,8 @@ export interface BalanceResult {
   statDiff: number
   /** false si ninguna combinación cumple la tolerancia y se devuelve la mejor posible */
   withinTolerance: boolean
+  /** Media de «coincidencias recientes» de las parejas de cada equipo (0 = ninguna repetida) */
+  repeat?: number
   /** Combinaciones válidas encontradas */
   candidates: number
   method: 'exhaustive' | 'search'
@@ -62,6 +72,9 @@ interface Problem {
   fixed: Map<number, 0 | 1>
   together: [number, number][]
   apart: [number, number][]
+  /** n×n: coincidencias recientes entre cada par; null si la variedad está desactivada */
+  repeat: Float64Array | null
+  repeatWeight: number
 }
 
 interface Candidate {
@@ -69,6 +82,7 @@ interface Candidate {
   side: Uint8Array
   ratingDiff: number
   statDiff: number
+  repeat: number
   score: number
 }
 
@@ -101,6 +115,20 @@ export function balanceTeams(opts: BalanceOptions): BalanceOutcome {
     fixed,
     together: toPairs(opts.together),
     apart: toPairs(opts.apart),
+    repeat: null,
+    repeatWeight: 0,
+  }
+
+  if ((opts.variety ?? 0) > 0 && opts.history && opts.history.size > 0) {
+    const m = new Float64Array(n * n)
+    for (let i = 0; i < n; i++)
+      for (let j = i + 1; j < n; j++) {
+        const w = opts.history.get(pairKey(players[i]!.id, players[j]!.id)) ?? 0
+        m[i * n + j] = w
+        m[j * n + i] = w
+      }
+    problem.repeat = m
+    problem.repeatWeight = opts.variety!
   }
 
   if (!isSatisfiable(problem)) return { ok: false, error: 'impossible-constraints' }
@@ -124,6 +152,7 @@ export function balanceTeams(opts: BalanceOptions): BalanceOutcome {
       teamB: summarize(teamB),
       ratingDiff: chosen.ratingDiff,
       statDiff: chosen.statDiff,
+      repeat: problem.repeat ? chosen.repeat : undefined,
       withinTolerance: within.length > 0,
       candidates: within.length,
       method: exhaustive ? 'exhaustive' : 'search',
@@ -229,7 +258,25 @@ function evaluate(p: Problem, side: Uint8Array): Omit<Candidate, 'key' | 'side'>
   let statDiff = 0
   for (let k = 0; k < STAT_KEYS.length; k++) statDiff += Math.abs(sa[k]! / p.sizeA - sb[k]! / sizeB)
   statDiff /= STAT_KEYS.length
-  return { ratingDiff, statDiff, score: ratingDiff + STAT_WEIGHT * statDiff }
+  let repeat = 0
+  if (p.repeat) {
+    // Media de coincidencias recientes entre las parejas que quedan en el mismo equipo
+    let sum = 0
+    let pairs = 0
+    for (let i = 0; i < p.n; i++)
+      for (let j = i + 1; j < p.n; j++) {
+        if (side[i] !== side[j]) continue
+        sum += p.repeat[i * p.n + j]!
+        pairs++
+      }
+    repeat = pairs ? sum / pairs : 0
+  }
+  return {
+    ratingDiff,
+    statDiff,
+    repeat,
+    score: ratingDiff + STAT_WEIGHT * statDiff + p.repeatWeight * repeat,
+  }
 }
 
 function keyOf(side: Uint8Array): string {

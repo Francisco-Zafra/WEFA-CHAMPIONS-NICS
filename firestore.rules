@@ -33,6 +33,27 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Votación del MVP: un voto por partido y sesión anónima, solo mientras esté abierta
+    function votingOpen(matchId) {
+      let m = get(/databases/$(database)/documents/matches/$(matchId)).data;
+      return m.get('votingClosed', false) != true
+        && m.get('resultAt', null) != null
+        && request.time.toMillis() < m.resultAt + 259200000;
+    }
+
+    match /votes/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['matchId', 'uid', 'playerId', 'at'])
+        && request.resource.data.uid == request.auth.uid
+        && id == request.resource.data.matchId + '_' + request.auth.uid
+        && request.resource.data.playerId is string
+        && request.resource.data.playerId.size() <= 80
+        && request.resource.data.at is number
+        && votingOpen(request.resource.data.matchId);
+      allow delete: if isAdmin();
+    }
+
     match /cups/{id} {
       allow read: if true;
       allow write: if isAdmin();

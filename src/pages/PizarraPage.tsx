@@ -33,6 +33,7 @@ import { balancePct, fmt, statScale } from '@/domain/rating'
 import type { Club, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
+import { useDrawHistory } from '@/lib/drawHistory'
 import { createMatch, updateCup, updateMatch, type Collection } from '@/lib/data'
 import { useDraw, type Draw } from '@/lib/draw'
 import { runDraw } from '@/lib/runDraw'
@@ -53,6 +54,7 @@ export function PizarraPage({
 }) {
   const { draw, config, setDraw, setRevealing } = useDraw()
   const { isAdmin } = useAuth()
+  const pairs = useDrawHistory()
   const toast = useToast()
   const desktop = useIsDesktop()
   const shareRef = useRef<HTMLDivElement>(null)
@@ -164,6 +166,8 @@ export function PizarraPage({
         tolerance: draw.tolerance,
       },
       draw.cup,
+      undefined,
+      pairs,
     )
     if (!out.ok) return toast(out.error, 'error')
     setDraw(out.draw)
@@ -400,9 +404,11 @@ export function PizarraPage({
                     ? 'Equipos ajustados a mano a partir del sorteo.'
                     : draw.fromSaved
                       ? 'Equipos del partido guardado.'
-                      : result.method === 'exhaustive'
-                        ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
-                        : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
+                      : result.repeat !== undefined
+                        ? 'Variedad aplicada: se evitan las parejas de las últimas alineaciones.'
+                        : result.method === 'exhaustive'
+                          ? `Analizadas todas las combinaciones: ${result.candidates} cumplen la tolerancia.`
+                          : `Búsqueda inteligente: ${result.candidates} combinaciones óptimas encontradas.`}
                 </p>
               </section>
               <section className="panel flex flex-col gap-3 px-5 py-[18px]">

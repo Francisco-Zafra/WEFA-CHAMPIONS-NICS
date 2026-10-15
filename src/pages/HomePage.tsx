@@ -1,4 +1,4 @@
-import { CalendarClock, Clock, Crown, MapPin, Pencil, Share2, Shuffle } from 'lucide-react'
+import { CalendarClock, Clock, Crown, MapPin, Pencil, Share2, Shuffle, Star } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MatchWhenFields } from '@/components/MatchWhen'
@@ -19,11 +19,43 @@ import { tieLabel } from '@/domain/cup'
 import type { Club, Match, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
+import { useDrawHistory } from '@/lib/drawHistory'
+import { timeLeft, votingDeadline, votingStatus } from '@/domain/votes'
+import { useClock, useVoteData } from '@/lib/votesContext'
 import { cx } from '@/lib/cx'
 import { updateCup, updateMatch, type Collection } from '@/lib/data'
 import { useDraw } from '@/lib/draw'
 import { exportShareImage } from '@/lib/share'
 import { drawFromUpcoming, redrawUpcoming, teamPlayers } from '@/lib/upcomingDraw'
+
+/** Aviso de votación de MVP abierta que aún no has votado */
+function VoteBanner({ matches }: { matches: Match[] }) {
+  const { user } = useAuth()
+  const votes = useVoteData()
+  const now = useClock()
+  const open = matches
+    .filter((m) => votingStatus(m, now) === 'open')
+    .filter((m) => !(user && votes.data.some((v) => v.matchId === m.id && v.uid === user.uid)))
+    .sort((a, b) => (b.resultAt ?? 0) - (a.resultAt ?? 0))[0]
+  if (!open) return null
+  const a = getClub(open.clubA)
+  const b = getClub(open.clubB)
+  return (
+    <Link
+      to={`/historial?votar=${open.id}`}
+      className="glass glass--club flex items-center gap-3 px-4 py-3 text-[var(--ink)] no-underline"
+    >
+      <Star className="size-6 shrink-0 text-[var(--warn)]" fill="currentColor" />
+      <div className="min-w-0 flex-1">
+        <p className="eyebrow text-[10px]">Votación del MVP abierta</p>
+        <p className="truncate text-sm font-semibold">
+          {a.short} {open.scoreA}–{open.scoreB} {b.short} · cierra en {timeLeft(votingDeadline(open)!, now)}
+        </p>
+      </div>
+      <span className="btn btn--primary btn--sm shrink-0">Votar</span>
+    </Link>
+  )
+}
 
 const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const MONTHS = [
@@ -76,23 +108,33 @@ export function HomePage({
   if (matches.loading || cups.loading)
     return <div className="skel h-[400px] rounded-[30px]" aria-busy="true" />
 
+  const banner = <VoteBanner matches={matches.data} />
+
   if (!next)
     return (
-      <EmptyCards
-        title="No hay partido a la vista"
-        action={
-          isAdmin && (
-            <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
-              <Shuffle /> Hacer un sorteo
-            </Link>
-          )
-        }
-      >
-        Cuando guardéis un partido (o los equipos de un cruce de copa) aparecerá aquí con su cuenta atrás.
-      </EmptyCards>
+      <>
+        {banner}
+        <EmptyCards
+          title="No hay partido a la vista"
+          action={
+            isAdmin && (
+              <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
+                <Shuffle /> Hacer un sorteo
+              </Link>
+            )
+          }
+        >
+          Cuando guardéis un partido (o los equipos de un cruce de copa) aparecerá aquí con su cuenta atrás.
+        </EmptyCards>
+      </>
     )
 
-  return <Upcoming up={next} now={now} players={players.data} matches={matches.data} cups={cups.data} />
+  return (
+    <div className="flex flex-col gap-4">
+      {banner}
+      <Upcoming up={next} now={now} players={players.data} matches={matches.data} cups={cups.data} />
+    </div>
+  )
 }
 
 function Upcoming({
@@ -109,6 +151,7 @@ function Upcoming({
   cups: Cup[]
 }) {
   const { isAdmin } = useAuth()
+  const pairs = useDrawHistory()
   const { config, setDraw, setRevealing } = useDraw()
   const toast = useToast()
   const navigate = useNavigate()
@@ -147,7 +190,7 @@ function Upcoming({
   }
 
   function redo() {
-    const out = redrawUpcoming(up, players, config)
+    const out = redrawUpcoming(up, players, config, pairs)
     if (!out.ok) return toast(out.error, 'error')
     setDraw(out.draw)
     setRevealing(true)

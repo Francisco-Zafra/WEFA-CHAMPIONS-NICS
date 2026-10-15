@@ -142,6 +142,9 @@ export function SquadPage({ players }: { players: Collection<Player> }) {
             ) : (
               <PlayerCard player={p} off={!p.active} size={desktop ? 11 : 10} />
             )}
+            <Link to={`/jugador/${p.id}`} className="small -mt-1 text-xs underline-offset-2 hover:underline">
+              Ver ficha
+            </Link>
             <Switch
               checked={p.active}
               disabled={!isAdmin}
