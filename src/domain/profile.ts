@@ -1,10 +1,8 @@
-import { isPlayed, type Outcome } from './standings'
+import { isPlayed, resultFor, type Outcome } from './standings'
 import type { ClubId, Match } from './types'
 
 /** Partidos mínimos juntos / enfrentados para que una relación cuente como «mejor» o «peor» */
 export const MIN_GAMES = 2
-
-const outcome = (gf: number, ga: number): Outcome => (gf > ga ? 'W' : gf < ga ? 'L' : 'D')
 
 export interface PlayerGame {
   match: Match
@@ -20,7 +18,7 @@ export interface PlayerGame {
   mvp: boolean
 }
 
-/** Partidos jugados (amistosos con resultado) del jugador, del más antiguo al más reciente */
+/** Partidos jugados (con resultado) del jugador, del más antiguo al más reciente */
 export function gamesOf(matches: Match[], playerId: string): PlayerGame[] {
   const out: PlayerGame[] = []
   const sorted = matches
@@ -36,7 +34,7 @@ export function gamesOf(matches: Match[], playerId: string): PlayerGame[] {
       match: m,
       club: inA ? m.clubA : m.clubB,
       rivalClub: inA ? m.clubB : m.clubA,
-      outcome: outcome(gf, ga),
+      outcome: resultFor(m, inA ? 'A' : 'B'),
       goalsFor: gf,
       goalsAgainst: ga,
       mates: mine.filter((p) => p.id !== playerId).map(({ id, name }) => ({ id, name })),
@@ -183,7 +181,7 @@ export interface Rivalry {
   lastScore: [number, number]
 }
 
-/** Historial cara a cara entre clubes (solo amistosos con resultado), los más disputados primero */
+/** Historial cara a cara entre clubes (partidos con resultado), los más disputados primero */
 export function rivalries(matches: Match[]): Rivalry[] {
   const map = new Map<string, Rivalry>()
   const sorted = matches
@@ -209,8 +207,9 @@ export function rivalries(matches: Match[]): Rivalry[] {
     r.played++
     r.goalsA += ga
     r.goalsB += gb
-    if (ga > gb) r.winsA++
-    else if (gb > ga) r.winsB++
+    const o = resultFor(m, swap ? 'B' : 'A')
+    if (o === 'W') r.winsA++
+    else if (o === 'L') r.winsB++
     else r.drawn++
     r.lastDate = m.date
     r.lastScore = [ga, gb]

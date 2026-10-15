@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   champion,
   clearResult,
+  cupMatches,
   cupStatus,
   emptyTie,
   feeders,
@@ -133,5 +134,23 @@ describe('progreso', () => {
     expect(runnerUp(c)).toBe('avispas')
     expect(nextPending(c)).toBeNull()
     expect(titles([c, cup()]).get('tiburones')).toBe(1)
+  })
+})
+
+describe('cupMatches', () => {
+  it('convierte los cruces jugados en partidos con desempate', () => {
+    let c = cup()
+    c = play(c, 0, 1, 1, 'jabalies')
+    c = play(c, 1, 3, 0)
+    const ms = cupMatches([c])
+    expect(ms).toHaveLength(2)
+    expect(ms[0]).toMatchObject({
+      clubA: 'avispas',
+      clubB: 'jabalies',
+      scoreA: 1,
+      scoreB: 1,
+      winner: 'jabalies',
+    })
+    expect(ms[0]!.cup).toMatchObject({ name: 'Copa', label: 'Cuartos 1' })
   })
 })

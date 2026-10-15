@@ -1,6 +1,6 @@
 import { CLUBS } from './clubs'
 import { shuffle, type Rng } from './rng'
-import type { ClubId, MatchPlayer } from './types'
+import type { ClubId, Match, MatchPlayer } from './types'
 
 /**
  * Copa eliminatoria de 8 clubes: 7 cruces.
@@ -178,6 +178,39 @@ function resetDownstream(ties: CupTie[], tie: number) {
 }
 
 /** Títulos por club en las copas terminadas */
+/**
+ * Cruces jugados de todas las copas convertidos en partidos, para contarlos en estadísticas,
+ * fichas y duelos junto a los amistosos (los cruces sin equipos guardados solo cuentan para clubes)
+ */
+export function cupMatches(cups: Cup[]): Match[] {
+  const out: Match[] = []
+  for (const cup of cups)
+    cup.ties.forEach((t, i) => {
+      if (!t.winner || t.scoreA === null || t.scoreB === null) return
+      const [a, b] = participants(cup, i)
+      if (!a || !b) return
+      out.push({
+        id: `${cup.id}:${i}`,
+        date: t.date ?? '',
+        time: t.time,
+        place: t.place,
+        createdAt: cup.createdAt + i,
+        clubA: a,
+        clubB: b,
+        captainA: t.captainA,
+        captainB: t.captainB,
+        teamA: t.teamA,
+        teamB: t.teamB,
+        scoreA: t.scoreA,
+        scoreB: t.scoreB,
+        mvp: null,
+        winner: t.winner,
+        cup: { id: cup.id, name: cup.name, label: tieLabel(i) },
+      })
+    })
+  return out
+}
+
 export function titles(cups: Cup[]): Map<ClubId, number> {
   const out = new Map<ClubId, number>()
   for (const c of cups) {

@@ -82,6 +82,10 @@ export interface Match {
   resultAt?: number | null
   /** El admin cerró la votación antes de las 72 h */
   votingClosed?: boolean
+  /** Solo en cruces de copa: quién pasó (decide los empates) */
+  winner?: ClubId | null
+  /** Solo en cruces de copa: de qué copa y ronda es */
+  cup?: { id: string; name: string; label: string }
 }
 
 export type MatchInput = Omit<Match, 'id' | 'createdAt'>

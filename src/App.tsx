@@ -11,6 +11,7 @@ import { pairHistory } from '@/domain/variety'
 import { DrawHistoryContext } from '@/lib/drawHistory'
 import { useCups, useMatches, usePlayers, useVotes } from '@/lib/data'
 import { withResolvedMvp } from '@/domain/votes'
+import { cupMatches } from '@/domain/cup'
 import { VotesContext, useClock } from '@/lib/votesContext'
 import { DrawProvider, useDraw } from '@/lib/draw'
 import { wasWelcomed } from '@/lib/welcome'
@@ -35,6 +36,11 @@ function Routed() {
   const resolvedMatches = useMemo(
     () => ({ ...matches, data: withResolvedMvp(matches.data, votes.data, clock) }),
     [matches, votes.data, clock],
+  )
+  // Para estadísticas, fichas y duelos: amistosos + cruces de copa jugados
+  const statsMatches = useMemo(
+    () => ({ ...resolvedMatches, data: [...resolvedMatches.data, ...cupMatches(cups.data)] }),
+    [resolvedMatches, cups.data],
   )
   const defaultPlace = useMemo(() => lastPlace(matches.data, cups.data), [matches.data, cups.data])
   const pairs = useMemo(() => pairHistory(matches.data, cups.data), [matches.data, cups.data])
@@ -78,11 +84,11 @@ function Routed() {
                   <Route path="/copa/:id" element={<CupDetailPage cups={cups} />} />
                   <Route
                     path="/historial"
-                    element={<HistoryPage matches={resolvedMatches} players={players} />}
+                    element={<HistoryPage matches={resolvedMatches} stats={statsMatches} players={players} />}
                   />
                   <Route
                     path="/jugador/:id"
-                    element={<PlayerProfilePage players={players} matches={resolvedMatches} />}
+                    element={<PlayerProfilePage players={players} matches={statsMatches} />}
                   />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

@@ -24,9 +24,13 @@ const dayMonth = (iso: string) =>
 
 export function HistoryPage({
   matches,
+  stats,
   players,
 }: {
+  /** Amistosos (lista de partidos) */
   matches: Collection<Match>
+  /** Amistosos + cruces de copa jugados (clasificación, ranking y duelos) */
+  stats: Collection<Match>
   players: Collection<Player>
 }) {
   const [tab, setTab] = useState<Tab>('matches')
@@ -48,9 +52,9 @@ export function HistoryPage({
       </ErrorState>
     )
   else if (tab === 'matches') content = <MatchList matches={matches.data} players={players.data} />
-  else if (tab === 'clubs') content = <ClubTable matches={matches.data} />
-  else if (tab === 'duels') content = <DuelList matches={matches.data} />
-  else content = <PlayerTable matches={matches.data} players={players.data} />
+  else if (tab === 'clubs') content = <ClubTable matches={stats.data} />
+  else if (tab === 'duels') content = <DuelList matches={stats.data} />
+  else content = <PlayerTable matches={stats.data} players={players.data} />
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
@@ -423,7 +427,10 @@ function ClubTable({ matches }: { matches: Match[] }) {
           </tbody>
         </table>
       </div>
-      <p className="small text-[11px]">Empate a puntos: decide la diferencia de goles.</p>
+      <p className="small text-[11px]">
+        Cuentan amistosos y copa (en copa, el empate lo gana quien pasó). Empate a puntos: decide la
+        diferencia de goles.
+      </p>
     </section>
   )
 }
@@ -537,7 +544,7 @@ function DuelList({ matches }: { matches: Match[] }) {
     <section className="flex flex-col gap-2.5">
       <div className="flex items-baseline justify-between">
         <h2 className="h-display h-m">Cara a cara</h2>
-        <span className="small text-xs">Solo amistosos</span>
+        <span className="small text-xs">Amistosos y copa</span>
       </div>
       {rows.map((r) => {
         const a = getClub(r.a)

@@ -75,8 +75,8 @@ export function PlayerProfilePage({
             <div className="glass p-5">
               <h2 className="h-display h-m">Sin partidos todavía</h2>
               <p className="small mt-1">
-                Cuando juegue algún amistoso con resultado aparecerán aquí sus estadísticas, con quién gana
-                más y contra quién sufre.
+                Cuando juegue algún partido con resultado aparecerán aquí sus estadísticas, con quién gana más
+                y contra quién sufre.
               </p>
             </div>
           ) : (
@@ -192,6 +192,11 @@ export function PlayerProfilePage({
                         <Star className="size-3 text-[var(--warn)]" fill="currentColor" aria-label="MVP" />
                       )}
                     </span>
+                    {g.match.cup && (
+                      <span className="text-[10px] font-semibold text-[var(--muted)]">
+                        {g.match.cup.name} · {g.match.cup.label}
+                      </span>
+                    )}
                   </div>
                   <div className={cx('side flex-row-reverse text-right', g.outcome === 'W' && 'lose')}>
                     <Crest club={rival.id} size={32} />
