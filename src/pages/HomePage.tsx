@@ -360,72 +360,75 @@ function Upcoming({
           )}
         </div>
 
-        <section className="glass flex flex-col gap-2 px-4 py-3.5 lg:flex-[1_1_260px] lg:justify-center lg:rounded-[18px]">
-          <div className="flex items-center justify-between">
-            <span className="label">Equilibrio del sorteo</span>
-            <span className="text-[13px] font-bold text-[var(--ok)]">
-              {balancePct(diff)} % · Δ {fmt(diff)}
-            </span>
-          </div>
-          <div className="vs-bar" aria-hidden>
-            <div
-              style={{
-                flex: ratingA,
-                background: `linear-gradient(90deg, ${a.deep}, ${a.primary})`,
-                boxShadow: `0 0 12px ${a.primary}99`,
-              }}
-            />
-            <div
-              style={{
-                flex: ratingB,
-                background: `linear-gradient(90deg, ${b.primary}, ${b.deep})`,
-                boxShadow: `0 0 12px ${b.primary}99`,
-              }}
-            />
-          </div>
-          <div className="small flex justify-between gap-2 text-xs">
-            {duel ? (
-              <>
-                <span>
-                  Último duelo:{' '}
-                  <strong className="text-[var(--ink)]">
-                    {duel.goalsA === duel.goalsB
-                      ? `Empate ${duel.goalsA}–${duel.goalsB}`
-                      : `${(duel.goalsA > duel.goalsB ? a : b).short} ${Math.max(duel.goalsA, duel.goalsB)}–${Math.min(duel.goalsA, duel.goalsB)}`}
-                  </strong>
-                </span>
-                <span>{shortDate(duel.date)}</span>
-              </>
-            ) : (
-              <span>
-                Primer duelo entre {a.short} y {b.short}
+        {/* En escritorio: equilibrio, pizarra y acciones apilados en una columna */}
+        <div className="flex flex-col gap-4 lg:flex-[1_1_300px] lg:justify-end lg:gap-2.5">
+          <section className="glass flex flex-col gap-2 px-4 py-3.5 lg:gap-1.5 lg:rounded-[18px] lg:px-3.5 lg:py-2.5">
+            <div className="flex items-center justify-between">
+              <span className="label">Equilibrio del sorteo</span>
+              <span className="text-[13px] font-bold text-[var(--ok)]">
+                {balancePct(diff)} % · Δ {fmt(diff)}
               </span>
-            )}
-          </div>
-        </section>
+            </div>
+            <div className="vs-bar" aria-hidden>
+              <div
+                style={{
+                  flex: ratingA,
+                  background: `linear-gradient(90deg, ${a.deep}, ${a.primary})`,
+                  boxShadow: `0 0 12px ${a.primary}99`,
+                }}
+              />
+              <div
+                style={{
+                  flex: ratingB,
+                  background: `linear-gradient(90deg, ${b.primary}, ${b.deep})`,
+                  boxShadow: `0 0 12px ${b.primary}99`,
+                }}
+              />
+            </div>
+            <div className="small flex justify-between gap-2 text-xs">
+              {duel ? (
+                <>
+                  <span>
+                    Último duelo:{' '}
+                    <strong className="text-[var(--ink)]">
+                      {duel.goalsA === duel.goalsB
+                        ? `Empate ${duel.goalsA}–${duel.goalsB}`
+                        : `${(duel.goalsA > duel.goalsB ? a : b).short} ${Math.max(duel.goalsA, duel.goalsB)}–${Math.min(duel.goalsA, duel.goalsB)}`}
+                    </strong>
+                  </span>
+                  <span>{shortDate(duel.date)}</span>
+                </>
+              ) : (
+                <span>
+                  Primer duelo entre {a.short} y {b.short}
+                </span>
+              )}
+            </div>
+          </section>
 
-        <div className="flex flex-col gap-2.5 lg:flex-[1_1_220px] lg:justify-end">
-          <button
-            className="btn btn--hero h-[66px] text-[32px] lg:h-[72px]"
-            type="button"
-            onClick={openPizarra}
-          >
-            Ver pizarra
-          </button>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="flex flex-col gap-2.5">
             <button
-              className={`btn btn--glass ${isAdmin ? '' : 'col-span-2'}`}
+              className="btn btn--hero h-[66px] text-[32px] lg:h-[72px]"
               type="button"
-              onClick={() => void share()}
-              disabled={sharing}
+              onClick={openPizarra}
             >
-              {sharing ? <span className="spinner" /> : <Share2 />} Compartir
+              Ver pizarra
             </button>
-            {isAdmin && (
-              <button className="btn btn--glass" type="button" onClick={redo}>
-                <Shuffle /> {desktop ? 'Rehacer' : 'Rehacer sorteo'}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                className={`btn btn--glass ${isAdmin ? '' : 'col-span-2'}`}
+                type="button"
+                onClick={() => void share()}
+                disabled={sharing}
+              >
+                {sharing ? <span className="spinner" /> : <Share2 />} Compartir
               </button>
-            )}
+              {isAdmin && (
+                <button className="btn btn--glass" type="button" onClick={redo}>
+                  <Shuffle /> {desktop ? 'Rehacer' : 'Rehacer sorteo'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
