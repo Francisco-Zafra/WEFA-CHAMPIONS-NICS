@@ -10,6 +10,7 @@ import {
   nextPending,
   nextTie,
   participants,
+  reseed,
   runnerUp,
   setResult,
   titles,
@@ -152,5 +153,58 @@ describe('cupMatches', () => {
       winner: 'jabalies',
     })
     expect(ms[0]!.cup).toMatchObject({ name: 'Copa', label: 'Cuartos 1' })
+  })
+})
+
+describe('reseed', () => {
+  const swap = (seeds: ClubId[], i: number, j: number) => {
+    const out = [...seeds]
+    ;[out[i], out[j]] = [out[j]!, out[i]!]
+    return out
+  }
+  // Cuartos 1 jugado (avispas 2–1 jabalíes), cuartos 2 jugado y semis 1 jugada
+  const base = () => {
+    let c = cup()
+    c = play(c, 0, 2, 1)
+    c = play(c, 1, 0, 3)
+    c = play(c, 4, 1, 0)
+    c.ties[3] = { ...c.ties[3]!, date: '2026-11-05', teamA: [{ id: 'x', name: 'X', rating: 80 }] }
+    return c
+  }
+
+  it('sin cambios lo conserva todo', () => {
+    const c = base()
+    const r = reseed(c, c.seeds)
+    expect(r).toMatchObject({ lostResults: 0, lostTeams: 0 })
+    expect(r.ties).toEqual(c.ties)
+  })
+
+  it('dar la vuelta a un cruce invierte su resultado pero no lo pierde', () => {
+    const c = base()
+    const r = reseed(c, swap(c.seeds, 0, 1))
+    expect(r.lostResults).toBe(0)
+    expect(r.ties[0]).toMatchObject({ scoreA: 1, scoreB: 2, winner: 'avispas' })
+    expect(participants({ seeds: swap(c.seeds, 0, 1), ties: r.ties }, 4)).toEqual(['avispas', 'beetles'])
+  })
+
+  it('mover un cruce de sitio se lleva su resultado, sus equipos y su fecha', () => {
+    const c = base()
+    // Cuartos 2 (pinguinardos–beetles) ↔ cuartos 4 (flamingo–patos)
+    const seeds = swap(swap(c.seeds, 2, 6), 3, 7)
+    const r = reseed(c, seeds)
+    expect(r.ties[3]).toMatchObject({ scoreA: 0, scoreB: 3, winner: 'beetles' })
+    expect(r.ties[1]).toMatchObject({ winner: null, date: '2026-11-05', teamA: [{ id: 'x' }] })
+    // Semis 1 cambia de participantes: se pierde su resultado
+    expect(r.ties[4]!.winner).toBeNull()
+    expect(r).toMatchObject({ lostResults: 1, lostTeams: 0 })
+  })
+
+  it('cambiar un club de cruce borra ese resultado y lo que dependía de él', () => {
+    const c = base()
+    const r = reseed(c, swap(c.seeds, 0, 7))
+    expect(r.ties[0]!.winner).toBeNull()
+    expect(r.ties[4]!.winner).toBeNull()
+    expect(r.ties[1]!.winner).toBe('beetles')
+    expect(r.lostResults).toBe(2)
   })
 })

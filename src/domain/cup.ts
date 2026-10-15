@@ -177,7 +177,58 @@ function resetDownstream(ties: CupTie[], tie: number) {
   }
 }
 
-/** Títulos por club en las copas terminadas */
+/** Da la vuelta a un cruce: el equipo A pasa a ser el B (resultado, equipos y capitanes) */
+const flipTie = (t: CupTie): CupTie => ({
+  ...t,
+  scoreA: t.scoreB,
+  scoreB: t.scoreA,
+  teamA: t.teamB,
+  teamB: t.teamA,
+  captainA: t.captainB,
+  captainB: t.captainA,
+})
+
+export interface Reseed {
+  ties: CupTie[]
+  /** Cruces jugados cuyo resultado se pierde */
+  lostResults: number
+  /** Cruces sin jugar cuyos equipos sorteados se pierden */
+  lostTeams: number
+}
+
+/**
+ * Rehace el cuadro con otro orden de clubes. Cada cruce conserva su resultado y sus equipos si
+ * sigue enfrentando a los mismos dos clubes en la misma ronda (dándoles la vuelta si cambian de
+ * lado), con su fecha incluida; si no, se vacía, y con él lo que dependía de su ganador.
+ */
+export function reseed(cup: Pick<Cup, 'seeds' | 'ties'>, seeds: ClubId[]): Reseed {
+  const ties: CupTie[] = []
+  const next = { seeds, ties }
+  const used = new Set<number>()
+  for (let i = 0; i < TIE_COUNT; i++) {
+    const [a, b] = participants(next, i)
+    let tie = emptyTie()
+    if (a && b)
+      for (const j of roundOf(i).ties) {
+        const [oa, ob] = participants(cup, j)
+        const same = oa === a && ob === b
+        if (!same && !(oa === b && ob === a)) continue
+        tie = same ? { ...cup.ties[j]! } : flipTie(cup.ties[j]!)
+        used.add(j)
+        break
+      }
+    ties.push(tie)
+  }
+  let lostResults = 0
+  let lostTeams = 0
+  cup.ties.forEach((t, i) => {
+    if (used.has(i)) return
+    if (t.winner) lostResults++
+    else if (t.teamA.length > 0) lostTeams++
+  })
+  return { ties, lostResults, lostTeams }
+}
+
 /**
  * Cruces jugados de todas las copas convertidos en partidos, para contarlos en estadísticas,
  * fichas y duelos junto a los amistosos (los cruces sin equipos guardados solo cuentan para clubes)
@@ -211,6 +262,7 @@ export function cupMatches(cups: Cup[]): Match[] {
   return out
 }
 
+/** Títulos por club en las copas terminadas */
 export function titles(cups: Cup[]): Map<ClubId, number> {
   const out = new Map<ClubId, number>()
   for (const c of cups) {

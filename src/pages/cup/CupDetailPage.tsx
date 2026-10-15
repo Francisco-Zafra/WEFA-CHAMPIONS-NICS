@@ -1,15 +1,15 @@
-import { ChevronLeft, Shuffle, Trash2 } from 'lucide-react'
+import { ChevronLeft, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { getClub } from '@/domain/clubs'
-import { champion, cupStatus, drawSeeds, playedTies, TIE_COUNT, type Cup } from '@/domain/cup'
-import { createRng, randomSeed } from '@/domain/rng'
+import { champion, cupStatus, playedTies, TIE_COUNT, type Cup } from '@/domain/cup'
 import { useStartCupDraw } from '@/hooks/useStartCupDraw'
 import { useAuth } from '@/lib/auth'
-import { deleteCup, updateCup, type Collection } from '@/lib/data'
+import { deleteCup, type Collection } from '@/lib/data'
 import { Bracket } from './Bracket'
+import { CupEditor } from './CupEditor'
 import { TieSheet } from './TieSheet'
 
 export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
@@ -20,6 +20,7 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
   const startDraw = useStartCupDraw()
   const [open, setOpen] = useState<number | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [editing, setEditing] = useState(false)
   const cup = cups.data.find((c) => c.id === id)
 
   if (cups.loading) return <div className="skel h-[400px] rounded-[20px]" aria-busy="true" />
@@ -40,15 +41,6 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
   const status = cupStatus(cup)
   const win = champion(cup)
   const played = playedTies(cup)
-
-  async function reshuffle() {
-    try {
-      await updateCup(cup!.id, { seeds: drawSeeds(createRng(randomSeed())) })
-      toast('Cuadro sorteado de nuevo')
-    } catch {
-      toast('No se pudo sortear', 'error')
-    }
-  }
 
   async function remove() {
     try {
@@ -78,9 +70,9 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
             <h1 className="h-display h-xl mt-1 truncate lg:text-[64px]">{cup.name}</h1>
           </div>
         </div>
-        {isAdmin && status === 'draft' && (
-          <button className="btn btn--glass" type="button" onClick={() => void reshuffle()}>
-            <Shuffle /> Volver a sortear el cuadro
+        {isAdmin && (
+          <button className="btn btn--glass" type="button" onClick={() => setEditing(true)}>
+            <Pencil /> Editar copa
           </button>
         )}
       </div>
@@ -104,6 +96,8 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
           )}
         </div>
       )}
+
+      {isAdmin && <CupEditor cup={cup} open={editing} onClose={() => setEditing(false)} />}
 
       <TieSheet
         cup={cup}
