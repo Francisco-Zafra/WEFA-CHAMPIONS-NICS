@@ -17,8 +17,10 @@ import { cx } from '@/lib/cx'
 import { deleteMatch, deleteVotesOf, updateMatch, type Collection } from '@/lib/data'
 import { rivalries } from '@/domain/profile'
 import { useVoteData } from '@/lib/votesContext'
+import { PlayerDuel } from './history/PlayerDuel'
+import { RecordsView } from './history/Records'
 
-type Tab = 'matches' | 'clubs' | 'players' | 'duels'
+type Tab = 'matches' | 'clubs' | 'players' | 'duels' | 'records'
 
 const dayMonth = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
@@ -54,7 +56,8 @@ export function HistoryPage({
     )
   else if (tab === 'matches') content = <MatchList matches={matches.data} players={players.data} />
   else if (tab === 'clubs') content = <ClubTable matches={stats.data} />
-  else if (tab === 'duels') content = <DuelList matches={stats.data} />
+  else if (tab === 'duels') content = <DuelList matches={stats.data} players={players.data} />
+  else if (tab === 'records') content = <RecordsView matches={stats.data} players={players.data} />
   else content = <PlayerTable matches={stats.data} players={players.data} />
 
   return (
@@ -69,6 +72,7 @@ export function HistoryPage({
           { value: 'clubs', label: 'Clubes' },
           { value: 'players', label: 'Jugadores' },
           { value: 'duels', label: 'Duelos' },
+          { value: 'records', label: 'Récords' },
         ]}
       />
       {content}
@@ -534,18 +538,19 @@ function PlayerTable({ matches, players }: { matches: Match[]; players: Player[]
 
 // ---------- Duelos entre clubes ----------
 
-function DuelList({ matches }: { matches: Match[] }) {
+function DuelList({ matches, players }: { matches: Match[]; players: Player[] }) {
   const rows = useMemo(() => rivalries(matches), [matches])
   if (rows.length === 0)
     return (
       <EmptyCards title="Sin duelos todavía">
-        Cuando se jueguen amistosos con resultado, aquí verás el cara a cara entre cada pareja de clubes.
+        Cuando se jueguen partidos con resultado, aquí verás el cara a cara entre clubes y entre jugadores.
       </EmptyCards>
     )
   return (
     <section className="flex flex-col gap-2.5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="h-display h-m">Cara a cara</h2>
+      <PlayerDuel matches={matches} players={players} />
+      <div className="mt-2.5 flex items-baseline justify-between">
+        <h2 className="h-display h-m">Clubes cara a cara</h2>
         <span className="small text-xs">Amistosos y copa</span>
       </div>
       {rows.map((r) => {

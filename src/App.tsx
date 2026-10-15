@@ -71,7 +71,7 @@ function Routed() {
               <Layout>
                 <Routes>
                   <Route path="/" element={<HomePage players={players} matches={matches} cups={cups} />} />
-                  <Route path="/plantilla" element={<SquadPage players={players} />} />
+                  <Route path="/plantilla" element={<SquadPage players={players} matches={statsMatches} />} />
                   <Route
                     path="/sorteo"
                     element={<DrawPage players={players} captainDefaults={captainDefaults} />}

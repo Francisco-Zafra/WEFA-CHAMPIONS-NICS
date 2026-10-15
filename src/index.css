@@ -740,9 +740,15 @@
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--line);
+    /* Con muchas opciones en móvil, se desplaza en vez de desbordar */
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .seg::-webkit-scrollbar {
+    display: none;
   }
   .seg button {
-    flex: 1;
+    flex: 1 0 auto;
     appearance: none;
     border: 0;
     height: 36px;
@@ -751,7 +757,7 @@
     color: var(--muted);
     font: 600 13px var(--sans);
     cursor: pointer;
-    padding: 0 10px;
+    padding: 0 8px;
     white-space: nowrap;
   }
   .seg button[aria-pressed='true'] {

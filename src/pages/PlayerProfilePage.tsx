@@ -1,4 +1,4 @@
-import { ChevronLeft, Flame, Star } from 'lucide-react'
+import { ChevronLeft, Flame, Sparkles, Star } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
@@ -6,7 +6,8 @@ import { PlayerCard } from '@/components/PlayerCard'
 import { EmptyCards } from '@/components/States'
 import { Crest } from '@/components/ui'
 import { getClub } from '@/domain/clubs'
-import { playerProfile, type Relation } from '@/domain/profile'
+import { talisman, timeline, type TimelinePoint } from '@/domain/insights'
+import { gamesOf, playerProfile, type Relation } from '@/domain/profile'
 import type { Outcome } from '@/domain/standings'
 import type { Match, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
@@ -31,6 +32,9 @@ export function PlayerProfilePage({
   const { id } = useParams()
   const player = players.data.find((p) => p.id === id)
   const profile = useMemo(() => (id ? playerProfile(matches.data, id) : null), [matches.data, id])
+  const games = useMemo(() => (id ? gamesOf(matches.data, id) : []), [matches.data, id])
+  const points = useMemo(() => timeline(games), [games])
+  const lucky = useMemo(() => talisman(games), [games])
 
   if (players.loading || matches.loading)
     return <div className="skel h-[420px] rounded-[24px]" aria-busy="true" />
@@ -118,6 +122,7 @@ export function PlayerProfilePage({
                   </span>
                 )}
               </div>
+              {points.length >= 2 && <Evolution points={points} />}
             </>
           )}
         </div>
@@ -157,12 +162,20 @@ export function PlayerProfilePage({
             <h2 className="h-display h-m">Sus clubes</h2>
             <div className="flex flex-wrap gap-2.5">
               {profile.clubs.map((c) => (
-                <span key={c.club} className="pill h-auto gap-2 py-1.5 pr-3 pl-1.5">
+                <span
+                  key={c.club}
+                  className={cx('pill h-auto gap-2 py-1.5 pr-3 pl-1.5', c.club === lucky && 'pill--on')}
+                >
                   <Crest club={c.club} size={26} style={{ borderRadius: 8 }} />
                   <span className="text-[13px]">{getClub(c.club).short}</span>
                   <span className="text-[var(--muted)]">
                     {c.won}/{c.played}
                   </span>
+                  {c.club === lucky && (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--warn)]">
+                      <Sparkles className="size-3.5" /> Talismán
+                    </span>
+                  )}
                 </span>
               ))}
             </div>
@@ -284,6 +297,88 @@ function RelationBox({
           )
         })
       )}
+    </section>
+  )
+}
+
+const OUTCOME_COLOR: Record<Outcome, string> = { W: '#3BE3A0', D: '#9AA6C7', L: '#FF8A96' }
+
+/** % de victorias acumulado partido a partido */
+function Evolution({ points }: { points: TimelinePoint[] }) {
+  const last = points[points.length - 1]!
+  const prev = points[Math.max(0, points.length - 6)]!
+  const trend = last.winRate - prev.winRate
+  const x = (i: number) => (points.length === 1 ? 50 : (i / (points.length - 1)) * 100)
+  const y = (r: number) => (1 - r) * 100
+  const line = points.map((p, i) => `${x(i)},${y(p.winRate)}`).join(' ')
+  return (
+    <section className="glass flex flex-col gap-2 px-4 py-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="label">Evolución · % de victorias</span>
+        {Math.abs(trend) >= 0.05 && (
+          <span className={cx('text-xs font-bold', trend > 0 ? 'text-[var(--ok)]' : 'text-[#FF8A96]')}>
+            {trend > 0 ? 'A mejor' : 'A peor'} en los últimos partidos
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <div className="small flex flex-col justify-between py-0.5 text-[10px] tabular-nums" aria-hidden>
+          <span>100</span>
+          <span>50</span>
+          <span>0</span>
+        </div>
+        <div
+          className="relative h-[110px] flex-1"
+          role="img"
+          aria-label={`Porcentaje de victorias: empezó en ${Math.round(points[0]!.winRate * 100)} % y va por ${Math.round(last.winRate * 100)} %`}
+        >
+          <svg
+            className="absolute inset-0 size-full overflow-visible"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="evo-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="var(--club)" stopOpacity=".35" />
+                <stop offset="1" stopColor="var(--club)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <line
+              x1="0"
+              x2="100"
+              y1="50"
+              y2="50"
+              stroke="var(--line-2)"
+              strokeDasharray="3 3"
+              vectorEffect="non-scaling-stroke"
+            />
+            <polygon points={`0,100 ${line} 100,100`} fill="url(#evo-fill)" />
+            <polyline
+              points={line}
+              fill="none"
+              stroke="var(--club)"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          {points.map((p, i) => (
+            <span
+              key={i}
+              className="absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--night-900)]"
+              style={{ left: `${x(i)}%`, top: `${y(p.winRate)}%`, background: OUTCOME_COLOR[p.outcome] }}
+              title={`${dayMonth(p.date)} · ${FORM[p.outcome].t} · ${Math.round(p.winRate * 100)} %`}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="small flex justify-between pl-7 text-[10px]">
+        <span>{dayMonth(points[0]!.date)}</span>
+        <span>
+          {points.length} partidos · ahora {Math.round(last.winRate * 100)} %
+        </span>
+        <span>{dayMonth(last.date)}</span>
+      </div>
     </section>
   )
 }
