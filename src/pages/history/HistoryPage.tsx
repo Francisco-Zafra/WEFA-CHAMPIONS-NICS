@@ -17,8 +17,8 @@ import { cx } from '@/lib/cx'
 import { deleteMatch, deleteVotesOf, updateMatch, type Collection } from '@/lib/data'
 import { rivalries } from '@/domain/profile'
 import { useVoteData } from '@/lib/votesContext'
-import { PlayerDuel } from './history/PlayerDuel'
-import { RecordsView } from './history/Records'
+import { PlayerDuel } from './PlayerDuel'
+import { RecordsView } from './Records'
 
 type Tab = 'matches' | 'clubs' | 'players' | 'duels' | 'records'
 
