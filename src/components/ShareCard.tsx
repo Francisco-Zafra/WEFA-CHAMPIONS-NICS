@@ -1,6 +1,7 @@
 import type { Ref } from 'react'
 import { getClub } from '@/domain/clubs'
 import { fmt } from '@/domain/rating'
+import { Kit } from './Kit'
 import { Pitch, type PitchTeam } from './Pitch'
 import { Crest, CrestGhost, ShieldMark } from './ui'
 
@@ -62,19 +63,21 @@ export function ShareCard({
           />
           <div className="flex w-[520px] flex-col items-center">
             <span
-              className="h-display"
+              className="h-display flex items-center gap-4"
               style={{ fontSize: 78, color: a.primary, textShadow: `0 0 30px ${a.primary}99` }}
             >
               {a.name}
+              <Kit side="A" className="size-[46px]" />
             </span>
             <span className="h-display" style={{ fontSize: 40, color: 'var(--muted)' }}>
               vs
             </span>
             <span
-              className="h-display"
+              className="h-display flex items-center gap-4"
               style={{ fontSize: 78, color: b.primary, textShadow: `0 0 30px ${b.primary}99` }}
             >
               {b.name}
+              <Kit side="B" className="size-[46px]" />
             </span>
           </div>
           <Crest

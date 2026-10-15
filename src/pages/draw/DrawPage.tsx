@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom'
 import { CardSkeletons, EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Crest, CrestGhost, Seg, Switch } from '@/components/ui'
+import { Kit } from '@/components/Kit'
 import type { PlayerPair } from '@/domain/balance'
 import { resolveCaptains } from '@/domain/captains'
 import { roundOf, tieLabel } from '@/domain/cup'
@@ -320,7 +321,8 @@ function StepClubs({
           club={id}
           style={{ width: 200, height: 200, top: -40, [side === 'A' ? 'left' : 'right']: -30 }}
         />
-        <span className="eyebrow" style={{ color: 'var(--club)' }}>
+        <span className="eyebrow flex items-center gap-1.5" style={{ color: 'var(--club)' }}>
+          <Kit side={side} className="size-3.5" />
           Equipo {side} · {side === 'A' ? 'arriba' : 'abajo'}
         </span>
         <Crest club={id} size={92} />

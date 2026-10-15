@@ -7,6 +7,7 @@ import { PlayerCard } from '@/components/PlayerCard'
 import { ShareCard } from '@/components/ShareCard'
 import { Sheet } from '@/components/Sheet'
 import { EmptyCards } from '@/components/States'
+import { Kit } from '@/components/Kit'
 import { useToast } from '@/components/Toast'
 import { CrestGhost } from '@/components/ui'
 import { avatarUrl } from '@/domain/avatars'
@@ -209,7 +210,13 @@ function Upcoming({
     }
   }
 
-  const teamName = (club: Club, rating: number, captain: string | null, align: 'left' | 'right') => (
+  const teamName = (
+    club: Club,
+    side: 'A' | 'B',
+    rating: number,
+    captain: string | null,
+    align: 'left' | 'right',
+  ) => (
     <div style={{ textAlign: align }} className="min-w-0">
       <div
         className="h-display text-[28px] lg:text-[64px]"
@@ -218,6 +225,7 @@ function Upcoming({
         {club.name}
       </div>
       <div className="text-xs font-semibold text-white/85 lg:text-[15px]">
+        <Kit side={side} className="mr-1 inline size-3.5 align-[-2px] lg:size-4" />
         {capName(captain) && (
           <>
             Capitán {capName(captain)}{' '}
@@ -284,16 +292,16 @@ function Upcoming({
           </h1>
           {desktop ? (
             <div className="mt-7 grid w-full grid-cols-[minmax(0,1fr)_auto_auto_auto_minmax(0,1fr)] items-center gap-7">
-              {teamName(a, ratingA, up.captainA, 'right')}
+              {teamName(a, 'A', ratingA, up.captainA, 'right')}
               {crests}
-              {teamName(b, ratingB, up.captainB, 'left')}
+              {teamName(b, 'B', ratingB, up.captainB, 'left')}
             </div>
           ) : (
             <>
               <div className="mt-7 flex items-center gap-1.5">{crests}</div>
               <div className="mt-[22px] grid w-full grid-cols-2 gap-3">
-                {teamName(a, ratingA, up.captainA, 'left')}
-                {teamName(b, ratingB, up.captainB, 'right')}
+                {teamName(a, 'A', ratingA, up.captainA, 'left')}
+                {teamName(b, 'B', ratingB, up.captainB, 'right')}
               </div>
             </>
           )}
@@ -436,8 +444,8 @@ function Upcoming({
       {/* ALINEACIONES */}
       {desktop ? (
         <>
-          <TeamCards club={a} players={teamA} captain={up.captainA} rating={ratingA} />
-          <TeamCards club={b} players={teamB} captain={up.captainB} rating={ratingB} />
+          <TeamCards club={a} side="A" players={teamA} captain={up.captainA} rating={ratingA} />
+          <TeamCards club={b} side="B" players={teamB} captain={up.captainB} rating={ratingB} />
         </>
       ) : (
         <section className="flex flex-col gap-3 pt-1">
@@ -448,8 +456,8 @@ function Upcoming({
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
-            <Roster club={a} players={teamA} captain={up.captainA} />
-            <Roster club={b} players={teamB} captain={up.captainB} />
+            <Roster club={a} side="A" players={teamA} captain={up.captainA} />
+            <Roster club={b} side="B" players={teamB} captain={up.captainB} />
           </div>
         </section>
       )}
@@ -471,13 +479,27 @@ function Upcoming({
   )
 }
 
-function Roster({ club, players, captain }: { club: Club; players: Player[]; captain: string | null }) {
+function Roster({
+  club,
+  side,
+  players,
+  captain,
+}: {
+  club: Club
+  side: 'A' | 'B'
+  players: Player[]
+  captain: string | null
+}) {
   const sorted = captainFirst(
     [...players].sort((x, y) => y.rating - x.rating),
     captain,
   )
   return (
     <div className={`club-${club.id} flex flex-col gap-1.5`}>
+      <div className="flex items-center gap-1.5 px-1 text-xs font-semibold text-[var(--ink-2)]">
+        <Kit side={side} className="size-3.5" />
+        <span className="truncate">{club.short}</span>
+      </div>
       {sorted.map((p) => (
         <div key={p.id} className={cx('rrow', p.id === captain && 'rrow--cap')}>
           <span className="d">{p.avatar ? <img src={avatarUrl(p.avatar)} alt="" /> : initials(p.name)}</span>
@@ -494,11 +516,13 @@ function Roster({ club, players, captain }: { club: Club; players: Player[]; cap
 
 function TeamCards({
   club,
+  side,
   players,
   captain,
   rating,
 }: {
   club: Club
+  side: 'A' | 'B'
   players: Player[]
   captain: string | null
   rating: number
@@ -511,7 +535,9 @@ function TeamCards({
     <section className={`club-${club.id} home-team`}>
       <div className="flex items-center gap-3">
         <span className={`crest crest--${club.id}`} style={{ width: 40, height: 40 }} aria-hidden />
-        <h2 className="h-display h-m flex-1">{club.name} · alineación</h2>
+        <h2 className="h-display h-m">{club.name} · alineación</h2>
+        <Kit side={side} className="size-5" />
+        <span className="flex-1" />
         <span className="h-display neon text-[30px]">{fmt(rating)}</span>
       </div>
       <div className="flex flex-wrap gap-[18px]">

@@ -7,6 +7,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { EmptyCards, ErrorState } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { Crest, PageHeader, Seg } from '@/components/ui'
+import { Kit } from '@/components/Kit'
 import { getClub } from '@/domain/clubs'
 import { clubStandings, isPlayed, playerStandings, type Outcome } from '@/domain/standings'
 import type { Match, Player } from '@/domain/types'
@@ -201,13 +202,14 @@ function MatchDetail({ match, players, onDone }: { match: Match; players: Player
     }
   }
 
-  const roster = (team: Match['teamA'], captain: string | null, club: typeof a, right?: boolean) => (
+  const roster = (team: Match['teamA'], captain: string | null, club: typeof a, side: 'A' | 'B') => (
     <div className={`club-${club.id} flex flex-col gap-1.5`}>
-      <div className={cx('flex items-center gap-2', right && 'flex-row-reverse')}>
+      <div className={cx('flex items-center gap-2', side === 'B' && 'flex-row-reverse')}>
         <Crest club={club.id} size={28} />
         <span className="h-display h-s truncate">{club.short}</span>
+        <Kit side={side} className="size-4" />
       </div>
-      <ul className={cx('flex flex-col gap-1 text-sm', right && 'items-end')}>
+      <ul className={cx('flex flex-col gap-1 text-sm', side === 'B' && 'items-end')}>
         {captainFirst(team, captain).map((p) => (
           <li key={p.id} className="flex items-center gap-1.5">
             {p.id === captain && (
@@ -249,8 +251,8 @@ function MatchDetail({ match, players, onDone }: { match: Match; players: Player
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        {roster(match.teamA, match.captainA, a)}
-        {roster(match.teamB, match.captainB, b, true)}
+        {roster(match.teamA, match.captainA, a, 'A')}
+        {roster(match.teamB, match.captainB, b, 'B')}
       </div>
 
       <MvpVoting match={match} votes={votes.data} players={players} />
