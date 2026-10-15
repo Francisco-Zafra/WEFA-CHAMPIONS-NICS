@@ -13,17 +13,18 @@ aquí no se programa, aquí se forjan equipos.
 
 ## 🏆 Qué hay en el estadio
 
-|                         |                                                                                                                                                                                                                                                            |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🃏 **Plantilla**        | Cartas estilo FUT (Oro, Plata y Bronce) con las 6 stats de cada jugador. Fichajes, bajas y convocatoria con un toque.                                                                                                                                      |
-| 🎲 **Sorteo**           | Asistente en 3 pasos: convocados, clubes y capitanes, y reglas («nunca juntos» / «siempre juntos»). El algoritmo iguala la media **y** busca variedad: evita repetir los equipos y las parejas de las últimas alineaciones.                                |
-| 🎬 **Ceremonia**        | Draft: las cartas se revelan una a una, alternando equipos, con el himno de cada club y el medidor de equilibrio en vivo.                                                                                                                                  |
-| 📋 **Pizarra**          | Campo con la formación calculada a partir de las stats, radar comparativo e **imagen 1080×1350 lista para WhatsApp**.                                                                                                                                      |
-| 🏆 **Copa**             | Cuadro eliminatorio de los 8 clubes (cuartos, semis y final) jugado jornada a jornada: cada cruce tiene su propio sorteo de equipos, se apuntan los resultados (con empate, el admin elige quién pasa) y queda el palmarés. Va aparte de la clasificación. |
-| 🗳️ **Votación del MVP** | Tras apuntar un resultado se abre una votación de 72 h (o hasta que el admin la cierre). Sin cuentas: cada navegador vota una sola vez con una sesión anónima de Firebase. Gana el más votado.                                                             |
-| 🧑 **Fichas**           | Estadísticas de cada jugador, con quién gana más, contra quién sufre y sus últimos partidos; y cara a cara entre clubes en el Historial.                                                                                                                   |
-| 📈 **Historial**        | Resultados, MVP, clasificación de los 8 clubes y ranking de jugadores con racha.                                                                                                                                                                           |
-| 📱 **App instalable**   | Se puede añadir a la pantalla de inicio del móvil y funciona sin conexión.                                                                                                                                                                                 |
+|                         |                                                                                                                                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🏠 **Inicio**           | El próximo partido con su cuenta atrás, hora, campo, capitanes y quién juega de rojo y de azul.                                                                                                                           |
+| 🃏 **Plantilla**        | Cartas estilo FUT (Oro, Plata y Bronce) con la media de cada jugador, puesta a mano, y su avatar. Fichajes, bajas y convocatoria con un toque. El admin puede **calibrar las medias** con los resultados.                 |
+| 🎲 **Sorteo**           | Asistente en 3 pasos: convocados, clubes y capitanes, y reglas («nunca juntos» / «siempre juntos»). El algoritmo iguala la media **y** busca variedad: evita repetir las parejas de las últimas alineaciones.             |
+| 🎬 **Ceremonia**        | Las cartas se revelan una a una, alternando equipos, con el himno de cada club y el medidor de equilibrio en vivo.                                                                                                        |
+| 📋 **Pizarra**          | Campo con el equipo rojo arriba y el azul abajo, cambios a mano con la media recalculada al momento, radar comparativo e **imagen 1080×1350 lista para WhatsApp**.                                                        |
+| 🏆 **Copa**             | Cuadro eliminatorio de los 8 clubes (cuartos, semis y final): cada cruce tiene su propio sorteo de equipos y su resultado (con empate, el admin elige quién pasa). El admin puede editar el cuadro sin perder resultados. |
+| 🗳️ **Votación del MVP** | Tras apuntar un resultado se abre una votación de 72 h (o hasta que el admin la cierre). Sin cuentas: cada navegador vota una sola vez con una sesión anónima de Firebase. Gana el más votado.                            |
+| 📈 **Historial**        | Resultados, clasificación de clubes, ranking de jugadores, duelos (entre clubes y entre dos jugadores) y **récords**, con un panel que dice si los sorteos salen igualados. Cuentan amistosos y copa.                     |
+| 🧑 **Fichas**           | Cada jugador con sus números, su evolución, con quién gana más, contra quién sufre, su club talismán y sus últimos partidos.                                                                                              |
+| 📱 **App instalable**   | Se puede añadir a la pantalla de inicio del móvil y funciona sin conexión.                                                                                                                                                |
 
 ### Los 8 clubes
 
@@ -31,9 +32,9 @@ aquí no se programa, aquí se forjan equipos.
 
 ## 🔐 Acceso
 
-Al abrir la app por primera vez aparece la pantalla de bienvenida: **Entrar como espectador** permite ver la plantilla, sortear y consultar el historial. Para **editar** (fichar jugadores, convocar, guardar partidos y poner resultados) hay que entrar como admin con el usuario `admin`. La contraseña la tiene el míster.
+Al abrir la app por primera vez aparece la pantalla de bienvenida: **Entrar como espectador** permite verlo todo y votar al MVP, sin cuenta. Para **editar** (fichar jugadores, convocar, sortear, guardar partidos, poner resultados y gestionar copas) hay que entrar como admin con el usuario `admin`. La contraseña la tiene el míster.
 
-La interfaz se tiñe con el color del club del equipo A del sorteo.
+📽️ ¿Quieres enseñarle la app a alguien? Hay una [presentación corta](docs/presentacion/) (también en [PDF](docs/presentacion/WEFA-Champions-NICS.pdf)).
 
 ---
 
@@ -58,35 +59,43 @@ npm run dev:emulators                                      # terminal 2
 
 ### Scripts
 
-| Comando                                 | Qué hace                                                                                       |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `npm run test`                          | Tests de dominio (Vitest): reparto, formación y clasificaciones                                |
-| `npm run lint` / `typecheck` / `format` | Calidad de código                                                                              |
-| `npm run build`                         | Build de producción en `dist/`                                                                 |
-| `npm run migrate`                       | Migra `scripts/seed/players.json` (exportado del SQLite de FTB2.0) a Firestore. Es idempotente |
-| `npm run deploy:rules`                  | Publica `firestore.rules` (requiere `npx firebase-tools login`)                                |
+| Comando                                 | Qué hace                                                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `npm run test`                          | Tests de dominio (Vitest): reparto, variedad, formación, copa, clasificaciones, fichas, récords y votos |
+| `npm run lint` / `typecheck` / `format` | Calidad de código                                                                                       |
+| `npm run build`                         | Build de producción en `dist/`                                                                          |
+| `npm run migrate`                       | Migra `scripts/seed/players.json` (exportado del SQLite de FTB2.0) a Firestore. Es idempotente          |
+| `npm run deploy:rules`                  | Publica `firestore.rules` (requiere `npx firebase-tools login`)                                         |
 
 ### Estructura
 
 ```
 src/
-  domain/      Lógica pura y testeada: tipos, clubes, valoración, reparto, formación y clasificación
-  lib/         Firebase, autenticación, acceso a datos y estado del sorteo
-  components/  Componentes de UI (cartas, campo, radar, hojas, etc.)
-  pages/       Plantilla, Sorteo (configuración, ceremonia y resultado) e Historial
-public/clubs/  Escudos (WebP) e himnos (MP3) de los 8 clubes
-scripts/       Migración y datos semilla
+  domain/        Lógica pura y testeada: tipos, clubes, medias, reparto, variedad, formación,
+                 copa, clasificaciones, fichas, récords y votos (cada módulo con su .test.ts)
+  lib/           Firebase, autenticación, acceso a datos y estado compartido (sorteo, votos)
+  hooks/         Hooks de React (media queries, himnos, sorteo de copa)
+  components/    Componentes de UI reutilizables (cartas, campo, hojas, camisetas, etc.)
+  pages/         Una página por pantalla; las que tienen piezas propias van en su carpeta
+    cup/         Copas: lista, cuadro, cruce y editor
+    draw/        Sorteo: asistente y ceremonia
+    history/     Historial: partidos, clasificaciones, duelos y récords
+public/          Escudos e himnos de los clubes, avatares e iconos de la app
+scripts/         Migración a Firestore y datos semilla
+docs/            Presentación de la app
 ```
 
 ### Cómo funciona el reparto
 
-`src/domain/balance.ts` minimiza `|Δ media| + 0,15 × Δ media por stat`:
+`src/domain/balance.ts` minimiza `|Δ media| + 0,15 × Δ media por stat + variedad`, donde la variedad penaliza las parejas que ya jugaron juntas en las últimas alineaciones (`src/domain/variety.ts`):
 
 - Hasta 60.000 combinaciones posibles (unos 18 jugadores) **las prueba todas**.
 - Con más jugadores hace una **búsqueda local con reinicios aleatorios** (250 reinicios con intercambios de jugadores). Con 27 jugadores tarda milisegundos; antes eran unos 20 millones de combinaciones.
 - Capitanes, «juntos» y «separados» se validan antes de buscar (union-find con paridad), así que las reglas contradictorias se detectan al momento.
 - Entre las 40 mejores combinaciones dentro de la tolerancia se elige una al azar con semilla, para que cada sorteo sea distinto pero reproducible.
 
-### Despliegue
+### Despliegue y versiones
 
 Cada push a `main` pasa el CI (formato, lint, tests y build) y publica en GitHub Pages (`.github/workflows/ci.yml`).
+
+Los cambios de cada versión están en [CHANGELOG.md](CHANGELOG.md), y cada versión tiene su etiqueta (`v3.1.0`…).

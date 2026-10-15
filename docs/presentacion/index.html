@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WEFA Champions NICS · Presentación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geist:wght@400..700&display=swap">
+<style>
+  /* Diapositivas de 1920×1080 escaladas a la ventana. Flechas, espacio o clic para avanzar */
+  html, body { margin: 0; height: 100%; background: #04060f; overflow: hidden; }
+  .slide { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; box-sizing: border-box;
+    overflow: hidden; transform-origin: 0 0; display: none !important; }
+  .slide.on { display: flex !important; }
+  .slide[style*="display:grid"].on { display: grid !important; }
+  .slide * { margin: 0; box-sizing: border-box; }
+  .slide aside { display: none; }
+  .count { position: fixed; right: 16px; bottom: 12px; font: 600 13px system-ui, sans-serif; color: #8d97b5; }
+  @media print {
+    @page { size: 1920px 1080px; margin: 0; }
+    html, body { height: auto; overflow: visible; background: none; }
+    .slide { position: relative; display: flex !important; transform: none !important; break-after: page; }
+    .count { display: none; }
+  }
+</style>
+</head>
+<body>
+<section class="slide" id="cover" data-transition="fade" style="background:radial-gradient(ellipse at 75% 30%, #2A2266 0%, #0B1029 45%, #070B1C 100%);color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;gap:96px">
+<div style="flex:1;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">Fútbol entre amigos</p>
+<div style="display:flex;flex-direction:column">
+<h1 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:184px;font-weight:400;line-height:0.95;color:#EEF1FF">WEFA Champions</h1>
+<h1 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:184px;font-weight:400;line-height:0.95;color:#9B7BFF;text-shadow:0 0 48px #9B7BFF80">NICS</h1>
+</div>
+<p style="font-size:40px;line-height:1.35;color:#B9C2E0;width:900px">Sorteos igualados, copas y estadísticas de nuestros partidos, en una sola app.</p>
+<p style="font-size:28px;color:#8D97B5">francisco-zafra.github.io/WEFA-CHAMPIONS-NICS</p>
+</div>
+<img src="img/bienvenida.webp" alt="Pantalla de bienvenida de la app con los escudos de los 8 clubes" style="width:381px;height:824px;object-fit:cover;border-radius:48px;border:3px solid #2E3768;box-shadow:0 40px 120px #9B7BFF40">
+<aside>La app que usamos para el partido: hace los equipos, guarda los resultados y lleva las estadísticas. Se abre en el móvil o en el ordenador.</aside>
+</section>
+<section class="slide" id="idea" data-transition="fade" style="background:#0B1029;color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:72px">
+<div style="display:flex;flex-direction:column;gap:24px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">La idea</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;font-weight:400;line-height:1">Del grupo al campo en tres pasos</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#121A3A;border:2px solid #232C55;border-radius:32px;padding:48px">
+<p style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;line-height:1;color:#9B7BFF">01</p>
+<h3 style="font-size:48px;font-weight:700;color:#EEF1FF">Sortear</h3>
+<p style="font-size:32px;line-height:1.4;color:#B9C2E0">Equipos igualados según la media de cada uno.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#121A3A;border:2px solid #232C55;border-radius:32px;padding:48px">
+<p style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;line-height:1;color:#9B7BFF">02</p>
+<h3 style="font-size:48px;font-weight:700;color:#EEF1FF">Jugar</h3>
+<p style="font-size:32px;line-height:1.4;color:#B9C2E0">Cuenta atrás, alineación y camisetas claras.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#121A3A;border:2px solid #232C55;border-radius:32px;padding:48px">
+<p style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;line-height:1;color:#9B7BFF">03</p>
+<h3 style="font-size:48px;font-weight:700;color:#EEF1FF">Recordar</h3>
+<p style="font-size:32px;line-height:1.4;color:#B9C2E0">Resultados, MVP, copas y estadísticas.</p>
+</div>
+</div>
+<aside>Tres momentos: antes del partido sorteamos, el día del partido todos saben dónde y con quién juegan, y después todo queda guardado.</aside>
+</section>
+<section class="slide" id="sorteo" data-transition="fade" style="background:radial-gradient(ellipse at 85% 50%, #2A1A4F 0%, #070B1C 60%);color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;gap:120px">
+<div style="flex:1;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">01 · Sorteo</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;font-weight:400;line-height:1">Equipos igualados en un toque</h2>
+<p style="font-size:36px;line-height:1.4;color:#B9C2E0">Reparte a los convocados según su media para que los dos equipos queden lo más parejos posible.</p>
+<div style="display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="width:16px;height:16px;border-radius:50%;background:#9B7BFF"></div>
+<p style="font-size:32px;color:#EEF1FF">Capitanes y reglas: «juntos» o «separados»</p>
+</div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="width:16px;height:16px;border-radius:50%;background:#9B7BFF"></div>
+<p style="font-size:32px;color:#EEF1FF">Busca variedad: no repite siempre las mismas parejas</p>
+</div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="width:16px;height:16px;border-radius:50%;background:#9B7BFF"></div>
+<p style="font-size:32px;color:#EEF1FF">Se revela carta a carta, con suspense</p>
+</div>
+</div>
+</div>
+<img src="img/sorteo.webp" alt="Revelación del sorteo: la carta de Guti sale como capitán del primer equipo" style="width:381px;height:824px;object-fit:cover;border-radius:48px;border:3px solid #2E3768;box-shadow:0 40px 120px #9B7BFF40">
+<aside>El admin elige quién juega, los clubes y, si quiere, capitanes o parejas que deben ir juntas o separadas. La app busca el reparto más igualado y lo enseña carta a carta.</aside>
+</section>
+<section class="slide" id="pizarra" data-transition="fade" style="background:#0B1029;color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;gap:56px">
+<div style="flex:1;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">02 · Alineación</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:104px;font-weight:400;line-height:1">Lista para el grupo</h2>
+<p style="font-size:34px;line-height:1.4;color:#B9C2E0"><span style="color:#F87171">Rojo</span> arriba, <span style="color:#60A5FA">azul</span> abajo. Se retoca a mano y se comparte como imagen.</p>
+</div>
+<img src="img/pizarra.webp" alt="Pizarra en el móvil con los dos equipos en el campo" style="width:381px;height:824px;object-fit:cover;border-radius:48px;border:3px solid #2E3768">
+<img src="img/imagen-compartir.webp" alt="Imagen para compartir con las alineaciones, las medias y la diferencia" style="width:659px;height:824px;object-fit:cover;border-radius:32px;border:3px solid #2E3768;box-shadow:0 40px 120px #9B7BFF40">
+<aside>En la pizarra se ven los equipos en el campo. Si alguien no puede venir o queremos cambiar a dos jugadores, se toca y se recalcula la media al momento. Con un botón sale la imagen de la derecha para mandarla al grupo.</aside>
+</section>
+<section class="slide" id="inicio" data-transition="fade" style="background:radial-gradient(ellipse at 85% 50%, #3A2E0E 0%, #070B1C 60%);color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;gap:120px">
+<div style="flex:1;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">03 · Próximo partido</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;font-weight:400;line-height:1">Siempre sabes cuándo se juega</h2>
+<p style="font-size:36px;line-height:1.4;color:#B9C2E0">Al abrir la app ves el próximo partido con su cuenta atrás, la hora y el campo.</p>
+<div style="display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="width:16px;height:16px;border-radius:50%;background:#9B7BFF"></div>
+<p style="font-size:32px;color:#EEF1FF">Los dos equipos y quién es capitán</p>
+</div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="width:16px;height:16px;border-radius:50%;background:#9B7BFF"></div>
+<p style="font-size:32px;color:#EEF1FF">Quién juega de <span style="color:#F87171">rojo</span> y quién de <span style="color:#60A5FA">azul</span></p>
+</div>
+</div>
+</div>
+<img src="img/inicio.webp" alt="Inicio en el móvil: Avispas contra Beetles el jueves 22 de octubre, con cuenta atrás" style="width:381px;height:824px;object-fit:cover;border-radius:48px;border:3px solid #2E3768;box-shadow:0 40px 120px #FFC21A30">
+<aside>La pantalla de inicio es lo que más se mira: cuándo es el próximo partido, dónde, y quién va en cada equipo. Arriba sale un aviso cuando hay una votación del MVP abierta.</aside>
+</section>
+<section class="slide" id="copa" data-transition="fade" style="background:#0B1029;color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;gap:80px">
+<div style="flex:1;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">04 · Copa</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;font-weight:400;line-height:1">Copa de 8 clubes</h2>
+<p style="font-size:34px;line-height:1.4;color:#B9C2E0">Cuartos, semis y final. Cada cruce tiene su sorteo de equipos y su resultado.</p>
+<p style="font-size:28px;line-height:1.4;color:#8D97B5">Se puede jugar a la vez que los amistosos.</p>
+</div>
+<img src="img/copa.webp" alt="Cuadro de la Copa NICS 2026 con cuartos jugados, semifinales y final" style="width:1136px;height:710px;object-fit:cover;border-radius:24px;border:3px solid #2E3768;box-shadow:0 40px 120px #9B7BFF30">
+<aside>Las copas son eliminatorias de 8 clubes. El cuadro se sortea, y para cada cruce se hace el sorteo de equipos como en un amistoso. Si hay empate, el admin elige quién pasa.</aside>
+</section>
+<section class="slide" id="mvp" data-transition="fade" style="background:radial-gradient(ellipse at 85% 50%, #2A1A4F 0%, #070B1C 60%);color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;gap:120px">
+<div style="flex:1;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">05 · MVP</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;font-weight:400;line-height:1">El MVP lo elige la grada</h2>
+<p style="font-size:36px;line-height:1.4;color:#B9C2E0">Después del partido, cualquiera vota al mejor desde su móvil.</p>
+<div style="display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="width:16px;height:16px;border-radius:50%;background:#FFD34D"></div>
+<p style="font-size:32px;color:#EEF1FF">Un voto por persona, sin crear cuenta</p>
+</div>
+<div style="display:flex;flex-direction:row;align-items:center;gap:24px">
+<div style="width:16px;height:16px;border-radius:50%;background:#FFD34D"></div>
+<p style="font-size:32px;color:#EEF1FF">Se cierra a las 72 horas o cuando diga el admin</p>
+</div>
+</div>
+</div>
+<img src="img/mvp.webp" alt="Votación del MVP: resultado Beetles 1–3 Avispas y lista de jugadores para votar" style="width:381px;height:824px;object-fit:cover;border-radius:48px;border:3px solid #2E3768;box-shadow:0 40px 120px #FFD34D30">
+<aside>Al apuntar el resultado se abre la votación. Cada persona vota una vez y gana el más votado. Si hay empate, decide el admin.</aside>
+</section>
+<section class="slide" id="stats" data-transition="fade" style="background:#0B1029;color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;gap:80px">
+<div style="width:520px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">06 · Estadísticas</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:120px;font-weight:400;line-height:1">Todo queda registrado</h2>
+<p style="font-size:32px;line-height:1.4;color:#B9C2E0">Amistosos y copa cuentan en todo.</p>
+<div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px">
+<p style="font-size:28px;font-weight:600;background:#121A3A;border:2px solid #2E3768;border-radius:999px;padding:12px 28px">Clasificación</p>
+<p style="font-size:28px;font-weight:600;background:#121A3A;border:2px solid #2E3768;border-radius:999px;padding:12px 28px">Ranking</p>
+<p style="font-size:28px;font-weight:600;background:#121A3A;border:2px solid #2E3768;border-radius:999px;padding:12px 28px">Duelos</p>
+<p style="font-size:28px;font-weight:600;background:#121A3A;border:2px solid #2E3768;border-radius:999px;padding:12px 28px">Récords</p>
+<p style="font-size:28px;font-weight:600;background:#121A3A;border:2px solid #2E3768;border-radius:999px;padding:12px 28px">Ficha de cada jugador</p>
+</div>
+</div>
+<img src="img/ficha.webp" alt="Ficha de jugador con sus números, gráfica de evolución y mejores compañeros" style="width:1064px;height:665px;object-fit:cover;border-radius:24px;border:3px solid #2E3768">
+<img src="img/records.webp" alt="Récords en el móvil: mayor goleada, más goles, mejor racha y rey del MVP" style="position:absolute;left:1520px;top:364px;width:272px;height:588px;object-fit:cover;border-radius:36px;border:3px solid #2E3768;box-shadow:0 30px 90px #000000B0">
+<aside>En el historial hay clasificación de clubes, ranking de jugadores, duelos cara a cara y una pestaña de récords: goleadas, rachas, rey del MVP o la pareja invencible. Cada jugador tiene su ficha con su evolución y con quién gana más.</aside>
+</section>
+<section class="slide" id="extras" data-transition="fade" style="background:#070B1C;color:#EEF1FF;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:56px">
+<div style="display:flex;flex-direction:column;gap:24px">
+<p style="font-size:28px;font-weight:600;letter-spacing:8px;text-transform:uppercase;color:#9B7BFF">Y además</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:104px;font-weight:400;line-height:1">Los detalles</h2>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px">
+<div style="display:flex;flex-direction:column;gap:14px;background:#0E1530;border:2px solid #1E2750;border-radius:28px;padding:36px">
+<div style="display:flex;flex-direction:row;gap:10px">
+<div style="width:40px;height:40px;border-radius:10px;background:#EF4444"></div>
+<div style="width:40px;height:40px;border-radius:10px;background:#3B82F6"></div>
+</div>
+<h3 style="font-size:36px;font-weight:700">Camisetas claras</h3>
+<p style="font-size:26px;line-height:1.4;color:#AAB4D4">Rojo arriba, azul abajo, en toda la app.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#0E1530;border:2px solid #1E2750;border-radius:28px;padding:36px">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#9B7BFF;width:40px;height:40px"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+<h3 style="font-size:36px;font-weight:700">Calibrar medias</h3>
+<p style="font-size:26px;line-height:1.4;color:#AAB4D4">Avisa si alguien rinde por encima o por debajo de su media.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#0E1530;border:2px solid #1E2750;border-radius:28px;padding:36px">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#9B7BFF;width:40px;height:40px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+<h3 style="font-size:36px;font-weight:700">Editar la copa</h3>
+<p style="font-size:26px;line-height:1.4;color:#AAB4D4">Cambiar clubes y cruces sin perder resultados.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#0E1530;border:2px solid #1E2750;border-radius:28px;padding:36px">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#9B7BFF;width:40px;height:40px"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+<h3 style="font-size:36px;font-weight:700">Admin y espectadores</h3>
+<p style="font-size:26px;line-height:1.4;color:#AAB4D4">El admin sortea y edita; el resto mira y vota.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#0E1530;border:2px solid #1E2750;border-radius:28px;padding:36px">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#9B7BFF;width:40px;height:40px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+<h3 style="font-size:36px;font-weight:700">Cartas y avatares</h3>
+<p style="font-size:26px;line-height:1.4;color:#AAB4D4">Cada jugador con su carta, su media y su avatar.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#0E1530;border:2px solid #1E2750;border-radius:28px;padding:36px">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#9B7BFF;width:40px;height:40px"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+<h3 style="font-size:36px;font-weight:700">Como una app</h3>
+<p style="font-size:26px;line-height:1.4;color:#AAB4D4">Se instala en el móvil desde el navegador.</p>
+</div>
+</div>
+<aside>Cosas más pequeñas que ayudan en el día a día. La calibración y la edición de la copa solo las ve el admin.</aside>
+</section>
+<section class="slide" id="cierre" data-transition="fade" style="background:radial-gradient(ellipse at 50% 40%, #B39BFF 0%, #9B7BFF 55%, #7C5CF0 100%);color:#0B0620;font-family:'Geist', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px">
+<p style="font-size:28px;font-weight:700;letter-spacing:8px;text-transform:uppercase;color:#2E1F66;text-align:center">WEFA Champions NICS</p>
+<h2 style="font-family:'Bebas Neue', 'Arial Narrow', sans-serif;font-size:200px;font-weight:400;line-height:0.95;color:#0B0620;text-align:center">Entra y échale un ojo</h2>
+<p style="font-size:44px;font-weight:700;color:#0B0620;text-align:center">francisco-zafra.github.io/WEFA-CHAMPIONS-NICS</p>
+<p style="font-size:32px;color:#2E1F66;text-align:center">Pulsa «Entrar como espectador» y lo ves todo, sin cuenta.</p>
+<aside>Para mirar no hace falta cuenta: con «Entrar como espectador» se ve todo y se puede votar al MVP.</aside>
+</section>
+<div class="count" aria-live="polite"></div>
+<script>
+  const slides = [...document.querySelectorAll('.slide')]
+  const count = document.querySelector('.count')
+  let i = Math.max(0, Math.min(slides.length - 1, Number(location.hash.slice(1)) - 1 || 0))
+  function fit() {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080)
+    const x = (innerWidth - 1920 * s) / 2
+    const y = (innerHeight - 1080 * s) / 2
+    for (const el of slides) el.style.transform = `translate(${x}px, ${y}px) scale(${s})`
+  }
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n))
+    slides.forEach((el, k) => el.classList.toggle('on', k === i))
+    count.textContent = `${i + 1} / ${slides.length}`
+    history.replaceState(null, '', `#${i + 1}`)
+  }
+  addEventListener('keydown', (e) => {
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) show(i + 1)
+    if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) show(i - 1)
+    if (e.key === 'Home') show(0)
+    if (e.key === 'End') show(slides.length - 1)
+  })
+  addEventListener('click', (e) => show(e.clientX < innerWidth / 3 ? i - 1 : i + 1))
+  addEventListener('resize', fit)
+  fit()
+  show(i)
+</script>
+</body>
+</html>
