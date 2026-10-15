@@ -2,7 +2,7 @@ name: CI / Deploy
 
 on:
   push:
-    branches: [main, FTB3.0]
+    branches: [main, 'FTB*']
   pull_request:
   workflow_dispatch:
 
