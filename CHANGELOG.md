@@ -2,7 +2,7 @@
 
 Versiones de WEFA Champions NICS. Cada versión tiene su etiqueta en git (`v3.1.0`, `v3.0.0`…).
 
-## Sin publicar
+## 3.3.0 · 2026-10-16
 
 ### Novedades
 
