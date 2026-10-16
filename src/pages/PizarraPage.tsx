@@ -26,16 +26,16 @@ import { initialWhen, whenToSave } from '@/lib/when'
 import { Sheet } from '@/components/Sheet'
 import { EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
-import { Banner, Crest } from '@/components/ui'
+import { Banner, Crest, Seg } from '@/components/ui'
 import { rebalance, type TeamSummary } from '@/domain/balance'
 import { getClub } from '@/domain/clubs'
-import { participants, roundOf, tieLabel, type Cup } from '@/domain/cup'
+import { findOpenTie, lineupsFor, participants, roundOf, tieLabel, type Cup } from '@/domain/cup'
 import { balancePct, fmt, statScale } from '@/domain/rating'
 import type { Club, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
 import { useDrawHistory } from '@/lib/drawHistory'
-import { createMatch, updateCup, updateMatch, type Collection } from '@/lib/data'
+import { createMatch, saveCup, updateMatch, type Collection } from '@/lib/data'
 import { useDraw, type Draw } from '@/lib/draw'
 import { runDraw } from '@/lib/runDraw'
 import { exportShareImage } from '@/lib/share'
@@ -684,17 +684,22 @@ function SaveMatchForm({
     teamA: snapshot(draw.result.teamA),
     teamB: snapshot(draw.result.teamB),
   }
+  // Un «amistoso» entre dos clubes con un cruce de copa pendiente seguramente es ese cruce
+  const openTie = draw.cup || draw.savedMatchId ? null : findOpenTie(cups, draw.clubA, draw.clubB)
+  const [target, setTarget] = useState<'cup' | 'friendly'>(openTie ? 'cup' : 'friendly')
+  const toCup = !!draw.cup || (openTie !== null && target === 'cup')
 
-  /** Partido de copa: los equipos se guardan en su cruce del cuadro */
-  async function saveToCup(ref: NonNullable<Draw['cup']>) {
-    const cup = cups.find((c) => c.id === ref.cupId)
+  /** Partido de copa: los equipos se guardan en su cruce del cuadro (dados la vuelta si hace falta) */
+  async function saveToCup(cupId: string, tie: number, flipped: boolean) {
+    const cup = cups.find((c) => c.id === cupId)
     if (!cup) return toast('Esa copa ya no existe', 'error')
-    const [a, b] = participants(cup, ref.tie)
-    if (a !== draw.clubA || b !== draw.clubB)
-      return toast('El cruce ha cambiado: vuelve a sortear desde la copa', 'error')
-    if (cup.ties[ref.tie]!.winner) return toast('Ese cruce ya tiene resultado', 'error')
-    const ties = cup.ties.map((t, i) => (i === ref.tie ? { ...t, ...whenToSave(when), ...lineups } : t))
-    await updateCup(cup.id, { ties })
+    const [a, b] = participants(cup, tie)
+    const [ea, eb] = flipped ? [draw.clubB, draw.clubA] : [draw.clubA, draw.clubB]
+    if (a !== ea || b !== eb) return toast('El cruce ha cambiado: vuelve a sortear desde la copa', 'error')
+    if (cup.ties[tie]!.winner) return toast('Ese cruce ya tiene resultado', 'error')
+    const sides = lineupsFor(lineups, flipped)
+    const ties = cup.ties.map((t, i) => (i === tie ? { ...t, ...whenToSave(when), ...sides } : t))
+    await saveCup(cup, { ties })
     toast('Equipos guardados en el cuadro. Apunta el resultado tras el partido')
     clearCup()
     onClose()
@@ -704,7 +709,8 @@ function SaveMatchForm({
   async function save() {
     setBusy(true)
     try {
-      if (draw.cup) return await saveToCup(draw.cup)
+      if (draw.cup) return await saveToCup(draw.cup.cupId, draw.cup.tie, false)
+      if (openTie && target === 'cup') return await saveToCup(openTie.cup.id, openTie.tie, openTie.flipped)
       if (draw.savedMatchId) {
         // Sorteo rehecho de un partido ya guardado: se actualiza, no se duplica
         await updateMatch(draw.savedMatchId, {
@@ -739,9 +745,28 @@ function SaveMatchForm({
 
   return (
     <div className="flex flex-col gap-4">
+      {openTie && (
+        <div className="flex flex-col gap-2">
+          <p className="eyebrow">¿Es el partido de copa?</p>
+          <p className="small">
+            {getClub(draw.clubA).name} y {getClub(draw.clubB).name} tienen pendiente el cruce «
+            {tieLabel(openTie.tie)}» de «{openTie.cup.name}». Si lo guardas en la copa, el resultado contará
+            en el cuadro.
+          </p>
+          <Seg<'cup' | 'friendly'>
+            label="Dónde se guarda el partido"
+            value={target}
+            onChange={setTarget}
+            options={[
+              { value: 'cup', label: 'En la copa' },
+              { value: 'friendly', label: 'Como amistoso' },
+            ]}
+          />
+        </div>
+      )}
       <p className="small">
-        {draw.cup
-          ? 'Los equipos se guardan en el cruce del cuadro. El resultado lo apuntas en la copa después del partido.'
+        {toCup
+          ? 'Los equipos se guardan en el cruce del cuadro. El resultado lo apuntas después del partido, en la copa o en el historial.'
           : 'Se guardan los equipos tal cual. El marcador y el MVP los pones después del partido.'}
       </p>
       <MatchWhenFields value={when} onChange={setWhen} />

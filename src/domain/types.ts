@@ -82,10 +82,12 @@ export interface Match {
   resultAt?: number | null
   /** El admin cerró la votación antes de las 72 h */
   votingClosed?: boolean
-  /** Solo en cruces de copa: quién pasó (decide los empates) */
+  /** Solo en cruces de copa: quién pasó (con empate, quien ganó los penaltis) */
   winner?: ClubId | null
-  /** Solo en cruces de copa: de qué copa y ronda es */
-  cup?: { id: string; name: string; label: string }
+  /** Tal cual está en la BD: el partido es el cruce `tie` de la copa `id` (sin él, es un amistoso) */
+  cupRef?: { id: string; tie: number }
+  /** Para mostrar: de qué copa y cruce es (nombre y etiqueta sacados de la copa) */
+  cup?: { id: string; name: string; label: string; tie: number }
 }
 
 export type MatchInput = Omit<Match, 'id' | 'createdAt'>

@@ -2,6 +2,7 @@ dist
 dev-dist
 public
 package-lock.json
+.emulators-data
 
 # Presentación: HTML en el formato de las diapositivas, se mantiene tal cual
 docs/presentacion/index.html

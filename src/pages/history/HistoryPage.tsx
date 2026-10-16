@@ -1,4 +1,4 @@
-import { Crown, Minus, Plus, Star, Trash2 } from 'lucide-react'
+import { Crown, Minus, Plus, Star, Trash2, Trophy } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MvpVoting } from '@/components/MvpVoting'
@@ -9,14 +9,17 @@ import { useToast } from '@/components/Toast'
 import { Crest, PageHeader, Seg } from '@/components/ui'
 import { Kit } from '@/components/Kit'
 import { getClub } from '@/domain/clubs'
-import { clubStandings, isPlayed, playerStandings, type Outcome } from '@/domain/standings'
+import { wentToPenalties, type Cup } from '@/domain/cup'
+import { clubStandings, isPlayed, playerStandings, resultFor, type Outcome } from '@/domain/standings'
 import type { Match, Player } from '@/domain/types'
+import { useStartCupDraw } from '@/hooks/useStartCupDraw'
 import { useAuth } from '@/lib/auth'
 import { captainFirst } from '@/domain/formation'
 import { cx } from '@/lib/cx'
 import { deleteMatch, deleteVotesOf, updateMatch, type Collection } from '@/lib/data'
 import { rivalries } from '@/domain/profile'
 import { useVoteData } from '@/lib/votesContext'
+import { TieSheet } from '../cup/TieSheet'
 import { PlayerDuel } from './PlayerDuel'
 import { RecordsView } from './Records'
 
@@ -29,12 +32,15 @@ export function HistoryPage({
   matches,
   stats,
   players,
+  cups,
 }: {
-  /** Amistosos (lista de partidos) */
+  /** Amistosos y cruces de copa, jugados y por jugar (lista de partidos) */
   matches: Collection<Match>
   /** Amistosos + cruces de copa jugados (clasificación, ranking y duelos) */
   stats: Collection<Match>
   players: Collection<Player>
+  /** Para abrir los cruces de copa en su ficha */
+  cups: Cup[]
 }) {
   const [tab, setTab] = useState<Tab>('matches')
 
@@ -54,7 +60,8 @@ export function HistoryPage({
         guardado no se ha perdido.
       </ErrorState>
     )
-  else if (tab === 'matches') content = <MatchList matches={matches.data} players={players.data} />
+  else if (tab === 'matches')
+    content = <MatchList matches={matches.data} players={players.data} cups={cups} />
   else if (tab === 'clubs') content = <ClubTable matches={stats.data} />
   else if (tab === 'duels') content = <DuelList matches={stats.data} players={players.data} />
   else if (tab === 'records') content = <RecordsView matches={stats.data} players={players.data} />
@@ -82,13 +89,16 @@ export function HistoryPage({
 
 // ---------- Partidos ----------
 
-function MatchList({ matches, players }: { matches: Match[]; players: Player[] }) {
+function MatchList({ matches, players, cups }: { matches: Match[]; players: Player[]; cups: Cup[] }) {
   const { isAdmin } = useAuth()
+  const startDraw = useStartCupDraw()
   const [openId, setOpenId] = useState<string | null>(null)
   const [params, setParams] = useSearchParams()
   // El enlace «Votar» de Inicio (?votar=id) abre ese partido; el abierto sigue los datos en directo
   const wanted = params.get('votar')
   const current = matches.find((m) => m.id === (openId ?? wanted)) ?? null
+  // Los cruces de copa se abren en su ficha: el resultado se guarda en la copa
+  const tieCup = current?.cup ? (cups.find((c) => c.id === current.cup!.id) ?? null) : null
   const close = () => {
     setOpenId(null)
     if (wanted) setParams({}, { replace: true })
@@ -120,7 +130,23 @@ function MatchList({ matches, players }: { matches: Match[]; players: Player[] }
       {matches.map((m) => (
         <MatchRow key={m.id} match={m} onOpen={() => setOpenId(m.id)} />
       ))}
-      <MatchSheet match={current} players={players} onClose={close} />
+      <MatchSheet match={current?.cup ? null : current} players={players} onClose={close} />
+      {tieCup && (
+        <TieSheet
+          cup={tieCup}
+          tie={current!.cup!.tie}
+          onClose={close}
+          players={players}
+          onDraw={
+            isAdmin
+              ? (tie) => {
+                  close()
+                  startDraw(tieCup, tie)
+                }
+              : undefined
+          }
+        />
+      )}
     </section>
   )
 }
@@ -129,14 +155,15 @@ function MatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
   const a = getClub(match.clubA)
   const b = getClub(match.clubB)
   const done = isPlayed(match)
-  const loseA = done && match.scoreA! < match.scoreB!
-  const loseB = done && match.scoreB! < match.scoreA!
+  const loseA = done && resultFor(match, 'A') === 'L'
+  const loseB = done && resultFor(match, 'B') === 'L'
+  const pens = match.cup && wentToPenalties(match)
   return (
     <button
       className="match"
       type="button"
       onClick={onOpen}
-      aria-label={`${a.name} contra ${b.name}, ${dayMonth(match.date)}`}
+      aria-label={`${a.name} contra ${b.name}, ${dayMonth(match.date)}${match.cup ? `, ${match.cup.name} · ${match.cup.label}` : ''}`}
     >
       <div className={cx('side', loseA && 'lose')}>
         <Crest club={a.id} size={36} />
@@ -151,6 +178,13 @@ function MatchRow({ match, onOpen }: { match: Match; onOpen: () => void }) {
           <span className="pill pill--on h-7 text-[11px]">Pendiente</span>
         )}
         <span className="small text-[11px]">{dayMonth(match.date)}</span>
+        {match.cup && (
+          <span className="flex items-center gap-1 text-[10px] font-bold whitespace-nowrap text-[var(--club)]">
+            <Trophy className="size-3" />
+            {match.cup.label}
+            {pens && ' · penaltis'}
+          </span>
+        )}
       </div>
       <div className={cx('side flex-row-reverse text-right', loseB && 'lose')}>
         <Crest club={b.id} size={36} />
@@ -434,8 +468,8 @@ function ClubTable({ matches }: { matches: Match[] }) {
         </table>
       </div>
       <p className="small text-[11px]">
-        Cuentan amistosos y copa (en copa, el empate lo gana quien pasó). Empate a puntos: decide la
-        diferencia de goles.
+        Cuentan amistosos y copa (en copa, un empate cuenta como victoria para quien gana los penaltis).
+        Empate a puntos: decide la diferencia de goles.
       </p>
     </section>
   )

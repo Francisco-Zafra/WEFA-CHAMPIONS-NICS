@@ -22,8 +22,10 @@ export const db = initializeFirestore(app, {
 })
 
 if (useEmulators) {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
-  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  // Puertos de firebase.json; se pueden cambiar para tener otros emuladores a la vez
+  const env = import.meta.env
+  connectAuthEmulator(auth, `http://127.0.0.1:${env.VITE_EMU_AUTH_PORT ?? 9099}`, { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', Number(env.VITE_EMU_FIRESTORE_PORT ?? 8080))
 }
 
 /** El login es "usuario + contraseña"; Firebase Auth necesita un email */

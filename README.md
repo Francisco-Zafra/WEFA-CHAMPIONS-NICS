@@ -13,18 +13,18 @@ aquí no se programa, aquí se forjan equipos.
 
 ## 🏆 Qué hay en el estadio
 
-|                         |                                                                                                                                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🏠 **Inicio**           | El próximo partido con su cuenta atrás, hora, campo, capitanes y quién juega de rojo y de azul.                                                                                                                           |
-| 🃏 **Plantilla**        | Cartas estilo FUT (Oro, Plata y Bronce) con la media de cada jugador, puesta a mano, y su avatar. Fichajes, bajas y convocatoria con un toque. El admin puede **calibrar las medias** con los resultados.                 |
-| 🎲 **Sorteo**           | Asistente en 3 pasos: convocados, clubes y capitanes, y reglas («nunca juntos» / «siempre juntos»). El algoritmo iguala la media **y** busca variedad: evita repetir las parejas de las últimas alineaciones.             |
-| 🎬 **Ceremonia**        | Las cartas se revelan una a una, alternando equipos, con el himno de cada club y el medidor de equilibrio en vivo.                                                                                                        |
-| 📋 **Pizarra**          | Campo con el equipo rojo arriba y el azul abajo, cambios a mano con la media recalculada al momento, radar comparativo e **imagen 1080×1350 lista para WhatsApp**.                                                        |
-| 🏆 **Copa**             | Cuadro eliminatorio de los 8 clubes (cuartos, semis y final): cada cruce tiene su propio sorteo de equipos y su resultado (con empate, el admin elige quién pasa). El admin puede editar el cuadro sin perder resultados. |
-| 🗳️ **Votación del MVP** | Tras apuntar un resultado se abre una votación de 72 h (o hasta que el admin la cierre). Sin cuentas: cada navegador vota una sola vez con una sesión anónima de Firebase. Gana el más votado.                            |
-| 📈 **Historial**        | Resultados, clasificación de clubes, ranking de jugadores, duelos (entre clubes y entre dos jugadores) y **récords**, con un panel que dice si los sorteos salen igualados. Cuentan amistosos y copa.                     |
-| 🧑 **Fichas**           | Cada jugador con sus números, su evolución, con quién gana más, contra quién sufre, su club talismán y sus últimos partidos.                                                                                              |
-| 📱 **App instalable**   | Se puede añadir a la pantalla de inicio del móvil y funciona sin conexión.                                                                                                                                                |
+|                         |                                                                                                                                                                                                                                                                                               |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🏠 **Inicio**           | El próximo partido con su cuenta atrás, hora, campo, capitanes y quién juega de rojo y de azul.                                                                                                                                                                                               |
+| 🃏 **Plantilla**        | Cartas estilo FUT (Oro, Plata y Bronce) con la media de cada jugador, puesta a mano, y su avatar. Fichajes, bajas y convocatoria con un toque. El admin puede **calibrar las medias** con los resultados.                                                                                     |
+| 🎲 **Sorteo**           | Asistente en 3 pasos: convocados, clubes y capitanes, y reglas («nunca juntos» / «siempre juntos»). El algoritmo iguala la media **y** busca variedad: evita repetir las parejas de las últimas alineaciones.                                                                                 |
+| 🎬 **Ceremonia**        | Las cartas se revelan una a una, alternando equipos, con el himno de cada club y el medidor de equilibrio en vivo.                                                                                                                                                                            |
+| 📋 **Pizarra**          | Campo con el equipo rojo arriba y el azul abajo, cambios a mano con la media recalculada al momento, radar comparativo e **imagen 1080×1350 lista para WhatsApp**.                                                                                                                            |
+| 🏆 **Copa**             | Cuadro eliminatorio de los 8 clubes (cuartos, semis y final): cada cruce tiene su propio sorteo de equipos, su resultado (con empate, se decide en la tanda de penaltis) y su MVP. Los partidos de copa salen también en el historial. El admin puede editar el cuadro sin perder resultados. |
+| 🗳️ **Votación del MVP** | Tras apuntar un resultado se abre una votación de 72 h (o hasta que el admin la cierre). Sin cuentas: cada navegador vota una sola vez con una sesión anónima de Firebase. Gana el más votado.                                                                                                |
+| 📈 **Historial**        | Resultados, clasificación de clubes, ranking de jugadores, duelos (entre clubes y entre dos jugadores) y **récords**, con un panel que dice si los sorteos salen igualados. Cuentan amistosos y copa.                                                                                         |
+| 🧑 **Fichas**           | Cada jugador con sus números, su evolución, con quién gana más, contra quién sufre, su club talismán y sus últimos partidos.                                                                                                                                                                  |
+| 📱 **App instalable**   | Se puede añadir a la pantalla de inicio del móvil y funciona sin conexión.                                                                                                                                                                                                                    |
 
 ### Los 8 clubes
 
@@ -53,19 +53,24 @@ Requiere Java 21 o superior.
 
 ```bash
 npm run emulators                                          # terminal 1
-WEFA_PASSWORD=loquesea npm run migrate -- --emulator --create-admin   # carga los 27 jugadores
+WEFA_PASSWORD=loquesea npm run migrate -- --emulator --create-admin   # solo la primera vez: carga los 27 jugadores
 npm run dev:emulators                                      # terminal 2
 ```
 
+En PowerShell, la contraseña se pone así: `$env:WEFA_PASSWORD = "loquesea"; npm run migrate -- --emulator --create-admin`.
+
+Los datos de prueba se guardan en `.emulators-data/` al parar los emuladores con **Ctrl+C** y se cargan solos al arrancar. Si cierras la terminal sin más, se pierde lo de esa sesión. Para empezar de cero, borra la carpeta. `npm run emulators:clean` arranca vacío y no guarda nada.
+
 ### Scripts
 
-| Comando                                 | Qué hace                                                                                                |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `npm run test`                          | Tests de dominio (Vitest): reparto, variedad, formación, copa, clasificaciones, fichas, récords y votos |
-| `npm run lint` / `typecheck` / `format` | Calidad de código                                                                                       |
-| `npm run build`                         | Build de producción en `dist/`                                                                          |
-| `npm run migrate`                       | Migra `scripts/seed/players.json` (exportado del SQLite de FTB2.0) a Firestore. Es idempotente          |
-| `npm run deploy:rules`                  | Publica `firestore.rules` (requiere `npx firebase-tools login`)                                         |
+| Comando                                 | Qué hace                                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `npm run test`                          | Tests de dominio (Vitest): reparto, variedad, formación, copa, clasificaciones, fichas, récords y votos                      |
+| `npm run lint` / `typecheck` / `format` | Calidad de código                                                                                                            |
+| `npm run build`                         | Build de producción en `dist/`                                                                                               |
+| `npm run migrate`                       | Migra `scripts/seed/players.json` (exportado del SQLite de FTB2.0) a Firestore. Es idempotente                               |
+| `node scripts/migrate-cups.mjs`         | Pasa las copas antiguas (cruces dentro de la copa) a partidos y junta los duplicados. Sin `--apply` solo enseña lo que haría |
+| `npm run deploy:rules`                  | Publica `firestore.rules` (requiere `npx firebase-tools login`)                                                              |
 
 ### Estructura
 

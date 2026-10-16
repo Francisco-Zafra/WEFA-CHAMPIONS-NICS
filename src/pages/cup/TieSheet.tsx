@@ -1,16 +1,29 @@
-import { Crown, Minus, Plus, Shuffle, Trash2 } from 'lucide-react'
+import { Crown, Minus, Plus, Shuffle, Star, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { MvpVoting } from '@/components/MvpVoting'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { Crest, Seg } from '@/components/ui'
 import { Kit } from '@/components/Kit'
 import { getClub } from '@/domain/clubs'
-import { clearResult, isReady, participants, roundOf, setResult, tieLabel, type Cup } from '@/domain/cup'
-import type { ClubId, MatchPlayer } from '@/domain/types'
+import {
+  clearResult,
+  cupMatches,
+  isReady,
+  participants,
+  roundOf,
+  setResult,
+  tieLabel,
+  wentToPenalties,
+  type Cup,
+} from '@/domain/cup'
+import type { ClubId, MatchPlayer, Player } from '@/domain/types'
+import { resolvedMvp } from '@/domain/votes'
 import { useAuth } from '@/lib/auth'
 import { captainFirst } from '@/domain/formation'
 import { cx } from '@/lib/cx'
-import { updateCup } from '@/lib/data'
+import { saveCup } from '@/lib/data'
+import { useClock, useVoteData } from '@/lib/votesContext'
 
 const isoToday = () => {
   const d = new Date()
@@ -22,11 +35,14 @@ export function TieSheet({
   tie,
   onClose,
   onDraw,
+  players = [],
 }: {
   cup: Cup
   tie: number | null
   onClose: () => void
   onDraw?: (tie: number) => void
+  /** Para los avatares de la votación del MVP */
+  players?: Player[]
 }) {
   return (
     <Sheet
@@ -36,7 +52,14 @@ export function TieSheet({
       title={tie !== null ? tieLabel(tie) : ''}
     >
       {tie !== null && (
-        <TieDetail key={`${cup.id}-${tie}`} cup={cup} tie={tie} onDone={onClose} onDraw={onDraw} />
+        <TieDetail
+          key={`${cup.id}-${tie}`}
+          cup={cup}
+          tie={tie}
+          onDone={onClose}
+          onDraw={onDraw}
+          players={players}
+        />
       )}
     </Sheet>
   )
@@ -47,15 +70,24 @@ function TieDetail({
   tie,
   onDone,
   onDraw,
+  players,
 }: {
   cup: Cup
   tie: number
   onDone: () => void
   onDraw?: (tie: number) => void
+  players: Player[]
 }) {
   const { isAdmin } = useAuth()
   const toast = useToast()
+  const votes = useVoteData()
+  const now = useClock()
   const t = cup.ties[tie]!
+  const [mvp, setMvp] = useState(t.mvp ?? '')
+  // El cruce como partido (para la votación del MVP); solo si ya tiene su partido guardado
+  const raw = t.matchId ? cupMatches([cup], { pending: true }).find((m) => m.cup!.tie === tie) : undefined
+  const match = raw && { ...raw, mvp: resolvedMvp(raw, votes.data, now) }
+  const mvpName = [...t.teamA, ...t.teamB].find((p) => p.id === match?.mvp)?.name
   const [a, b] = participants(cup, tie)
   const [scoreA, setScoreA] = useState(t.scoreA ?? 0)
   const [scoreB, setScoreB] = useState(t.scoreB ?? 0)
@@ -75,14 +107,20 @@ function TieDetail({
   async function save() {
     const out = setResult(cup, tie, { scoreA, scoreB, winner: draw ? winner : null, date })
     if (!out.ok) {
-      toast(out.error === 'need-winner' ? 'Hay empate: elige quién pasa' : 'Resultado no válido', 'error')
+      toast(
+        out.error === 'need-winner' ? 'Hay empate: elige quién gana los penaltis' : 'Resultado no válido',
+        'error',
+      )
       return
     }
+    // Apuntar el resultado abre la votación del MVP (72 h)
+    out.ties[tie] = { ...out.ties[tie]!, mvp: mvp || null, resultAt: t.resultAt ?? Date.now() }
     setBusy(true)
     try {
-      await updateCup(cup.id, { ties: out.ties })
-      const passes = out.ties[tie]!.winner!
-      toast(tie === 6 ? `¡${getClub(passes).name}, campeón!` : `${getClub(passes).name} pasa de ronda`)
+      await saveCup(cup, { ties: out.ties })
+      const passes = getClub(out.ties[tie]!.winner!).name
+      const pens = wentToPenalties(out.ties[tie]!) ? ' en los penaltis' : ''
+      toast(tie === 6 ? `¡${passes}, campeón${pens}!` : `${passes} pasa de ronda${pens}`)
       onDone()
     } catch {
       toast('No se pudo guardar', 'error')
@@ -93,7 +131,7 @@ function TieDetail({
   async function clear() {
     setBusy(true)
     try {
-      await updateCup(cup.id, { ties: clearResult(cup, tie) })
+      await saveCup(cup, { ties: clearResult(cup, tie) })
       toast('Resultado borrado', 'info')
       onDone()
     } catch {
@@ -117,11 +155,15 @@ function TieDetail({
         </div>
       )}
 
+      {!isAdmin && wentToPenalties(t) && (
+        <p className="text-center text-sm font-bold">{getClub(t.winner!).name} gana en los penaltis</p>
+      )}
+
       {isAdmin && draw && (
         <div className="flex flex-col gap-2">
-          <p className="eyebrow">Empate · ¿quién pasa?</p>
+          <p className="eyebrow">Empate · ¿quién gana la tanda de penaltis?</p>
           <Seg
-            label="Quién pasa de ronda"
+            label="Quién gana la tanda de penaltis"
             value={winner ?? ''}
             onChange={(v) => setWinner(v as ClubId)}
             options={[
@@ -132,10 +174,41 @@ function TieDetail({
         </div>
       )}
 
+      {!isAdmin && mvpName && (
+        <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-[var(--warn)]">
+          <Star className="size-4" fill="currentColor" /> MVP: {mvpName}
+        </p>
+      )}
+
       {t.teamA.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
-          <Lineup club={a} side="A" team={t.teamA} captain={t.captainA} />
-          <Lineup club={b} side="B" team={t.teamB} captain={t.captainB} />
+          <Lineup club={a} side="A" team={t.teamA} captain={t.captainA} mvp={match?.mvp ?? null} />
+          <Lineup club={b} side="B" team={t.teamB} captain={t.captainB} mvp={match?.mvp ?? null} />
+        </div>
+      )}
+
+      {match && <MvpVoting match={match} votes={votes.data} players={players} />}
+
+      {isAdmin && t.teamA.length > 0 && (
+        <div className="field">
+          <label htmlFor="tie-mvp">MVP del partido</label>
+          <select id="tie-mvp" className="select" value={mvp} onChange={(e) => setMvp(e.target.value)}>
+            <option value="">Sin MVP</option>
+            {(
+              [
+                [a, t.teamA],
+                [b, t.teamB],
+              ] as const
+            ).map(([club, team]) => (
+              <optgroup key={club} label={getClub(club).name}>
+                {team.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
         </div>
       )}
 
@@ -234,11 +307,13 @@ function Lineup({
   side,
   team,
   captain,
+  mvp,
 }: {
   club: ClubId
   side: 'A' | 'B'
   team: MatchPlayer[]
   captain: string | null
+  mvp: string | null
 }) {
   const right = side === 'B'
   return (
@@ -257,6 +332,9 @@ function Lineup({
               <Crown className="size-3.5 text-[#ffd34d]" fill="currentColor" aria-label="Capitán" />
             )}
             {p.name}
+            {p.id === mvp && (
+              <Star className="size-3.5 text-[var(--warn)]" fill="currentColor" aria-label="MVP" />
+            )}
           </li>
         ))}
       </ul>

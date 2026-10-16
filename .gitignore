@@ -8,6 +8,8 @@ coverage/
 !.env.example
 !.env.emulators
 .firebase/
+# Datos de los emuladores (se guardan al salir con Ctrl+C)
+.emulators-data/
 firebase-debug.log
 firestore-debug.log
 .DS_Store

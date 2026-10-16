@@ -9,7 +9,7 @@ import { drawSeeds, reseed, tieLabel, type Cup } from '@/domain/cup'
 import { createRng, randomSeed } from '@/domain/rng'
 import type { ClubId } from '@/domain/types'
 import { cx } from '@/lib/cx'
-import { updateCup } from '@/lib/data'
+import { saveCup } from '@/lib/data'
 
 /** Editar una copa: nombre, orden de los clubes y de los cruces de cuartos */
 export function CupEditor({ cup, open, onClose }: { cup: Cup; open: boolean; onClose: () => void }) {
@@ -61,7 +61,7 @@ function EditorForm({ cup, onDone }: { cup: Cup; onDone: () => void }) {
   async function save() {
     setBusy(true)
     try {
-      await updateCup(cup.id, { name: name.trim(), seeds, ties: result.ties })
+      await saveCup(cup, { name: name.trim(), seeds, ties: result.ties })
       toast('Copa actualizada')
       onDone()
     } catch {

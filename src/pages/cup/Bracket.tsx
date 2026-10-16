@@ -1,7 +1,16 @@
 import { Check, Shuffle, Trophy, Users } from 'lucide-react'
 import { Crest } from '@/components/ui'
 import { getClub } from '@/domain/clubs'
-import { champion, feeders, isReady, participants, ROUNDS, tieLabel, type Cup } from '@/domain/cup'
+import {
+  champion,
+  feeders,
+  isReady,
+  participants,
+  ROUNDS,
+  tieLabel,
+  wentToPenalties,
+  type Cup,
+} from '@/domain/cup'
 import type { ClubId } from '@/domain/types'
 import { cx } from '@/lib/cx'
 
@@ -85,7 +94,10 @@ function TieCard({
         <header className="flex items-center justify-between gap-2">
           <span className="eyebrow text-[10px]">{tieLabel(tie)}</span>
           {decided ? (
-            <span className="small text-[11px]">{t.date ? dayMonth(t.date) : 'Jugado'}</span>
+            <span className="small text-[11px]">
+              {t.date ? dayMonth(t.date) : 'Jugado'}
+              {wentToPenalties(t) && ' · penaltis'}
+            </span>
           ) : drawn ? (
             <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--ok)]">
               <Users className="size-3.5" /> Equipos listos

@@ -11,7 +11,7 @@ import { pairHistory } from '@/domain/variety'
 import { DrawHistoryContext } from '@/lib/drawHistory'
 import { useCups, useMatches, usePlayers, useVotes } from '@/lib/data'
 import { withResolvedMvp } from '@/domain/votes'
-import { cupMatches } from '@/domain/cup'
+import { cupMatches, joinTies } from '@/domain/cup'
 import { VotesContext, useClock } from '@/lib/votesContext'
 import { DrawProvider, useDraw } from '@/lib/draw'
 import { wasWelcomed } from '@/lib/welcome'
@@ -28,19 +28,54 @@ import { WelcomePage } from '@/pages/WelcomePage'
 
 function Routed() {
   const players = usePlayers()
-  const matches = useMatches()
-  const cups = useCups()
+  const allMatches = useMatches()
+  const rawCups = useCups()
   const votes = useVotes()
   const clock = useClock()
-  // Partidos con el MVP salido de la votación (para historial y fichas)
+  // En la BD, cada partido (amistoso o de copa) es un documento de `matches`. Aquí se separan:
+  // los amistosos por un lado y las copas montadas con sus partidos por otro
+  const matches = useMemo(
+    () => ({ ...allMatches, data: allMatches.data.filter((m) => !m.cupRef) }),
+    [allMatches],
+  )
+  const cups = useMemo(
+    () => ({
+      ...rawCups,
+      loading: rawCups.loading || allMatches.loading,
+      error: rawCups.error ?? allMatches.error,
+      data: rawCups.data.map((c) => joinTies(c, allMatches.data)),
+    }),
+    [rawCups, allMatches],
+  )
+  // Con el MVP salido de la votación: amistosos y cruces de copa (jugados y por jugar con equipos)
   const resolvedMatches = useMemo(
     () => ({ ...matches, data: withResolvedMvp(matches.data, votes.data, clock) }),
     [matches, votes.data, clock],
   )
+  const resolvedCupMatches = useMemo(
+    () => withResolvedMvp(cupMatches(cups.data, { pending: true }), votes.data, clock),
+    [cups.data, votes.data, clock],
+  )
   // Para estadísticas, fichas y duelos: amistosos + cruces de copa jugados
   const statsMatches = useMemo(
-    () => ({ ...resolvedMatches, data: [...resolvedMatches.data, ...cupMatches(cups.data)] }),
-    [resolvedMatches, cups.data],
+    () => ({
+      ...resolvedMatches,
+      loading: resolvedMatches.loading || cups.loading,
+      data: [...resolvedMatches.data, ...resolvedCupMatches.filter((m) => m.winner)],
+    }),
+    [resolvedMatches, resolvedCupMatches, cups.loading],
+  )
+  // Lista del historial: amistosos + cruces de copa
+  const historyMatches = useMemo(
+    () => ({
+      ...resolvedMatches,
+      loading: resolvedMatches.loading || cups.loading,
+      error: resolvedMatches.error ?? cups.error,
+      data: [...resolvedMatches.data, ...resolvedCupMatches].sort(
+        (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
+      ),
+    }),
+    [resolvedMatches, resolvedCupMatches, cups.loading, cups.error],
   )
   const defaultPlace = useMemo(() => lastPlace(matches.data, cups.data), [matches.data, cups.data])
   const pairs = useMemo(() => pairHistory(matches.data, cups.data), [matches.data, cups.data])
@@ -70,7 +105,12 @@ function Routed() {
             element={
               <Layout>
                 <Routes>
-                  <Route path="/" element={<HomePage players={players} matches={matches} cups={cups} />} />
+                  <Route
+                    path="/"
+                    element={
+                      <HomePage players={players} matches={matches} cups={cups} voting={statsMatches.data} />
+                    }
+                  />
                   <Route path="/plantilla" element={<SquadPage players={players} matches={statsMatches} />} />
                   <Route
                     path="/sorteo"
@@ -81,10 +121,17 @@ function Routed() {
                     element={<PizarraPage players={players} cups={cups} defaultPlace={defaultPlace} />}
                   />
                   <Route path="/copa" element={<CupPage cups={cups} />} />
-                  <Route path="/copa/:id" element={<CupDetailPage cups={cups} />} />
+                  <Route path="/copa/:id" element={<CupDetailPage cups={cups} players={players.data} />} />
                   <Route
                     path="/historial"
-                    element={<HistoryPage matches={resolvedMatches} stats={statsMatches} players={players} />}
+                    element={
+                      <HistoryPage
+                        matches={historyMatches}
+                        stats={statsMatches}
+                        players={players}
+                        cups={cups.data}
+                      />
+                    }
                   />
                   <Route
                     path="/jugador/:id"

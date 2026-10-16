@@ -1,12 +1,13 @@
 {
   "name": "wefa-champions-nics",
   "private": true,
-  "version": "3.1.0",
+  "version": "3.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:emulators": "vite --mode emulators",
-    "emulators": "firebase emulators:start --project wefa-champions-nics",
+    "emulators": "firebase emulators:start --project wefa-champions-nics --import=.emulators-data --export-on-exit",
+    "emulators:clean": "firebase emulators:start --project wefa-champions-nics",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",

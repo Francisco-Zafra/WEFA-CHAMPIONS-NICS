@@ -2,6 +2,21 @@
 
 Versiones de WEFA Champions NICS. Cada versión tiene su etiqueta en git (`v3.1.0`, `v3.0.0`…).
 
+## 3.2.0 · 2026-10-16
+
+### Novedades
+
+- **MVP en la copa:** los partidos de copa también tienen MVP y votación de la grada.
+
+### Arreglos
+
+- **Un partido, un solo registro:** los partidos de copa se guardan como cualquier otro partido y se ven a la vez en la copa y en el historial. Da igual dónde apuntes el resultado: no se duplica y las victorias cuentan para los jugadores.
+- Al guardar en la pizarra un partido entre dos clubes que tienen un cruce de copa pendiente, la app pregunta si es el de la copa para no duplicarlo como amistoso.
+
+### Cambios
+
+- En copa, el empate se decide en la tanda de penaltis: la app pregunta «¿quién gana la tanda de penaltis?» y lo indica en el cuadro y en el historial.
+
 ## 3.1.0 · 2026-10-15
 
 ### Novedades
