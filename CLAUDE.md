@@ -14,7 +14,8 @@ WEFA Champions NICS: app para el partido semanal de un grupo de amigos. Sortea e
 
 ```bash
 npm run dev              # Vite contra el Firebase REAL (producción)
-npm run emulators        # emuladores de Auth (9099) y Firestore (8080); requiere Java 21+
+npm run emulators        # emuladores de Auth (9099) y Firestore (8080); requiere Java 21+. Guardan los datos en .emulators-data/ al salir con Ctrl+C
+npm run emulators:clean  # los mismos emuladores, vacíos y sin guardar nada (para tus pruebas)
 npm run dev:emulators    # Vite contra los emuladores (.env.emulators)
 WEFA_PASSWORD=loquesea npm run migrate -- --emulator --create-admin   # siembra los 27 jugadores y crea el admin del emulador con esa contraseña
 
@@ -32,7 +33,7 @@ Antes de dar algo por terminado: `npm run format && npm run lint && npm run type
 
 - **No escribas la contraseña real del admin en ningún fichero del repo** (es público). En los emuladores usa cualquiera.
 - **Producción es intocable sin permiso.** No escribas en el Firestore real, no despliegues reglas, no hagas push ni abras PRs sin que el usuario lo pida. Para probar, usa siempre los emuladores.
-- **El usuario suele tener su `npm run dev` en el puerto 5173: no lo pares nunca.** Para tus pruebas, levanta Vite con `npx vite --mode emulators --port 5174 --strictPort` y los emuladores. Al acabar, para tus procesos (5174, 8080, 9099, 4400, 4500, 9150).
+- **El usuario suele tener su `npm run dev` en el puerto 5173: no lo pares nunca.** Para tus pruebas, levanta Vite con `npx vite --mode emulators --port 5174 --strictPort` y los emuladores con `npm run emulators:clean` (así no ensucias ni pisas los datos de prueba del usuario en `.emulators-data/`). Si el usuario ya tiene sus emuladores en marcha (puertos 8080/9099 ocupados), no los pares: pregúntale. Al acabar, para solo tus procesos (5174, 8080, 9099, 4400, 4500, 9150).
 - **Comprueba en el navegador los cambios de interfaz** (Playwright desde el directorio temporal, no en el repo): móvil 390×844 y escritorio 1440×900, como admin y como espectador si aplica. Mira las capturas antes de decir que está bien.
 - **Si una pantalla necesita un diseño nuevo**, pregunta. El diseño original viene de Claude Design (artifact `https://claude.ai/artifact/EDxSxPdAEn74YeWiofYwXw`); lo nuevo se hace con los estilos existentes salvo que el usuario diga otra cosa.
 - **Scripts temporales** (sembrar datos, capturas…) en el directorio temporal. Si uno tiene que vivir en `scripts/` para resolver dependencias, bórralo al terminar.

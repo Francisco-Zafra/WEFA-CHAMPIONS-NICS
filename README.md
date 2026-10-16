@@ -53,9 +53,13 @@ Requiere Java 21 o superior.
 
 ```bash
 npm run emulators                                          # terminal 1
-WEFA_PASSWORD=loquesea npm run migrate -- --emulator --create-admin   # carga los 27 jugadores
+WEFA_PASSWORD=loquesea npm run migrate -- --emulator --create-admin   # solo la primera vez: carga los 27 jugadores
 npm run dev:emulators                                      # terminal 2
 ```
+
+En PowerShell, la contraseña se pone así: `$env:WEFA_PASSWORD = "loquesea"; npm run migrate -- --emulator --create-admin`.
+
+Los datos de prueba se guardan en `.emulators-data/` al parar los emuladores con **Ctrl+C** y se cargan solos al arrancar. Si cierras la terminal sin más, se pierde lo de esa sesión. Para empezar de cero, borra la carpeta. `npm run emulators:clean` arranca vacío y no guarda nada.
 
 ### Scripts
 
