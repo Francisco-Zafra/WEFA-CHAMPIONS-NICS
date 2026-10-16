@@ -5,7 +5,16 @@ import { useToast } from '@/components/Toast'
 import { Crest, Seg } from '@/components/ui'
 import { Kit } from '@/components/Kit'
 import { getClub } from '@/domain/clubs'
-import { clearResult, isReady, participants, roundOf, setResult, tieLabel, type Cup } from '@/domain/cup'
+import {
+  clearResult,
+  isReady,
+  participants,
+  roundOf,
+  setResult,
+  tieLabel,
+  wentToPenalties,
+  type Cup,
+} from '@/domain/cup'
 import type { ClubId, MatchPlayer } from '@/domain/types'
 import { useAuth } from '@/lib/auth'
 import { captainFirst } from '@/domain/formation'
@@ -75,14 +84,18 @@ function TieDetail({
   async function save() {
     const out = setResult(cup, tie, { scoreA, scoreB, winner: draw ? winner : null, date })
     if (!out.ok) {
-      toast(out.error === 'need-winner' ? 'Hay empate: elige quién pasa' : 'Resultado no válido', 'error')
+      toast(
+        out.error === 'need-winner' ? 'Hay empate: elige quién gana los penaltis' : 'Resultado no válido',
+        'error',
+      )
       return
     }
     setBusy(true)
     try {
       await updateCup(cup.id, { ties: out.ties })
-      const passes = out.ties[tie]!.winner!
-      toast(tie === 6 ? `¡${getClub(passes).name}, campeón!` : `${getClub(passes).name} pasa de ronda`)
+      const passes = getClub(out.ties[tie]!.winner!).name
+      const pens = wentToPenalties(out.ties[tie]!) ? ' en los penaltis' : ''
+      toast(tie === 6 ? `¡${passes}, campeón${pens}!` : `${passes} pasa de ronda${pens}`)
       onDone()
     } catch {
       toast('No se pudo guardar', 'error')
@@ -117,11 +130,15 @@ function TieDetail({
         </div>
       )}
 
+      {!isAdmin && wentToPenalties(t) && (
+        <p className="text-center text-sm font-bold">{getClub(t.winner!).name} gana en los penaltis</p>
+      )}
+
       {isAdmin && draw && (
         <div className="flex flex-col gap-2">
-          <p className="eyebrow">Empate · ¿quién pasa?</p>
+          <p className="eyebrow">Empate · ¿quién gana la tanda de penaltis?</p>
           <Seg
-            label="Quién pasa de ronda"
+            label="Quién gana la tanda de penaltis"
             value={winner ?? ''}
             onChange={(v) => setWinner(v as ClubId)}
             options={[

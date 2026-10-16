@@ -42,6 +42,18 @@ function Routed() {
     () => ({ ...resolvedMatches, data: [...resolvedMatches.data, ...cupMatches(cups.data)] }),
     [resolvedMatches, cups.data],
   )
+  // Lista del historial: amistosos + cruces de copa (jugados y por jugar con equipos)
+  const historyMatches = useMemo(
+    () => ({
+      ...resolvedMatches,
+      loading: resolvedMatches.loading || cups.loading,
+      error: resolvedMatches.error ?? cups.error,
+      data: [...resolvedMatches.data, ...cupMatches(cups.data, { pending: true })].sort(
+        (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
+      ),
+    }),
+    [resolvedMatches, cups],
+  )
   const defaultPlace = useMemo(() => lastPlace(matches.data, cups.data), [matches.data, cups.data])
   const pairs = useMemo(() => pairHistory(matches.data, cups.data), [matches.data, cups.data])
   const captainDefaults = useMemo(() => lastCaptains(matches.data, cups.data), [matches.data, cups.data])
@@ -84,7 +96,14 @@ function Routed() {
                   <Route path="/copa/:id" element={<CupDetailPage cups={cups} />} />
                   <Route
                     path="/historial"
-                    element={<HistoryPage matches={resolvedMatches} stats={statsMatches} players={players} />}
+                    element={
+                      <HistoryPage
+                        matches={historyMatches}
+                        stats={statsMatches}
+                        players={players}
+                        cups={cups.data}
+                      />
+                    }
                   />
                   <Route
                     path="/jugador/:id"

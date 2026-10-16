@@ -19,7 +19,7 @@ export const ROUNDS = [
 export interface CupTie {
   scoreA: number | null
   scoreB: number | null
-  /** Quién pasa. Con empate lo elige el admin */
+  /** Quién pasa. Con empate, quien gana la tanda de penaltis (lo elige el admin) */
   winner: ClubId | null
   /** YYYY-MM-DD */
   date: string | null
@@ -231,13 +231,15 @@ export function reseed(cup: Pick<Cup, 'seeds' | 'ties'>, seeds: ClubId[]): Resee
 
 /**
  * Cruces jugados de todas las copas convertidos en partidos, para contarlos en estadísticas,
- * fichas y duelos junto a los amistosos (los cruces sin equipos guardados solo cuentan para clubes)
+ * fichas y duelos junto a los amistosos (los cruces sin equipos guardados solo cuentan para clubes).
+ * Con `pending`, también los cruces por jugar que ya tienen equipos y fecha (para el historial).
  */
-export function cupMatches(cups: Cup[]): Match[] {
+export function cupMatches(cups: Cup[], { pending = false } = {}): Match[] {
   const out: Match[] = []
   for (const cup of cups)
     cup.ties.forEach((t, i) => {
-      if (!t.winner || t.scoreA === null || t.scoreB === null) return
+      const played = !!t.winner && t.scoreA !== null && t.scoreB !== null
+      if (!played && !(pending && !t.winner && t.teamA.length > 0 && t.date)) return
       const [a, b] = participants(cup, i)
       if (!a || !b) return
       out.push({
@@ -252,15 +254,47 @@ export function cupMatches(cups: Cup[]): Match[] {
         captainB: t.captainB,
         teamA: t.teamA,
         teamB: t.teamB,
-        scoreA: t.scoreA,
-        scoreB: t.scoreB,
+        scoreA: played ? t.scoreA : null,
+        scoreB: played ? t.scoreB : null,
         mvp: null,
         winner: t.winner,
-        cup: { id: cup.id, name: cup.name, label: tieLabel(i) },
+        cup: { id: cup.id, name: cup.name, label: tieLabel(i), tie: i },
       })
     })
   return out
 }
+
+/** Cruce por jugar entre dos clubes; `flipped` si en el cuadro van al revés (B contra A) */
+export interface OpenTie {
+  cup: Cup
+  tie: number
+  flipped: boolean
+}
+
+/**
+ * Cruce de copa pendiente entre estos dos clubes (en las copas en el orden dado, la primera que
+ * lo tenga). Sirve para no guardar como amistoso un partido que en realidad es de copa.
+ */
+export function findOpenTie(cups: Cup[], clubA: ClubId, clubB: ClubId): OpenTie | null {
+  for (const cup of cups)
+    for (let i = 0; i < TIE_COUNT; i++) {
+      if (cup.ties[i]!.winner) continue
+      const [a, b] = participants(cup, i)
+      if (a === clubA && b === clubB) return { cup, tie: i, flipped: false }
+      if (a === clubB && b === clubA) return { cup, tie: i, flipped: true }
+    }
+  return null
+}
+
+export type TieLineups = Pick<CupTie, 'teamA' | 'teamB' | 'captainA' | 'captainB'>
+
+/** Equipos y capitanes puestos en el lado del cuadro que les toca */
+export const lineupsFor = (l: TieLineups, flipped: boolean): TieLineups =>
+  flipped ? { teamA: l.teamB, teamB: l.teamA, captainA: l.captainB, captainB: l.captainA } : l
+
+/** El cruce se decidió en la tanda de penaltis (empate en el marcador) */
+export const wentToPenalties = (t: Pick<CupTie, 'scoreA' | 'scoreB'> & { winner?: ClubId | null }) =>
+  !!t.winner && t.scoreA !== null && t.scoreA === t.scoreB
 
 /** Títulos por club en las copas terminadas */
 export function titles(cups: Cup[]): Map<ClubId, number> {
