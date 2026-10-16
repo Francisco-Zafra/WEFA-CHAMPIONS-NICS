@@ -6,7 +6,8 @@ Versiones de WEFA Champions NICS. Cada versión tiene su etiqueta en git (`v3.1.
 
 ### Arreglos
 
-- **Copa e historial, sincronizados:** los cruces de copa salen en el historial (jugados y por jugar) y el resultado se apunta en un solo sitio; da igual si lo metes desde la copa o desde el historial.
+- **Un partido, un solo registro:** los partidos de copa se guardan como cualquier otro partido y se ven a la vez en la copa y en el historial. Da igual dónde apuntes el resultado: no se duplica y las victorias cuentan para los jugadores.
+- Los partidos de copa también tienen MVP y votación de la grada.
 - Al guardar en la pizarra un partido entre dos clubes que tienen un cruce de copa pendiente, la app pregunta si es el de la copa para no duplicarlo como amistoso.
 
 ### Cambios

@@ -24,7 +24,7 @@ import { useDrawHistory } from '@/lib/drawHistory'
 import { timeLeft, votingDeadline, votingStatus } from '@/domain/votes'
 import { useClock, useVoteData } from '@/lib/votesContext'
 import { cx } from '@/lib/cx'
-import { updateCup, updateMatch, type Collection } from '@/lib/data'
+import { saveCup, updateMatch, type Collection } from '@/lib/data'
 import { useDraw } from '@/lib/draw'
 import { exportShareImage } from '@/lib/share'
 import { drawFromUpcoming, redrawUpcoming, teamPlayers } from '@/lib/upcomingDraw'
@@ -92,10 +92,14 @@ export function HomePage({
   players,
   matches,
   cups,
+  voting,
 }: {
   players: Collection<Player>
+  /** Amistosos */
   matches: Collection<Match>
   cups: Collection<Cup>
+  /** Partidos jugados (amistosos y de copa) para el aviso de votación del MVP */
+  voting: Match[]
 }) {
   const now = useNow()
   const { isAdmin } = useAuth()
@@ -109,7 +113,7 @@ export function HomePage({
   if (matches.loading || cups.loading)
     return <div className="skel h-[400px] rounded-[30px]" aria-busy="true" />
 
-  const banner = <VoteBanner matches={matches.data} />
+  const banner = <VoteBanner matches={voting} />
 
   if (!next)
     return (
@@ -589,7 +593,7 @@ function EditWhenForm({ up, cups, onDone }: { up: UpcomingMatch; cups: Cup[]; on
       else {
         const cup = cups.find((c) => c.id === up.cupId)
         if (!cup || up.tie === undefined) throw new Error('copa')
-        await updateCup(cup.id, { ties: cup.ties.map((t, i) => (i === up.tie ? { ...t, ...data } : t)) })
+        await saveCup(cup, { ties: cup.ties.map((t, i) => (i === up.tie ? { ...t, ...data } : t)) })
       }
       toast('Partido actualizado')
       onDone()

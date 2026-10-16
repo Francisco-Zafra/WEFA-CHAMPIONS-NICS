@@ -63,13 +63,14 @@ Los datos de prueba se guardan en `.emulators-data/` al parar los emuladores con
 
 ### Scripts
 
-| Comando                                 | Qué hace                                                                                                |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `npm run test`                          | Tests de dominio (Vitest): reparto, variedad, formación, copa, clasificaciones, fichas, récords y votos |
-| `npm run lint` / `typecheck` / `format` | Calidad de código                                                                                       |
-| `npm run build`                         | Build de producción en `dist/`                                                                          |
-| `npm run migrate`                       | Migra `scripts/seed/players.json` (exportado del SQLite de FTB2.0) a Firestore. Es idempotente          |
-| `npm run deploy:rules`                  | Publica `firestore.rules` (requiere `npx firebase-tools login`)                                         |
+| Comando                                 | Qué hace                                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `npm run test`                          | Tests de dominio (Vitest): reparto, variedad, formación, copa, clasificaciones, fichas, récords y votos                      |
+| `npm run lint` / `typecheck` / `format` | Calidad de código                                                                                                            |
+| `npm run build`                         | Build de producción en `dist/`                                                                                               |
+| `npm run migrate`                       | Migra `scripts/seed/players.json` (exportado del SQLite de FTB2.0) a Firestore. Es idempotente                               |
+| `node scripts/migrate-cups.mjs`         | Pasa las copas antiguas (cruces dentro de la copa) a partidos y junta los duplicados. Sin `--apply` solo enseña lo que haría |
+| `npm run deploy:rules`                  | Publica `firestore.rules` (requiere `npx firebase-tools login`)                                                              |
 
 ### Estructura
 

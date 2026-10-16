@@ -5,6 +5,9 @@ import {
   cupMatches,
   cupStatus,
   emptyTie,
+  emptyTies,
+  joinTies,
+  tieWrites,
   feeders,
   findOpenTie,
   lineupsFor,
@@ -20,7 +23,7 @@ import {
   type Cup,
 } from './cup'
 import { createRng } from './rng'
-import type { ClubId } from './types'
+import type { ClubId, Match } from './types'
 
 const SEEDS: ClubId[] = [
   'avispas',
@@ -51,7 +54,7 @@ describe('cuadro', () => {
   it('sortea los 8 clubes sin repetir', () => {
     const c = newCup('Copa', createRng(7))
     expect(new Set(c.seeds).size).toBe(8)
-    expect(c.ties).toHaveLength(7)
+    expect(emptyTies()).toHaveLength(7)
   })
 
   it('conecta cuartos → semis → final', () => {
@@ -253,5 +256,95 @@ describe('reseed', () => {
     expect(r.ties[4]!.winner).toBeNull()
     expect(r.ties[1]!.winner).toBe('beetles')
     expect(r.lostResults).toBe(2)
+  })
+})
+
+describe('cruces guardados como partidos', () => {
+  const team = [{ id: 'x', name: 'X', rating: 80 }]
+  const asMatch = (id: string, tie: number, over: Partial<Match> = {}): Match => ({
+    id,
+    date: '2026-10-20',
+    time: '21:00',
+    place: null,
+    createdAt: 0,
+    clubA: 'avispas',
+    clubB: 'jabalies',
+    captainA: null,
+    captainB: null,
+    teamA: team,
+    teamB: team,
+    scoreA: null,
+    scoreB: null,
+    mvp: null,
+    cupRef: { id: 'c1', tie },
+    ...over,
+  })
+
+  it('joinTies pone cada partido en su cruce y deja los de otras copas', () => {
+    const m = asMatch('m1', 0, { scoreA: 1, scoreB: 1, winner: 'jabalies', resultAt: 5 })
+    const other = asMatch('m2', 1, { cupRef: { id: 'otra', tie: 1 } })
+    const c = joinTies(cup(), [m, other])
+    expect(c.ties[0]).toMatchObject({ matchId: 'm1', winner: 'jabalies', resultAt: 5, teamA: team })
+    expect(c.ties[1]!.matchId).toBeNull()
+    expect(participants(c, 4)).toEqual(['jabalies', null])
+    // El partido de copa conserva su id: los votos del MVP siguen apuntando a él
+    expect(cupMatches([c])[0]!.id).toBe('m1')
+  })
+
+  it('crea el partido de un cruce nuevo y no reescribe lo que no cambia', () => {
+    const before = joinTies(cup(), [asMatch('m1', 0, { scoreA: 2, scoreB: 0, winner: 'avispas' })])
+    const ties = before.ties.map((t) => ({ ...t }))
+    ties[1] = { ...ties[1]!, date: '2026-10-27', teamA: team, teamB: team }
+    const w = tieWrites(before, { seeds: before.seeds, ties })
+    expect(w.upserts).toHaveLength(1)
+    expect(w.upserts[0]).toMatchObject({
+      id: null,
+      doc: { clubA: 'pinguinardos', cup: { id: 'c1', tie: 1 } },
+    })
+    expect(w.deletes).toEqual([])
+  })
+
+  it('al cambiar quién pasa borra los partidos de las rondas siguientes y sus votos', () => {
+    let c = joinTies(cup(), [
+      asMatch('m0', 0, { scoreA: 2, scoreB: 0, winner: 'avispas', resultAt: 1 }),
+      asMatch('m1', 1, {
+        clubA: 'pinguinardos',
+        clubB: 'beetles',
+        scoreA: 1,
+        scoreB: 0,
+        winner: 'pinguinardos',
+        resultAt: 1,
+      }),
+      asMatch('m4', 4, { clubA: 'avispas', clubB: 'pinguinardos', resultAt: 1 }),
+    ])
+    const out = setResult(c, 0, { scoreA: 0, scoreB: 1, date: '2026-10-20' })
+    if (!out.ok) throw new Error(out.error)
+    const w = tieWrites(c, { seeds: c.seeds, ties: out.ties })
+    expect(w.deletes).toEqual(['m4'])
+    expect(w.clearVotes).toEqual(['m4'])
+    expect(w.upserts.map((u) => u.id)).toEqual(['m0'])
+    // Quitar el resultado conserva el partido (tiene equipos) pero invalida sus votos
+    c = joinTies(cup(), [asMatch('m0', 0, { scoreA: 2, scoreB: 0, winner: 'avispas', resultAt: 1 })])
+    const cleared = tieWrites(c, { seeds: c.seeds, ties: clearResult(c, 0) })
+    expect(cleared.upserts[0]).toMatchObject({ id: 'm0', doc: { winner: null, resultAt: null } })
+    expect(cleared.clearVotes).toEqual(['m0'])
+  })
+
+  it('al reordenar el cuadro el partido se mueve de cruce sin cambiar de id', () => {
+    const before = joinTies(cup(), [asMatch('m0', 0, { scoreA: 2, scoreB: 0, winner: 'avispas' })])
+    const seeds = [...SEEDS.slice(2, 4), ...SEEDS.slice(0, 2), ...SEEDS.slice(4)]
+    const w = tieWrites(before, { seeds, ties: reseed(before, seeds).ties })
+    expect(w.upserts).toEqual([
+      expect.objectContaining({ id: 'm0', doc: expect.objectContaining({ cup: { id: 'c1', tie: 1 } }) }),
+    ])
+    expect(w.deletes).toEqual([])
+  })
+
+  it('una copa del formato antiguo pasa todos sus cruces a partidos', () => {
+    const legacy = { ...play(cup(), 0, 3, 1), legacy: true }
+    const w = tieWrites(legacy, legacy)
+    expect(w.upserts).toEqual([
+      expect.objectContaining({ id: null, doc: expect.objectContaining({ scoreA: 3 }) }),
+    ])
   })
 })

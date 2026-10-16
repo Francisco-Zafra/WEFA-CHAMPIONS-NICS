@@ -136,6 +136,7 @@ function MatchList({ matches, players, cups }: { matches: Match[]; players: Play
           cup={tieCup}
           tie={current!.cup!.tie}
           onClose={close}
+          players={players}
           onDraw={
             isAdmin
               ? (tie) => {

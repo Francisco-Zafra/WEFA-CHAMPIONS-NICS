@@ -2,18 +2,22 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
+  getDocs,
   onSnapshot,
+  query,
   serverTimestamp,
   Timestamp,
   updateDoc,
+  where,
   writeBatch,
   type DocumentData,
 } from 'firebase/firestore'
 import { useEffect, useState } from 'react'
 import { isAvatarId } from '@/domain/avatars'
 import { isClubId } from '@/domain/clubs'
-import { emptyTie, TIE_COUNT, type Cup, type CupInput, type CupTie } from '@/domain/cup'
+import { emptyTie, tieWrites, TIE_COUNT, type Cup, type CupInput, type CupTie } from '@/domain/cup'
 import { clampRating, clampStat, overall } from '@/domain/rating'
 import type { Vote } from '@/domain/votes'
 import {
@@ -72,6 +76,10 @@ function toMatch(id: string, d: DocumentData): Match | null {
     mvp: d.mvp ?? null,
     resultAt: typeof d.resultAt === 'number' ? d.resultAt : null,
     votingClosed: d.votingClosed === true,
+    // Partido de copa: a qué cruce pertenece y quién pasó
+    ...(d.cup && typeof d.cup.id === 'string' && typeof d.cup.tie === 'number'
+      ? { cupRef: { id: d.cup.id, tie: d.cup.tie }, winner: isClubId(d.winner) ? d.winner : null }
+      : {}),
   }
 }
 
@@ -82,6 +90,7 @@ const toTeam = (raw: unknown) =>
 
 const toScore = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
+/** Copa con sus cruces del formato antiguo, si los tiene (los nuevos se montan con `joinTies`) */
 function toCup(id: string, d: DocumentData): Cup | null {
   const seeds = Array.isArray(d.seeds) ? d.seeds.filter(isClubId) : []
   if (seeds.length !== 8) return null
@@ -108,6 +117,7 @@ function toCup(id: string, d: DocumentData): Cup | null {
     createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toMillis() : Date.now(),
     seeds,
     ties,
+    legacy: raw.length > 0,
   }
 }
 
@@ -213,16 +223,40 @@ export function useCups(): Collection<Cup> {
 }
 
 export async function createCup(input: CupInput): Promise<string> {
-  const ref = await addDoc(cups, { ...input, createdAt: serverTimestamp() })
+  const ref = await addDoc(cups, { name: input.name, seeds: input.seeds, createdAt: serverTimestamp() })
   return ref.id
 }
 
-export function updateCup(id: string, input: Partial<CupInput>) {
-  return updateDoc(doc(cups, id), input)
+/**
+ * Guarda los cambios de una copa (montada) en una sola escritura: nombre y cuadro en la copa, y
+ * cada cruce en su partido de `matches`. Una copa del formato antiguo queda convertida.
+ */
+export async function saveCup(before: Cup, after: Partial<CupInput> & Pick<Cup, 'ties'>) {
+  const writes = tieWrites(before, { seeds: after.seeds ?? before.seeds, ties: after.ties })
+  const batch = writeBatch(db)
+  for (const { id, doc: data } of writes.upserts) {
+    if (id) batch.set(doc(matches, id), data, { merge: true })
+    else batch.set(doc(matches), { ...data, createdAt: serverTimestamp() })
+  }
+  for (const id of writes.deletes) batch.delete(doc(matches, id))
+  const cupFields = {
+    ...(after.name !== undefined ? { name: after.name } : {}),
+    ...(after.seeds ? { seeds: after.seeds } : {}),
+    ...(before.legacy ? { ties: deleteField() } : {}),
+  }
+  if (Object.keys(cupFields).length) batch.update(doc(cups, before.id), cupFields)
+  await batch.commit()
+  await deleteVotesOfMatches(writes.clearVotes)
 }
 
-export function deleteCup(id: string) {
-  return deleteDoc(doc(cups, id))
+/** Borra la copa con todos sus partidos y sus votos */
+export async function deleteCup(cup: Cup) {
+  const ids = cup.ties.map((t) => t.matchId).filter((id): id is string => !!id)
+  const batch = writeBatch(db)
+  for (const id of ids) batch.delete(doc(matches, id))
+  batch.delete(doc(cups, cup.id))
+  await batch.commit()
+  await deleteVotesOfMatches(ids)
 }
 
 // ---------- Votación del MVP ----------
@@ -256,6 +290,16 @@ export function useVotes(): Collection<Vote> {
 export async function castVote(matchId: string, playerId: string): Promise<void> {
   const user = auth.currentUser ?? (await signInAnonymously(auth)).user
   await setDoc(doc(votes, `${matchId}_${user.uid}`), { matchId, uid: user.uid, playerId, at: Date.now() })
+}
+
+/** Borra los votos de esos partidos (si falla no pasa nada grave: sin resultado no cuentan) */
+async function deleteVotesOfMatches(matchIds: string[]) {
+  for (let i = 0; i < matchIds.length; i += 30) {
+    const snap = await getDocs(query(votes, where('matchId', 'in', matchIds.slice(i, i + 30)))).catch(
+      () => null,
+    )
+    if (snap && !snap.empty) await deleteVotesOf(snap.docs.map((d) => d.id)).catch(() => undefined)
+  }
 }
 
 export function deleteVotesOf(ids: string[]) {

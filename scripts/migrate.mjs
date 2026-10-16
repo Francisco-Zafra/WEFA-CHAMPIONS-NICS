@@ -35,8 +35,9 @@ const app = initializeApp(config)
 const auth = getAuth(app)
 const db = getFirestore(app)
 if (args.has('--emulator')) {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
-  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  const env = process.env
+  connectAuthEmulator(auth, `http://127.0.0.1:${env.VITE_EMU_AUTH_PORT ?? 9099}`, { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', Number(env.VITE_EMU_FIRESTORE_PORT ?? 8080))
   console.log('→ Usando emuladores locales')
 }
 

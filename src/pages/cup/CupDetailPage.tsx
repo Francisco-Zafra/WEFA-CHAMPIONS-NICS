@@ -5,6 +5,7 @@ import { EmptyCards } from '@/components/States'
 import { useToast } from '@/components/Toast'
 import { getClub } from '@/domain/clubs'
 import { champion, cupStatus, playedTies, TIE_COUNT, type Cup } from '@/domain/cup'
+import type { Player } from '@/domain/types'
 import { useStartCupDraw } from '@/hooks/useStartCupDraw'
 import { useAuth } from '@/lib/auth'
 import { deleteCup, type Collection } from '@/lib/data'
@@ -12,7 +13,7 @@ import { Bracket } from './Bracket'
 import { CupEditor } from './CupEditor'
 import { TieSheet } from './TieSheet'
 
-export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
+export function CupDetailPage({ cups, players }: { cups: Collection<Cup>; players: Player[] }) {
   const { id } = useParams()
   const { isAdmin } = useAuth()
   const toast = useToast()
@@ -44,7 +45,7 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
 
   async function remove() {
     try {
-      await deleteCup(cup!.id)
+      await deleteCup(cup!)
       toast('Copa eliminada', 'info')
       navigate('/copa')
     } catch {
@@ -102,6 +103,7 @@ export function CupDetailPage({ cups }: { cups: Collection<Cup> }) {
       <TieSheet
         cup={cup}
         tie={open}
+        players={players}
         onClose={() => setOpen(null)}
         onDraw={
           isAdmin

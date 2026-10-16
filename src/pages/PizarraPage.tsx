@@ -35,7 +35,7 @@ import type { Club, Player } from '@/domain/types'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useAuth } from '@/lib/auth'
 import { useDrawHistory } from '@/lib/drawHistory'
-import { createMatch, updateCup, updateMatch, type Collection } from '@/lib/data'
+import { createMatch, saveCup, updateMatch, type Collection } from '@/lib/data'
 import { useDraw, type Draw } from '@/lib/draw'
 import { runDraw } from '@/lib/runDraw'
 import { exportShareImage } from '@/lib/share'
@@ -699,7 +699,7 @@ function SaveMatchForm({
     if (cup.ties[tie]!.winner) return toast('Ese cruce ya tiene resultado', 'error')
     const sides = lineupsFor(lineups, flipped)
     const ties = cup.ties.map((t, i) => (i === tie ? { ...t, ...whenToSave(when), ...sides } : t))
-    await updateCup(cup.id, { ties })
+    await saveCup(cup, { ties })
     toast('Equipos guardados en el cuadro. Apunta el resultado tras el partido')
     clearCup()
     onClose()
