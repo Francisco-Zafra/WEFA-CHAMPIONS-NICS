@@ -43,7 +43,7 @@ function VoteBanner({ matches }: { matches: Match[] }) {
   const b = getClub(open.clubB)
   return (
     <Link
-      to={`/historial?votar=${open.id}`}
+      to={`/historial/${open.id}?tab=mvp`}
       className="glass glass--club flex items-center gap-3 px-4 py-3 text-[var(--ink)] no-underline"
     >
       <Star className="size-6 shrink-0 text-[var(--warn)]" fill="currentColor" />

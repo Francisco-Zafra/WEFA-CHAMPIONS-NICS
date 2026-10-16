@@ -83,6 +83,7 @@ function Card({
   big,
   edit,
   target,
+  goals = 0,
 }: {
   spot: Spot
   captain: boolean
@@ -90,11 +91,13 @@ function Card({
   edit?: PitchEdit
   /** Es del equipo rival al seleccionado: tocarla intercambia */
   target?: boolean
+  /** Goles que marcó en el partido */
+  goals?: number
 }) {
   const { player } = spot
   const selected = edit?.selected === player.id
   const style = { left: `${spot.x}%`, top: spot.y, x: '-50%', scale: spot.scale, originY: 0 }
-  const label = `${player.name}, media ${player.rating}${captain ? ', capitán' : ''}`
+  const label = `${player.name}, media ${player.rating}${captain ? ', capitán' : ''}${goals ? `, ${goals} ${goals === 1 ? 'gol' : 'goles'}` : ''}`
   const body = (
     <>
       {captain && <Crown className="pk__crown" fill="currentColor" strokeWidth={1.5} aria-hidden />}
@@ -119,6 +122,11 @@ function Card({
           <span className="pk__name">{shortName(player.name)}</span>
         </div>
       </div>
+      {goals > 0 && (
+        <span className="pk__g" aria-hidden>
+          <span className="ball" />×{goals}
+        </span>
+      )}
     </>
   )
   if (edit)
@@ -166,6 +174,7 @@ export function Pitch({
   height,
   big,
   edit,
+  goals,
   className,
   style,
 }: {
@@ -175,6 +184,8 @@ export function Pitch({
   height: number
   big?: boolean
   edit?: PitchEdit
+  /** Goles de cada jugador (id → goles), para ponerles el balón */
+  goals?: Record<string, number>
   className?: string
   style?: CSSProperties
 }) {
@@ -212,6 +223,7 @@ export function Pitch({
             big={big}
             edit={edit}
             target={selectedSide === 'B'}
+            goals={goals?.[s.player.id]}
           />
         ))}
       </div>
@@ -224,6 +236,7 @@ export function Pitch({
             big={big}
             edit={edit}
             target={selectedSide === 'A'}
+            goals={goals?.[s.player.id]}
           />
         ))}
       </div>

@@ -14,6 +14,7 @@ import { withResolvedMvp } from '@/domain/votes'
 import { cupMatches, joinTies } from '@/domain/cup'
 import { VotesContext, useClock } from '@/lib/votesContext'
 import { DrawProvider, useDraw } from '@/lib/draw'
+import { StatsFilterProvider } from '@/lib/statsFilter'
 import { wasWelcomed } from '@/lib/welcome'
 import { CupDetailPage } from '@/pages/cup/CupDetailPage'
 import { CupPage } from '@/pages/cup/CupPage'
@@ -24,6 +25,7 @@ import { HomePage } from '@/pages/HomePage'
 import { PlayerProfilePage } from '@/pages/PlayerProfilePage'
 import { PizarraPage } from '@/pages/PizarraPage'
 import { SquadPage } from '@/pages/SquadPage'
+import { StatsPage } from '@/pages/stats/StatsPage'
 import { WelcomePage } from '@/pages/WelcomePage'
 
 function Routed() {
@@ -111,7 +113,7 @@ function Routed() {
                       <HomePage players={players} matches={matches} cups={cups} voting={statsMatches.data} />
                     }
                   />
-                  <Route path="/plantilla" element={<SquadPage players={players} matches={statsMatches} />} />
+                  <Route path="/plantilla" element={<SquadPage players={players} />} />
                   <Route
                     path="/sorteo"
                     element={<DrawPage players={players} captainDefaults={captainDefaults} />}
@@ -122,20 +124,28 @@ function Routed() {
                   />
                   <Route path="/copa" element={<CupPage cups={cups} />} />
                   <Route path="/copa/:id" element={<CupDetailPage cups={cups} players={players.data} />} />
+                  {['/historial', '/historial/:id', '/historial/:id/:mode'].map((path) => (
+                    <Route
+                      key={path}
+                      path={path}
+                      element={
+                        <HistoryPage
+                          matches={historyMatches}
+                          players={players}
+                          cups={cups.data}
+                          defaultPlace={defaultPlace}
+                        />
+                      }
+                    />
+                  ))}
+                  <Route path="/estadisticas" element={<Navigate to="/estadisticas/jugadores" replace />} />
                   <Route
-                    path="/historial"
-                    element={
-                      <HistoryPage
-                        matches={historyMatches}
-                        stats={statsMatches}
-                        players={players}
-                        cups={cups.data}
-                      />
-                    }
+                    path="/estadisticas/:section"
+                    element={<StatsPage players={players} matches={statsMatches} cups={cups} />}
                   />
                   <Route
                     path="/jugador/:id"
-                    element={<PlayerProfilePage players={players} matches={statsMatches} />}
+                    element={<PlayerProfilePage players={players} matches={statsMatches} cups={cups} />}
                   />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
@@ -158,7 +168,9 @@ export function App() {
       <AuthProvider>
         <ToastProvider>
           <DrawProvider>
-            <Routed />
+            <StatsFilterProvider>
+              <Routed />
+            </StatsFilterProvider>
           </DrawProvider>
         </ToastProvider>
       </AuthProvider>

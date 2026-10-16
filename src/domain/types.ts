@@ -60,6 +60,15 @@ export interface MatchPlayer {
   rating: number
 }
 
+/** Quién marcó los goles de un partido */
+export interface MatchGoals {
+  /** Goles de cada jugador (id → goles); su equipo es en el que jugó */
+  byPlayer: Record<string, number>
+  /** Goles en propia puerta a favor del equipo A / B (los marcó un rival) */
+  ownA: number
+  ownB: number
+}
+
 export interface Match {
   id: string
   /** Fecha del partido, YYYY-MM-DD */
@@ -82,6 +91,8 @@ export interface Match {
   resultAt?: number | null
   /** El admin cerró la votación antes de las 72 h */
   votingClosed?: boolean
+  /** Goleadores apuntados; ausente o null = sin goleadores (partidos antiguos) */
+  goals?: MatchGoals | null
   /** Solo en cruces de copa: quién pasó (con empate, quien ganó los penaltis) */
   winner?: ClubId | null
   /** Tal cual está en la BD: el partido es el cruce `tie` de la copa `id` (sin él, es un amistoso) */

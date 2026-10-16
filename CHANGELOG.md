@@ -2,6 +2,24 @@
 
 Versiones de WEFA Champions NICS. Cada versión tiene su etiqueta en git (`v3.1.0`, `v3.0.0`…).
 
+## 3.3.0 · 2026-10-16
+
+### Novedades
+
+- **Estadísticas, pestaña nueva:** jugadores, goleadores, clubes, comparar, récords y «¿Funciona el sorteo?», separados del historial.
+- **Filtros para todo:** competición (copa y ronda), fechas y temporadas (de septiembre a junio), jugadores (alguno, juntos o enfrentados), clubes, campo, resultado y mínimos de partidos. Se combinan, siguen en todas las secciones y, si no queda ningún partido, la app propone qué quitar.
+- **Goleadores:** el admin apunta quién marcó cada gol (y los de propia puerta), con aviso si no cuadra con el marcador. Pichichi, máximo goleador por club, récords de goles y goles en la ficha del jugador.
+- **Comparar** dos jugadores o dos clubes lado a lado, enfrentados y juntos.
+- **Ficha del partido** nueva: alineación con los goles, goleadores, MVP y ajustes del admin.
+- Las cifras llevan a sus partidos: tocar «5 victorias» abre esos partidos en el historial.
+
+### Cambios
+
+- **Historial** solo con los partidos, agrupados por mes y con el máximo goleador de cada uno; en escritorio, la ficha al lado.
+- **Navegación:** seis iconos en el móvil (solo la pestaña activa enseña su nombre) y menú lateral en dos grupos. El sorteo, para el admin, va en la cabecera del móvil.
+- **Menos cajas:** listas con una línea fina en vez de tarjetas y pestañas subrayadas.
+- **Calibrar medias** pasa de Plantilla a Estadísticas › ¿Funciona el sorteo?
+
 ## 3.2.0 · 2026-10-16
 
 ### Novedades

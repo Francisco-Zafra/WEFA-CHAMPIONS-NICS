@@ -1,4 +1,4 @@
-import { Check, Lock, Star } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { leaders, tally, timeLeft, votingDeadline, votingStatus, type Vote } from '@/domain/votes'
 import type { Match, MatchPlayer, Player } from '@/domain/types'
@@ -18,37 +18,36 @@ function voteError(e: unknown): string {
   return 'No se pudo registrar el voto.'
 }
 
-/** Votación del MVP de un partido: sin cuentas, un voto por navegador */
+/**
+ * Votación del MVP de un partido: sin cuentas, un voto por navegador. El admin puede cerrarla
+ * (proclama al más votado) o elegir el MVP a mano
+ */
 export function MvpVoting({ match, votes, players }: { match: Match; votes: Vote[]; players: Player[] }) {
   const { user, isAdmin } = useAuth()
   const toast = useToast()
   const now = useClock()
   const [choice, setChoice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [manual, setManual] = useState(false)
   const status = votingStatus(match, now)
-  if (status === 'none') return null
 
+  const candidates: (MatchPlayer & { side: 'A' | 'B' })[] = [
+    ...match.teamA.map((p) => ({ ...p, side: 'A' as const })),
+    ...match.teamB.map((p) => ({ ...p, side: 'B' as const })),
+  ]
+  const byId = new Map(candidates.map((c) => [c.id, c]))
+  const nameOf = (id: string) => players.find((p) => p.id === id)?.name ?? byId.get(id)?.name ?? '¿?'
+  const avatarOf = (id: string) => players.find((p) => p.id === id)?.avatar ?? null
   const mine = user ? votes.find((v) => v.matchId === match.id && v.uid === user.uid) : undefined
   const rows = tally(votes, match.id)
   const total = rows.reduce((a, r) => a + r.votes, 0)
-  const candidates: (MatchPlayer & { club: 'A' | 'B' })[] = [
-    ...match.teamA.map((p) => ({ ...p, club: 'A' as const })),
-    ...match.teamB.map((p) => ({ ...p, club: 'B' as const })),
-  ]
-  const byId = new Map(candidates.map((c) => [c.id, c]))
-  const nameOf = (id: string) => byId.get(id)?.name ?? '¿?'
-  const avatarOf = (id: string) => players.find((p) => p.id === id)?.avatar ?? null
-  const deadline = votingDeadline(match)!
-  const showResults = status === 'closed' || !!mine || isAdmin
-  const max = rows[0]?.votes ?? 1
+  const top = rows[0]?.votes ?? 0
 
-  async function vote() {
-    if (!choice) return
+  async function run(action: () => Promise<void>, message: string) {
     setBusy(true)
     try {
-      await castVote(match.id, choice)
-      toast('¡Voto registrado!')
-      setChoice(null)
+      await action()
+      toast(message)
     } catch (e) {
       toast(voteError(e), 'error')
     } finally {
@@ -56,50 +55,97 @@ export function MvpVoting({ match, votes, players }: { match: Match; votes: Vote
     }
   }
 
-  async function close() {
-    const top = leaders(rows)
-    setBusy(true)
-    try {
-      await updateMatch(match.id, { votingClosed: true, ...(top.length === 1 ? { mvp: top[0]! } : {}) })
-      toast(
-        top.length === 1
-          ? `MVP: ${nameOf(top[0]!)}`
-          : top.length > 1
-            ? 'Hay empate: elige el MVP en el desplegable de abajo.'
-            : 'Votación cerrada sin votos.',
-        top.length > 1 ? 'info' : 'success',
-      )
-    } catch {
-      toast('No se pudo cerrar la votación', 'error')
-    } finally {
-      setBusy(false)
-    }
+  const vote = () => choice && void run(() => castVote(match.id, choice), '¡Voto registrado!')
+
+  function close() {
+    const best = leaders(rows)
+    void run(
+      () => updateMatch(match.id, { votingClosed: true, ...(best.length === 1 ? { mvp: best[0]! } : {}) }),
+      best.length === 1
+        ? `MVP: ${nameOf(best[0]!)}`
+        : best.length > 1
+          ? 'Hay empate: elige el MVP a mano.'
+          : 'Votación cerrada sin votos.',
+    )
   }
 
-  return (
-    <section className="glass flex flex-col gap-3 p-4" aria-label="Votación del MVP">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="eyebrow">Votación del MVP</p>
-          <h3 className="h-display h-m mt-1 flex items-center gap-2">
-            <Star className="size-5 text-[var(--warn)]" fill="currentColor" />
-            {status === 'open' ? '¿Quién fue el mejor?' : 'Votación cerrada'}
-          </h3>
+  const setMvp = (id: string) =>
+    void run(
+      () => updateMatch(match.id, { mvp: id || null }),
+      id ? `MVP: ${nameOf(id)}` : 'MVP quitado',
+    ).then(() => setManual(false))
+
+  const manualPick = isAdmin && manual && (
+    <div className="field">
+      <label htmlFor="mvp-pick">MVP del partido</label>
+      <select
+        id="mvp-pick"
+        className="select"
+        value={match.mvp ?? ''}
+        disabled={busy}
+        onChange={(e) => setMvp(e.target.value)}
+      >
+        <option value="">Sin MVP</option>
+        {(['A', 'B'] as const).map((side) => (
+          <optgroup key={side} label={side === 'A' ? 'Rojo' : 'Azul'}>
+            {candidates
+              .filter((c) => c.side === side)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {nameOf(c.id)}
+                </option>
+              ))}
+          </optgroup>
+        ))}
+      </select>
+    </div>
+  )
+
+  if (status === 'none')
+    return (
+      <div className="flex flex-col gap-2.5">
+        <div className="card__h">
+          <span className="h-display h-s flex items-center gap-2">
+            <span className="star" aria-hidden style={{ width: 18, height: 18 }} />
+            MVP
+          </span>
+          {match.mvp && <span className="pillnote">Elegido a mano</span>}
         </div>
-        <span className="small shrink-0 text-right text-xs">
-          {status === 'open' ? (
-            <>
-              Cierra en
-              <br />
-              <strong className="text-[var(--ink)]">{timeLeft(deadline, now)}</strong>
-            </>
-          ) : (
-            <span className="flex items-center gap-1">
-              <Lock className="size-3.5" /> {total} {total === 1 ? 'voto' : 'votos'}
-            </span>
-          )}
+        {match.mvp ? (
+          <div className="flex items-center gap-2.5">
+            <PlayerAvatar player={{ name: nameOf(match.mvp), avatar: avatarOf(match.mvp) }} />
+            <span className="flex-1 text-[15px] font-bold">{nameOf(match.mvp)}</span>
+          </div>
+        ) : (
+          <p className="small text-[13px]">
+            {match.scoreA === null
+              ? 'La votación se abre al apuntar el resultado.'
+              : 'Este partido es de antes de la votación: no tiene MVP.'}
+          </p>
+        )}
+        {isAdmin && match.scoreA !== null && !manual && (
+          <button className="btn btn--glass btn--sm self-start" type="button" onClick={() => setManual(true)}>
+            Elegir a mano
+          </button>
+        )}
+        {manualPick}
+      </div>
+    )
+
+  const showResults = status === 'closed' || !!mine || isAdmin
+  return (
+    <section className="flex flex-col gap-2.5" aria-label="Votación del MVP">
+      <div className="flex items-center justify-between gap-3">
+        <span className="h-display h-s flex items-center gap-2">
+          <span className="star" aria-hidden style={{ width: 18, height: 18 }} />
+          {status === 'open' ? 'Votación abierta' : 'Votación cerrada'}
         </span>
-      </header>
+        <span className="pillnote">
+          {status === 'open'
+            ? `Quedan ${timeLeft(votingDeadline(match)!, now)}`
+            : `${total} ${total === 1 ? 'voto' : 'votos'}`}
+        </span>
+      </div>
 
       {status === 'open' && !mine && (
         <>
@@ -112,91 +158,83 @@ export function MvpVoting({ match, votes, players }: { match: Match; votes: Vote
                 aria-checked={choice === c.id}
                 onClick={() => setChoice(c.id)}
                 className={cx(
-                  'prow club-' + (c.club === 'A' ? match.clubA : match.clubB),
+                  'prow',
+                  c.side === 'A' ? 'team-red' : 'team-blue',
                   choice === c.id && 'prow--on',
                 )}
+                style={choice === c.id ? { boxShadow: 'inset 0 -2px 0 var(--club)' } : undefined}
               >
                 <PlayerAvatar
-                  player={{ name: c.name, avatar: avatarOf(c.id) }}
+                  player={{ name: nameOf(c.id), avatar: avatarOf(c.id) }}
                   className="size-[34px] text-sm"
                 />
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{c.name}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{nameOf(c.id)}</span>
               </button>
             ))}
           </div>
-          <button
-            className="btn btn--primary h-12"
-            type="button"
-            disabled={!choice || busy}
-            onClick={() => void vote()}
-          >
+          <button className="btn btn--primary h-12" type="button" disabled={!choice || busy} onClick={vote}>
             {busy ? <span className="spinner" /> : <Check />}
             {choice ? `Votar a ${nameOf(choice)}` : 'Elige a un jugador'}
           </button>
-          <p className="small text-xs">
-            Solo puedes votar una vez. Sin cuentas: tu voto se guarda en este navegador.
-          </p>
         </>
       )}
 
-      {status === 'open' && mine && (
-        <p className="flex items-center gap-2 text-sm">
-          <Check className="size-4 text-[var(--ok)]" /> Has votado por{' '}
-          <strong>{nameOf(mine.playerId)}</strong>. Gracias.
-        </p>
-      )}
-
       {showResults && (
-        <ol className="flex flex-col gap-1.5">
-          {rows.length === 0 && <li className="small text-xs">Aún no hay votos.</li>}
-          {rows.map((r) => {
-            const c = byId.get(r.playerId)
-            return (
-              <li
-                key={r.playerId}
-                className={cx(
-                  'flex items-center gap-2.5',
-                  c && `club-${c.club === 'A' ? match.clubA : match.clubB}`,
-                )}
-              >
-                <PlayerAvatar
-                  player={{ name: nameOf(r.playerId), avatar: avatarOf(r.playerId) }}
-                  className="size-7 text-xs"
+        <div className="flex flex-col gap-2">
+          {rows.length === 0 && <p className="small text-xs">Aún no hay votos.</p>}
+          {rows.map((r) => (
+            <div key={r.playerId} className={cx('vote', mine?.playerId === r.playerId && 'vote--me')}>
+              <span className="n">{nameOf(r.playerId)}</span>
+              <div className="hbar">
+                <i
+                  style={{
+                    width: `${(r.votes / (top || 1)) * 100}%`,
+                    background:
+                      r.votes === top
+                        ? 'var(--gold)'
+                        : mine?.playerId === r.playerId
+                          ? '#9B7BFF'
+                          : 'rgba(255,255,255,.35)',
+                  }}
                 />
-                <span className="w-24 shrink-0 truncate text-sm font-semibold">{nameOf(r.playerId)}</span>
-                <span className="sbar flex-1" style={{ height: 8 }}>
-                  <i
-                    style={{
-                      left: 0,
-                      width: `${(r.votes / max) * 100}%`,
-                      background: 'var(--club)',
-                      borderRadius: 8,
-                    }}
-                  />
-                </span>
-                <span className="num w-5 text-right text-sm font-bold">{r.votes}</span>
-              </li>
-            )
-          })}
-        </ol>
+              </div>
+              <span className="text-right font-bold">{r.votes}</span>
+            </div>
+          ))}
+        </div>
       )}
 
       {status === 'closed' && match.mvp && (
-        <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-[var(--warn)]">
-          <Star className="size-4" fill="currentColor" /> MVP: {nameOf(match.mvp)}
-        </p>
+        <div className="flex items-center gap-2.5">
+          <PlayerAvatar player={{ name: nameOf(match.mvp), avatar: avatarOf(match.mvp) }} />
+          <span className="flex-1 text-[15px] font-bold">{nameOf(match.mvp)}</span>
+          <span className="note">
+            MVP · {rows.find((r) => r.playerId === match.mvp)?.votes ?? 0} de {total} votos
+          </span>
+        </div>
       )}
 
-      {isAdmin && status === 'open' && (
-        <button
-          className="btn btn--glass btn--sm self-start"
-          type="button"
-          disabled={busy}
-          onClick={() => void close()}
-        >
-          <Lock /> Cerrar votación{rows.length ? ' y proclamar MVP' : ''}
-        </button>
+      <p className="note">
+        {status === 'open'
+          ? mine
+            ? `Has votado por ${nameOf(mine.playerId)}. Un voto por persona; la estrella sale en la alineación al cerrar.`
+            : `${total} ${total === 1 ? 'voto' : 'votos'} · un voto por persona durante 72 h, sin cuenta.`
+          : 'Votación terminada.'}
+      </p>
+
+      {isAdmin && (
+        <div className="mt-1 grid grid-cols-2 gap-2">
+          <button className="btn btn--glass btn--sm h-11" type="button" onClick={() => setManual((x) => !x)}>
+            Elegir a mano
+          </button>
+          {status === 'open' && (
+            <button className="btn btn--primary btn--sm h-11" type="button" disabled={busy} onClick={close}>
+              Cerrar votación
+            </button>
+          )}
+        </div>
       )}
+      {manualPick}
     </section>
   )
 }

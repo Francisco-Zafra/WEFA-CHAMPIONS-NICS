@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { playerProfile, rivalries } from './profile'
+import { currentStreaks, playerProfile, rivalries, streakLabel } from './profile'
 import type { ClubId, Match } from './types'
 
 const p = (id: string) => ({ id, name: id.toUpperCase(), rating: 80 })
@@ -85,5 +85,31 @@ describe('rivalries', () => {
     expect(ft.lastScore).toEqual([5, 2])
     expect(r[0]).toBe(ft)
     expect(r.find((x) => x.b === 'patos')).toMatchObject({ played: 1, drawn: 1 })
+  })
+})
+
+describe('rachas actuales', () => {
+  it('cuenta hacia atrás hasta que cambia el resultado', () => {
+    const p = (id: string) => ({ id, name: id, rating: 80 })
+    const m = (date: string, scoreA: number, scoreB: number): Match => ({
+      id: date,
+      date,
+      time: null,
+      place: null,
+      createdAt: 0,
+      clubA: 'avispas',
+      clubB: 'pandas',
+      captainA: null,
+      captainB: null,
+      teamA: [p('a')],
+      teamB: [p('b')],
+      scoreA,
+      scoreB,
+      mvp: null,
+    })
+    const s = currentStreaks([m('2026-10-01', 0, 1), m('2026-10-08', 2, 1), m('2026-10-15', 3, 0)])
+    expect(streakLabel(s.get('a')!)).toBe('2V')
+    expect(streakLabel(s.get('b')!)).toBe('2D')
+    expect(streakLabel(null)).toBe('')
   })
 })

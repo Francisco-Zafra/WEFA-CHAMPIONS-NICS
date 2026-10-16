@@ -1,5 +1,6 @@
 import { Crown, Minus, Plus, Shuffle, Star, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { MvpVoting } from '@/components/MvpVoting'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
@@ -210,6 +211,12 @@ function TieDetail({
             ))}
           </select>
         </div>
+      )}
+
+      {t.matchId && t.winner && (
+        <Link className="btn btn--glass" to={`/historial/${t.matchId}`}>
+          Ver ficha del partido · goleadores y MVP
+        </Link>
       )}
 
       {!t.winner && onDraw && (

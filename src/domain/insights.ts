@@ -127,6 +127,8 @@ export interface DrawQuality {
   /** De esos, cuántos ganó el favorito */
   favoriteWon: number
   draws: number
+  /** Partidos por diferencia de goles: 0, 1, 2, 3 y 4 o más */
+  margins: [number, number, number, number, number]
 }
 
 export function drawQuality(matches: Match[]): DrawQuality {
@@ -139,11 +141,13 @@ export function drawQuality(matches: Match[]): DrawQuality {
     decided: 0,
     favoriteWon: 0,
     draws: 0,
+    margins: [0, 0, 0, 0, 0],
   }
   for (const m of ms) {
     const margin = Math.abs(m.scoreA - m.scoreB)
     const gap = avg(m.teamA) - avg(m.teamB)
     q.avgMargin += margin
+    q.margins[Math.min(margin, 4)]!++
     q.avgGap += Math.abs(gap)
     if (margin <= 1) q.close++
     const o = resultFor(m, 'A')
@@ -217,7 +221,11 @@ function topPlayers(
   }
 }
 
-export function records(matches: Match[], players: Player[]): Records {
+export function records(
+  matches: Match[],
+  players: Player[],
+  mins: { winRate: number; duo: number } = { winRate: WIN_RATE_MIN_GAMES, duo: DUO_MIN_GAMES },
+): Records {
   const played = matches.filter(isPlayed).sort(byDate)
   const names = new Map(players.map((p) => [p.id, p.name]))
   const nameOf = (mp: MatchPlayer) => names.get(mp.id) ?? mp.name
@@ -282,7 +290,7 @@ export function records(matches: Match[], players: Player[]): Records {
           duos.set(key, d)
         }
     }
-  const eligible = [...duos.values()].filter((d) => d.played >= DUO_MIN_GAMES)
+  const eligible = [...duos.values()].filter((d) => d.played >= mins.duo)
   const bestDuo =
     eligible.filter((d) => d.won > 0).sort((a, b) => b.winRate - a.winRate || b.played - a.played)[0] ?? null
   const worstDuo =
@@ -298,7 +306,7 @@ export function records(matches: Match[], players: Player[]): Records {
     mostPlayed: topPlayers(rows((g) => g.length)),
     bestWinRate: topPlayers(
       rows(
-        (g) => (g.length >= WIN_RATE_MIN_GAMES ? Math.round((wins(g) / g.length) * 100) : -1),
+        (g) => (g.length >= mins.winRate ? Math.round((wins(g) / g.length) * 100) : -1),
         (g) => `${wins(g)} de ${g.length}`,
       ),
       1,
@@ -388,4 +396,37 @@ export function talisman(games: PlayerGame[]): Match['clubA'] | null {
   // Tiene que ganar con él más que en general
   const overall = games.filter((g) => g.outcome === 'W').length / games.length
   return best.won / best.played > overall ? club : null
+}
+
+// ---------- Veredicto del sorteo ----------
+
+export type Verdict = 'yes' | 'meh' | 'no'
+
+/** ¿Funciona el sorteo? Sí con 55 % o más de partidos igualados; más o menos desde el 40 % */
+export function verdict(q: DrawQuality): Verdict | null {
+  if (q.played === 0) return null
+  const close = q.close / q.played
+  return close >= 0.55 ? 'yes' : close >= 0.4 ? 'meh' : 'no'
+}
+
+// ---------- Duelos entre jugadores ----------
+
+/** Las parejas de jugadores que más veces se han enfrentado */
+export function frequentDuels(matches: Match[], players: Player[], limit = 3): [string, string][] {
+  const known = new Set(players.map((p) => p.id))
+  const count = new Map<string, { ids: [string, string]; n: number }>()
+  for (const m of matches.filter(isPlayed))
+    for (const x of m.teamA)
+      for (const y of m.teamB) {
+        if (!known.has(x.id) || !known.has(y.id)) continue
+        const ids = [x.id, y.id].sort() as [string, string]
+        const key = pairKey(...ids)
+        const c = count.get(key) ?? { ids, n: 0 }
+        c.n++
+        count.set(key, c)
+      }
+  return [...count.values()]
+    .sort((a, b) => b.n - a.n || a.ids.join().localeCompare(b.ids.join()))
+    .slice(0, limit)
+    .map((c) => c.ids)
 }
