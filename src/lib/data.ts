@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react'
 import { isAvatarId } from '@/domain/avatars'
 import { isClubId } from '@/domain/clubs'
 import { emptyTie, tieWrites, TIE_COUNT, type Cup, type CupInput, type CupTie } from '@/domain/cup'
+import type { MatchGoals } from '@/domain/types'
 import { clampRating, clampStat, overall } from '@/domain/rating'
 import type { Vote } from '@/domain/votes'
 import {
@@ -76,11 +77,23 @@ function toMatch(id: string, d: DocumentData): Match | null {
     mvp: d.mvp ?? null,
     resultAt: typeof d.resultAt === 'number' ? d.resultAt : null,
     votingClosed: d.votingClosed === true,
+    goals: toGoals(d.goals),
     // Partido de copa: a qué cruce pertenece y quién pasó
     ...(d.cup && typeof d.cup.id === 'string' && typeof d.cup.tie === 'number'
       ? { cupRef: { id: d.cup.id, tie: d.cup.tie }, winner: isClubId(d.winner) ? d.winner : null }
       : {}),
   }
+}
+
+/** Goleadores tal cual vienen de la BD; cualquier cosa rara se descarta */
+function toGoals(raw: unknown): MatchGoals | null {
+  if (!raw || typeof raw !== 'object') return null
+  const g = raw as Record<string, unknown>
+  const n = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : 0)
+  const byPlayer: Record<string, number> = {}
+  for (const [id, v] of Object.entries((g.byPlayer ?? {}) as Record<string, unknown>))
+    if (n(v)) byPlayer[id] = n(v)
+  return { byPlayer, ownA: n(g.ownA), ownB: n(g.ownB) }
 }
 
 const toTeam = (raw: unknown) =>
@@ -200,6 +213,11 @@ export function createMatch(input: MatchInput) {
 
 export function updateMatch(id: string, input: Partial<MatchInput>) {
   return updateDoc(doc(matches, id), input)
+}
+
+/** Goleadores de un partido (amistoso o de copa: los dos son documentos de `matches`) */
+export function setMatchGoals(id: string, goals: MatchGoals) {
+  return updateDoc(doc(matches, id), { goals })
 }
 
 export function deleteMatch(id: string) {

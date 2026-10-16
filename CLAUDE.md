@@ -52,7 +52,7 @@ src/
   lib/         Firebase, auth, acceso a datos (data.ts) y contextos compartidos
   hooks/       Hooks de React
   components/  UI reutilizable
-  pages/       Una página por pantalla; con piezas propias, en carpeta (cup/, draw/, history/)
+  pages/       Una página por pantalla; con piezas propias, en carpeta (cup/, draw/, history/, stats/)
 public/        Escudos e himnos (clubs/), avatares (avatars/*.webp), iconos
 scripts/       migrate.mjs + seed/players.json (datos de FTB2.0)
 docs/          Presentación de la app (HTML + PDF)
@@ -65,12 +65,12 @@ docs/          Presentación de la app (HTML + PDF)
 
 ## Modelo de datos (Firestore)
 
-| Colección | Contenido                                                                                                                                                                                                                                               |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `players` | `name`, `rating` (media manual 1–99), `stats` (6 atributos **decorativos**), `avatar` (id o null), `active` (convocado)                                                                                                                                 |
-| `matches` | **Todos los partidos**, amistosos y de copa: clubes, equipos (instantánea con `rating` de cada jugador), capitanes, marcador, `mvp`, fecha/hora/campo, `resultAt`, `votingClosed`. Los de copa llevan además `cup: { id, tie }` y `winner` (quién pasó) |
-| `cups`    | `name`, `seeds` (8 clubes en orden del cuadro). Los cruces (0–3 cuartos, 4–5 semis, 6 final) son los partidos que apuntan a la copa. Las copas antiguas pueden tener aún `ties` dentro: `scripts/migrate-cups.mjs` las convierte                        |
-| `votes`   | Votos del MVP. Id `${matchId}_${uid}`, solo creación                                                                                                                                                                                                    |
+| Colección | Contenido                                                                                                                                                                                                                                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `players` | `name`, `rating` (media manual 1–99), `stats` (6 atributos **decorativos**), `avatar` (id o null), `active` (convocado)                                                                                                                                                                                                                            |
+| `matches` | **Todos los partidos**, amistosos y de copa: clubes, equipos (instantánea con `rating` de cada jugador), capitanes, marcador, `mvp`, fecha/hora/campo, `resultAt`, `votingClosed`, `goals` (`byPlayer` id → goles, `ownA`/`ownB` en propia puerta; ausente = sin goleadores). Los de copa llevan además `cup: { id, tie }` y `winner` (quién pasó) |
+| `cups`    | `name`, `seeds` (8 clubes en orden del cuadro). Los cruces (0–3 cuartos, 4–5 semis, 6 final) son los partidos que apuntan a la copa. Las copas antiguas pueden tener aún `ties` dentro: `scripts/migrate-cups.mjs` las convierte                                                                                                                   |
+| `votes`   | Votos del MVP. Id `${matchId}_${uid}`, solo creación                                                                                                                                                                                                                                                                                               |
 
 Las reglas (`firestore.rules`): lectura pública; escribe solo `admin@wefa-nics.app` (el usuario «admin» de la app). Los votos los crea cualquier sesión anónima mientras la votación esté abierta. Si cambias el formato de un documento, revisa las reglas.
 
@@ -84,7 +84,9 @@ Las reglas (`firestore.rules`): lectura pública; escribe solo `admin@wefa-nics.
 - **Estadísticas**: en `App.tsx`, `statsMatches` = amistosos + cruces de copa jugados (`cupMatches`), todos con el MVP resuelto. **Cualquier estadística nueva debe usar `statsMatches`** y sacar el resultado con `resultFor(m, side)`: en copa, un empate se decide en la tanda de penaltis y cuenta como victoria para quien la gana (`winner`).
 - **MVP**: al guardar un resultado se pone `resultAt`. La votación dura 72 h (`domain/votes.ts`) o hasta que el admin la cierra. El MVP resuelto es el manual o, cerrada la votación, el más votado sin empate.
 - **Copa** (`domain/cup.ts`): **un partido es un solo documento** de `matches`, se vea en la copa o en el historial; nunca se guarda dos veces. `App.tsx` separa los amistosos (sin `cupRef`) y monta cada copa con sus partidos (`joinTies`); las páginas trabajan con esa copa montada. Para guardar cambios de cruces usa siempre `saveCup(antes, después)`, que calcula con `tieWrites` qué partidos crear, cambiar o borrar (y qué votos ya no valen). El historial abre los cruces en su ficha (`TieSheet`), con MVP y votación como cualquier partido. `setResult` borra lo que dependía de un ganador que cambia. `reseed` reordena el cuadro y lleva cada resultado con su enfrentamiento.
-- **Calibrar medias** (`domain/insights.ts`): solo cuenta partidos jugados con la media actual del jugador. Sugiere cambios de ±1 a ±3 cuando la diferencia es clara (z ≥ 1,65) y hay al menos 5 partidos.
+- **Filtros de Estadísticas** (`domain/filters.ts`, estado en `lib/statsFilter.tsx`): cada sección y la ficha del jugador trabajan con `applyFilter(statsMatches, filtro)` (hook `useStatsData`). La temporada va de septiembre a agosto (`seasonOf`) y se abre en la actual. Los mínimos de partidos (`mins`) van en el filtro.
+- **Goleadores** (`domain/goals.ts`): un partido «tiene goleadores» si se guardaron y hay alguno (o es 0–0). Las estadísticas de goles solo cuentan esos partidos y lo dicen («sobre N partidos con goleadores»). Al dar la vuelta a un cruce de copa, `ownA`/`ownB` también se cambian.
+- **Calibrar medias** (`domain/insights.ts`, en Estadísticas › ¿Funciona el sorteo?): solo cuenta partidos jugados con la media actual del jugador. Sugiere cambios de ±1 a ±3 cuando la diferencia es clara (z ≥ 1,65) y hay al menos 5 partidos.
 
 ## Estilo y UI
 

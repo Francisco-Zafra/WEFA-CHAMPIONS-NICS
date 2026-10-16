@@ -1,6 +1,6 @@
-import { LogIn, LogOut } from 'lucide-react'
+import { LogIn, LogOut, Shuffle } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { useDraw } from '@/lib/draw'
 import { useToast } from './Toast'
@@ -24,25 +24,44 @@ const ICON = {
       <circle cx="12" cy="12" r="2.5" />
     </>
   ),
-  cup: (
+  cup: <path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M9 17h6" />,
+  history: (
     <>
-      <path d="M3 5h5v5H3M3 14h5v5H3M8 7.5h3v9H8M11 12h3" />
-      <rect x="14" y="9" width="7" height="6" rx="1.5" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </>
   ),
-  history: (
-    <path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M9 17h6" />
-  ),
+  stats: <path d="M5 20v-8M12 20V5M19 20v-5" strokeWidth="2" />,
 }
 
-const NAV = [
+interface NavItem {
+  to: string
+  label: string
+  icon: ReactNode
+  /** Otras rutas en las que esta entrada cuenta como activa */
+  also?: string[]
+  adminOnly?: boolean
+}
+
+/** Menú lateral en dos grupos: lo que se usa para preparar y jugar, y lo que se consulta después */
+const WEEK: NavItem[] = [
   { to: '/', label: 'Inicio', icon: ICON.home },
   { to: '/plantilla', label: 'Plantilla', icon: ICON.squad },
-  { to: '/sorteo', label: 'Sorteo', icon: ICON.draw },
+  { to: '/sorteo', label: 'Sorteo', icon: ICON.draw, adminOnly: true },
   { to: '/pizarra', label: 'Pizarra', icon: ICON.board },
   { to: '/copa', label: 'Copa', icon: ICON.cup },
-  { to: '/historial', label: 'Historial', icon: ICON.history },
 ]
+const DATA: NavItem[] = [
+  { to: '/historial', label: 'Historial', icon: ICON.history },
+  { to: '/estadisticas', label: 'Estadísticas', icon: ICON.stats, also: ['/jugador'] },
+]
+/** Móvil: seis iconos (el sorteo, para el admin, va en la cabecera) */
+const MOBILE = [...WEEK.filter((n) => n.to !== '/sorteo'), ...DATA]
+
+function isActive(item: NavItem, path: string) {
+  if (item.to === '/') return path === '/'
+  return [item.to, ...(item.also ?? [])].some((p) => path === p || path.startsWith(`${p}/`))
+}
 
 function NavIcon({ children }: { children: ReactNode }) {
   return (
@@ -107,13 +126,23 @@ function AccountButton() {
   )
 }
 
-/** El sorteo es solo para el admin: los espectadores no ven esa pestaña */
-const navFor = (isAdmin: boolean) => NAV.filter((n) => isAdmin || n.to !== '/sorteo')
-
 export function Layout({ children }: { children: ReactNode }) {
   const { setMode } = useDraw()
   const { isAdmin, logout } = useAuth()
   const toast = useToast()
+  const { pathname } = useLocation()
+  const railItem = (item: NavItem) =>
+    (!item.adminOnly || isAdmin) && (
+      <Link
+        key={item.to}
+        to={item.to}
+        className="rail__item"
+        aria-current={isActive(item, pathname) ? 'page' : undefined}
+      >
+        <NavIcon>{item.icon}</NavIcon>
+        {item.label}
+      </Link>
+    )
 
   return (
     <div className="club-wefa grain relative min-h-dvh">
@@ -121,15 +150,13 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Escritorio: rail lateral */}
       <nav className="rail hidden lg:flex" aria-label="Principal">
-        <Link to="/" className="mx-1.5 mb-7">
+        <Link to="/" className="mx-1.5 mb-3">
           <Wordmark large />
         </Link>
-        {navFor(isAdmin).map(({ to, label, icon }) => (
-          <NavLink key={to} to={to} end={to === '/'} className="rail__item">
-            <NavIcon>{icon}</NavIcon>
-            {label}
-          </NavLink>
-        ))}
+        <span className="railgroup">La semana</span>
+        {WEEK.map(railItem)}
+        <span className="railgroup">Los datos</span>
+        {DATA.map(railItem)}
         <div className="flex-1" />
         {isAdmin && (
           <Link
@@ -173,25 +200,46 @@ export function Layout({ children }: { children: ReactNode }) {
         <Link to="/">
           <Wordmark />
         </Link>
-        <AccountButton />
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Link
+              className="btn btn--glass btn--sm h-11"
+              to="/sorteo"
+              onClick={() => setMode('friendly')}
+              aria-label="Nuevo sorteo"
+            >
+              <Shuffle /> Sorteo
+            </Link>
+          )}
+          <AccountButton />
+        </div>
       </header>
 
       <main className="relative z-[1] mx-auto box-border max-w-[1240px] px-[18px] pt-2.5 pb-[120px] lg:ml-[248px] lg:px-10 lg:pt-11 lg:pb-12">
         {children}
       </main>
 
-      {/* Móvil: tabbar flotante */}
+      {/* Móvil: seis iconos; solo la pestaña activa enseña su nombre */}
       <nav
-        className="tabbar lg:hidden"
+        className={`tabbar6 lg:hidden ${pathname.endsWith('/goles') ? 'hidden' : ''}`}
         aria-label="Principal"
-        style={{ gridTemplateColumns: `repeat(${navFor(isAdmin).length}, minmax(0, 1fr))` }}
       >
-        {navFor(isAdmin).map(({ to, label, icon }) => (
-          <NavLink key={to} to={to} end={to === '/'} className="tab">
-            <NavIcon>{icon}</NavIcon>
-            {label}
-          </NavLink>
-        ))}
+        {MOBILE.map((item) => {
+          const active = isActive(item, pathname)
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="t6"
+              aria-current={active ? 'page' : undefined}
+              aria-label={active ? undefined : item.label}
+              title={item.label}
+            >
+              <NavIcon>{item.icon}</NavIcon>
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
       </nav>
     </div>
   )

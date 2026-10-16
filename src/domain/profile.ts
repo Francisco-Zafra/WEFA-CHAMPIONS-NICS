@@ -104,7 +104,7 @@ export interface PlayerProfile {
   recent: PlayerGame[]
 }
 
-export function playerProfile(matches: Match[], playerId: string): PlayerProfile {
+export function playerProfile(matches: Match[], playerId: string, minGames = MIN_GAMES): PlayerProfile {
   const games = gamesOf(matches, playerId)
   const count = (o: Outcome) => games.filter((g) => g.outcome === o).length
   const played = games.length
@@ -123,8 +123,8 @@ export function playerProfile(matches: Match[], playerId: string): PlayerProfile
     best = Math.max(best, run)
   }
 
-  const partners = relations(games, (g) => g.mates).filter((r) => r.played >= MIN_GAMES)
-  const against = relations(games, (g) => g.rivals).filter((r) => r.played >= MIN_GAMES)
+  const partners = relations(games, (g) => g.mates).filter((r) => r.played >= minGames)
+  const against = relations(games, (g) => g.rivals).filter((r) => r.played >= minGames)
   const clubs = new Map<ClubId, { club: ClubId; played: number; won: number }>()
   for (const g of games) {
     const c = clubs.get(g.club) ?? { club: g.club, played: 0, won: 0 }
@@ -216,4 +216,34 @@ export function rivalries(matches: Match[]): Rivalry[] {
     map.set(key, r)
   }
   return [...map.values()].sort((x, y) => y.played - x.played || y.lastDate.localeCompare(x.lastDate))
+}
+
+/** «3V», «2E», «1D»; vacío si no hay racha */
+export function streakLabel(s: Streak | null): string {
+  if (!s) return ''
+  return `${s.count}${s.kind === 'W' ? 'V' : s.kind === 'D' ? 'E' : 'D'}`
+}
+
+/** Racha actual de cada jugador (victorias, empates o derrotas seguidas hasta el último partido) */
+export function currentStreaks(matches: Match[]): Map<string, Streak> {
+  const out = new Map<string, Streak>()
+  const sorted = matches
+    .filter(isPlayed)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
+  const done = new Set<string>()
+  for (const m of sorted)
+    for (const [team, side] of [
+      [m.teamA, 'A'],
+      [m.teamB, 'B'],
+    ] as const) {
+      const o = resultFor(m, side)
+      for (const p of team) {
+        if (done.has(p.id)) continue
+        const s = out.get(p.id)
+        if (!s) out.set(p.id, { kind: o, count: 1 })
+        else if (s.kind === o) s.count++
+        else done.add(p.id)
+      }
+    }
+  return out
 }

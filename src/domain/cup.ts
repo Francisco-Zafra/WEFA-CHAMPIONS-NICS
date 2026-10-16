@@ -1,6 +1,6 @@
 import { CLUBS } from './clubs'
 import { shuffle, type Rng } from './rng'
-import type { ClubId, Match, MatchPlayer } from './types'
+import type { ClubId, Match, MatchGoals, MatchPlayer } from './types'
 
 /**
  * Copa eliminatoria de 8 clubes: 7 cruces.
@@ -42,6 +42,8 @@ export interface CupTie {
   /** Cuándo se apuntó el resultado (ms); abre la votación del MVP */
   resultAt: number | null
   votingClosed: boolean
+  /** Goleadores apuntados (null = sin apuntar) */
+  goals: MatchGoals | null
 }
 
 export interface Cup {
@@ -74,6 +76,7 @@ export const emptyTie = (): CupTie => ({
   mvp: null,
   resultAt: null,
   votingClosed: false,
+  goals: null,
 })
 
 export const emptyTies = () => Array.from({ length: TIE_COUNT }, emptyTie)
@@ -194,6 +197,7 @@ export function clearResult(cup: Pick<Cup, 'ties'>, tie: number): CupTie[] {
     mvp: null,
     resultAt: null,
     votingClosed: false,
+    goals: null,
   }
   resetDownstream(ties, tie)
   return ties
@@ -215,6 +219,7 @@ const flipTie = (t: CupTie): CupTie => ({
   teamB: t.teamA,
   captainA: t.captainB,
   captainB: t.captainA,
+  goals: t.goals && { ...t.goals, ownA: t.goals.ownB, ownB: t.goals.ownA },
 })
 
 export interface Reseed {
@@ -289,6 +294,7 @@ export function cupMatches(cups: Cup[], { pending = false } = {}): Match[] {
         mvp: t.mvp,
         resultAt: t.resultAt,
         votingClosed: t.votingClosed,
+        goals: t.goals,
         winner: t.winner,
         cup: { id: cup.id, name: cup.name, label: tieLabel(i), tie: i },
       })
@@ -313,6 +319,7 @@ function tieFromMatch(m: Match): CupTie {
     mvp: m.mvp,
     resultAt: m.resultAt ?? null,
     votingClosed: !!m.votingClosed,
+    goals: m.goals ?? null,
   }
 }
 
@@ -350,6 +357,7 @@ export interface TieDoc {
   mvp: string | null
   resultAt: number | null
   votingClosed: boolean
+  goals: MatchGoals | null
   cup: { id: string; tie: number }
 }
 
@@ -374,6 +382,7 @@ function tieDoc(cup: Pick<Cup, 'id' | 'seeds' | 'ties'>, i: number): TieDoc | nu
     mvp: t.mvp,
     resultAt: t.resultAt,
     votingClosed: t.votingClosed,
+    goals: t.goals,
     cup: { id: cup.id, tie: i },
   }
 }

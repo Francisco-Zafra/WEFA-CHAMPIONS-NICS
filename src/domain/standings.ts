@@ -12,6 +12,8 @@ export interface ClubRow {
   goalsFor: number
   goalsAgainst: number
   points: number
+  /** Últimos resultados, del más antiguo al más reciente (máx. 5) */
+  form: Outcome[]
 }
 
 export interface PlayerRow {
@@ -45,7 +47,7 @@ export function clubStandings(matches: Match[]): ClubRow[] {
   const rows = new Map<ClubId, ClubRow>(
     CLUBS.map((c) => [
       c.id,
-      { club: c.id, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 },
+      { club: c.id, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, form: [] },
     ]),
   )
   for (const m of chronological(matches)) {
@@ -63,6 +65,7 @@ export function clubStandings(matches: Match[]): ClubRow[] {
       else if (o === 'D') row.drawn++
       else row.lost++
       row.points += o === 'W' ? 3 : o === 'D' ? 1 : 0
+      row.form = [...row.form, o].slice(-5)
     }
   }
   return [...rows.values()].sort(
@@ -119,4 +122,33 @@ export function playerStandings(matches: Match[], names: Map<string, string> = n
   return [...rows.values()].sort(
     (a, b) => b.won - a.won || b.winRate - a.winRate || b.mvps - a.mvps || a.name.localeCompare(b.name),
   )
+}
+
+export interface PointsSeries {
+  /** Meses con partidos, YYYY-MM */
+  months: string[]
+  /** Puntos acumulados de cada club al final de cada mes */
+  series: { club: ClubId; points: number[] }[]
+}
+
+/** Puntos acumulados por club mes a mes (victoria 3, empate 1), con los clubes de más a menos puntos */
+export function pointsByMonth(matches: Match[]): PointsSeries {
+  const played = chronological(matches)
+  const months = [...new Set(played.map((m) => m.date.slice(0, 7)))]
+  const totals = new Map<ClubId, number[]>(CLUBS.map((c) => [c.id, months.map(() => 0)]))
+  for (const m of played) {
+    const i = months.indexOf(m.date.slice(0, 7))
+    for (const [club, side] of [
+      [m.clubA, 'A'],
+      [m.clubB, 'B'],
+    ] as const) {
+      const o = resultFor(m, side)
+      totals.get(club)![i]! += o === 'W' ? 3 : o === 'D' ? 1 : 0
+    }
+  }
+  const series = [...totals].map(([club, perMonth]) => {
+    let acc = 0
+    return { club, points: perMonth.map((p) => (acc += p)) }
+  })
+  return { months, series: series.sort((a, b) => (b.points.at(-1) ?? 0) - (a.points.at(-1) ?? 0)) }
 }

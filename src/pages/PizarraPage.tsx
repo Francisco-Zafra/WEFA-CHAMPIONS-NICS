@@ -312,7 +312,7 @@ export function PizarraPage({
       )}
 
       {desktop ? (
-        <div className="flex items-stretch gap-6">
+        <div className="flat-panels flex items-stretch gap-6">
           {/* Columna izquierda: campo */}
           <motion.section
             key={draw.seed}
