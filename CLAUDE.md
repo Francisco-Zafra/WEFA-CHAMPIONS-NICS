@@ -102,7 +102,8 @@ Las reglas (`firestore.rules`): lectura pública; escribe solo `admin@wefa-nics.
 
 ## Versiones, ramas y commits
 
-- Una rama por versión: `FTB<mayor>.<menor>` (por ejemplo `FTB3.2`), con PR a `main`. Fusionar con **Merge**, no con Squash, para que las etiquetas sigan en la historia de `main`.
-- Al cerrar una versión: sube `version` en `package.json`, añade la entrada en `CHANGELOG.md` y crea la etiqueta anotada `vX.Y.Z` (en local; el push, cuando lo pida el usuario).
+- **Todo el trabajo se hace en la rama `dev`**; nunca se commitea directamente en `main`. Al cerrar una versión se abre un PR de `dev` a `main` y se fusiona con **Merge**, no con Squash, para que las etiquetas sigan en la historia de `main`. Después, `dev` se pone al día con `main` y se sigue trabajando en ella.
+- **El `CHANGELOG.md` se actualiza sobre la marcha**, en el mismo commit que el cambio: cada novedad, cambio o arreglo que note el usuario final va a una sección `## Sin publicar` arriba del todo (con los apartados «Novedades», «Cambios», «Arreglos» o «Documentación» que hagan falta). Una línea por cambio, en el tono del resto del fichero; los cambios internos (refactors, tests, CI) no hace falta apuntarlos.
+- Al cerrar una versión: sube `version` en `package.json`, renombra `## Sin publicar` a `## X.Y.Z · AAAA-MM-DD` (repasando que esté completa) y crea la etiqueta anotada `vX.Y.Z` (en local; el push, cuando lo pida el usuario).
 - Mensajes de commit en español, con el formato «Área: qué cambia» (por ejemplo «Copa: botón «Editar copa» para…»), y un cuerpo breve si hace falta.
 - Si cambian las funcionalidades clave, actualiza el README y, si procede, la presentación de `docs/presentacion/` (las capturas se hacen con datos de prueba en los emuladores).
