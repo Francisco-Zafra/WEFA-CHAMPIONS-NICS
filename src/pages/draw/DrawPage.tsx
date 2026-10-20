@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Crown,
   Link2,
+  Pencil,
   Plus,
   Trash2,
   Trophy,
@@ -14,22 +15,23 @@ import {
 import { LayoutGroup, motion } from 'motion/react'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CardSkeletons, EmptyCards } from '@/components/States'
+import { ManualLineupsModal } from '@/components/ManualLineupsModal'
 import { useToast } from '@/components/Toast'
 import { Crest, CrestGhost, Seg, Switch } from '@/components/ui'
 import { Kit } from '@/components/Kit'
-import type { PlayerPair } from '@/domain/balance'
+import { rebalance, type PlayerPair } from '@/domain/balance'
 import { resolveCaptains } from '@/domain/captains'
 import { roundOf, tieLabel } from '@/domain/cup'
 import { CLUBS, getClub } from '@/domain/clubs'
 import { averageRating, fmt, tier } from '@/domain/rating'
-import type { ClubId, Player } from '@/domain/types'
+import type { ClubId, MatchPlayer, Player } from '@/domain/types'
 import { cx } from '@/lib/cx'
 import { useAuth } from '@/lib/auth'
 import { useDrawHistory } from '@/lib/drawHistory'
 import type { Collection } from '@/lib/data'
-import { useDraw, type DrawConfig, type DrawStep } from '@/lib/draw'
+import { useDraw, type Draw, type DrawConfig, type DrawStep } from '@/lib/draw'
 import { runDraw, selectionOf, teamSizes } from '@/lib/runDraw'
 
 const STEP_LABELS = ['Convocados', 'Clubes', 'Reglas']
@@ -489,12 +491,14 @@ function StepRules({
   const { config } = useConfig()
   const { setStep, setDraw, setRevealing, cupTie } = useDraw()
   const toast = useToast()
+  const navigate = useNavigate()
   const selection = selectionOf(players, config)
   const [a, b] = teamSizes(selection.length, config.extraTo)
   const { set } = useConfig()
   const pairs = useDrawHistory()
   const [custom, setCustom] = useState(() => !isPreset(config.tolerance))
   const [draft, setDraft] = useState(() => fmtTolerance(config.tolerance))
+  const [manualOpen, setManualOpen] = useState(false)
 
   function sortear() {
     const out = runDraw(players, config, cupTie, captainDefaults, pairs)
@@ -504,6 +508,70 @@ function StepRules({
     }
     setDraw(out.draw)
     setRevealing(true)
+  }
+
+  function onSaveManual({
+    teamA,
+    teamB,
+    captainA,
+    captainB,
+  }: {
+    teamA: MatchPlayer[]
+    teamB: MatchPlayer[]
+    captainA: string | null
+    captainB: string | null
+  }) {
+    const playersMap = new Map(players.map((p) => [p.id, p]))
+    const pA = teamA.map(
+      (mp) =>
+        playersMap.get(mp.id) ?? {
+          id: mp.id,
+          name: mp.name,
+          rating: mp.rating,
+          stats: {
+            rit: mp.rating,
+            tir: mp.rating,
+            pas: mp.rating,
+            reg: mp.rating,
+            def: mp.rating,
+            fis: mp.rating,
+          },
+          avatar: null,
+          active: true,
+        },
+    )
+    const pB = teamB.map(
+      (mp) =>
+        playersMap.get(mp.id) ?? {
+          id: mp.id,
+          name: mp.name,
+          rating: mp.rating,
+          stats: {
+            rit: mp.rating,
+            tir: mp.rating,
+            pas: mp.rating,
+            reg: mp.rating,
+            def: mp.rating,
+            fis: mp.rating,
+          },
+          avatar: null,
+          active: true,
+        },
+    )
+    const result = rebalance(pA, pB, config.tolerance, { candidates: 1, method: 'search' })
+    const drawObj: Draw = {
+      result,
+      clubA: config.clubA,
+      clubB: config.clubB,
+      captainA,
+      captainB,
+      tolerance: config.tolerance,
+      seed: Date.now(),
+      at: Date.now(),
+      cup: cupTie ?? null,
+    }
+    setDraw(drawObj)
+    navigate('/pizarra')
   }
 
   return (
@@ -578,11 +646,37 @@ function StepRules({
             </span>
             <Crest club={config.clubB} size={34} />
           </div>
-          <button className="btn btn--hero" type="button" disabled={selection.length < 2} onClick={sortear}>
-            Sortear
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="btn btn--glass flex-1 h-[52px]"
+              type="button"
+              disabled={selection.length < 2}
+              onClick={() => setManualOpen(true)}
+            >
+              <Pencil className="size-4" /> Colocar a mano
+            </button>
+            <button
+              className="btn btn--hero flex-1"
+              type="button"
+              disabled={selection.length < 2}
+              onClick={sortear}
+            >
+              Sortear
+            </button>
+          </div>
         </div>
       </BottomBar>
+
+      {manualOpen && (
+        <ManualLineupsModal
+          open={manualOpen}
+          onClose={() => setManualOpen(false)}
+          clubA={config.clubA}
+          clubB={config.clubB}
+          players={selection}
+          onSave={onSaveManual}
+        />
+      )}
     </div>
   )
 }

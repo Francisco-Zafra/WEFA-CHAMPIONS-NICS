@@ -2,9 +2,107 @@ import { describe, expect, it } from 'vitest'
 import { balanceTeams, binomial, rebalance, type BalanceOptions } from './balance'
 import { pairKey } from './variety'
 import { SEED_PLAYERS } from './fixtures'
-import {} from './rating'
+import type { Player } from './types'
 
-const active = SEED_PLAYERS.filter((p) => p.active)
+/** 12 jugadores fijos para pruebas deterministas del algoritmo de reparto */
+const active: Player[] = [
+  {
+    id: 'legacy-2',
+    name: "Guti's Boyfriend",
+    rating: 83,
+    stats: { rit: 83, tir: 83, pas: 83, reg: 83, def: 83, fis: 83 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-3',
+    name: 'Ignacio A',
+    rating: 82,
+    stats: { rit: 82, tir: 82, pas: 82, reg: 82, def: 82, fis: 82 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-4',
+    name: 'Ignacio P',
+    rating: 87,
+    stats: { rit: 87, tir: 87, pas: 87, reg: 87, def: 87, fis: 87 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-5',
+    name: 'Jacobo',
+    rating: 83,
+    stats: { rit: 83, tir: 83, pas: 83, reg: 83, def: 83, fis: 83 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-6',
+    name: 'Pablo',
+    rating: 79,
+    stats: { rit: 79, tir: 79, pas: 79, reg: 79, def: 79, fis: 79 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-7',
+    name: 'Riccardo',
+    rating: 95,
+    stats: { rit: 95, tir: 95, pas: 95, reg: 95, def: 95, fis: 95 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-8',
+    name: "Riccardo's Boyfriend",
+    rating: 91,
+    stats: { rit: 91, tir: 91, pas: 91, reg: 91, def: 91, fis: 91 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-9',
+    name: 'Sergio',
+    rating: 91,
+    stats: { rit: 91, tir: 91, pas: 91, reg: 91, def: 91, fis: 91 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-10',
+    name: 'Younes',
+    rating: 76,
+    stats: { rit: 76, tir: 76, pas: 76, reg: 76, def: 76, fis: 76 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-11',
+    name: 'Álvaro',
+    rating: 81,
+    stats: { rit: 81, tir: 81, pas: 81, reg: 81, def: 81, fis: 81 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-16',
+    name: 'Fran',
+    rating: 89,
+    stats: { rit: 89, tir: 92, pas: 89, reg: 92, def: 89, fis: 83 },
+    avatar: null,
+    active: true,
+  },
+  {
+    id: 'legacy-17',
+    name: 'Guti',
+    rating: 94,
+    stats: { rit: 94, tir: 94, pas: 94, reg: 94, def: 94, fis: 94 },
+    avatar: null,
+    active: true,
+  },
+]
 const ids = (players: { id: string }[]) => players.map((p) => p.id).sort()
 
 function run(opts: Partial<BalanceOptions> & { players: BalanceOptions['players'] }) {

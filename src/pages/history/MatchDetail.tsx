@@ -2,6 +2,7 @@ import { ChevronLeft, Crown, Minus, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Kit } from '@/components/Kit'
+import { ManualLineupsModal } from '@/components/ManualLineupsModal'
 import { MatchWhenFields } from '@/components/MatchWhen'
 import { MvpVoting } from '@/components/MvpVoting'
 import { Pitch } from '@/components/Pitch'
@@ -15,7 +16,7 @@ import { isPlayed, resultFor } from '@/domain/standings'
 import type { ClubId, Match, Player } from '@/domain/types'
 import { useAuth } from '@/lib/auth'
 import { cx } from '@/lib/cx'
-import { removeMatch, saveScore, saveWhen, ScoreError } from '@/lib/matchActions'
+import { removeMatch, saveLineups, saveScore, saveWhen, ScoreError } from '@/lib/matchActions'
 import { teamPlayers } from '@/lib/upcomingDraw'
 import { useVoteData } from '@/lib/votesContext'
 import { initialWhen } from '@/lib/when'
@@ -273,11 +274,13 @@ function PenaltyPick({ m, value, onPick }: { m: Match; value: ClubId | null; onP
 /** Ajustes del admin: marcador, penaltis, fecha y campo, borrar */
 function SettingsPanel({
   m,
+  players,
   cups,
   defaultPlace,
   onDeleted,
 }: {
   m: Match
+  players: Player[]
   cups: Cup[]
   defaultPlace: string | null
   onDeleted: () => void
@@ -290,6 +293,7 @@ function SettingsPanel({
   const [scoreB, setScoreB] = useState(m.scoreB ?? 0)
   const [winner, setWinner] = useState<ClubId | null>(m.winner ?? null)
   const [when, setWhen] = useState(() => initialWhen(m, defaultPlace))
+  const [lineupsOpen, setLineupsOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const legacy = m.id.includes(':')
@@ -425,6 +429,20 @@ function SettingsPanel({
           </div>
         </div>
       )}
+      <div className="setrow">
+        <div>
+          <b>Alineaciones</b>
+          <br />
+          <span>
+            {m.teamA.length > 0 || m.teamB.length > 0
+              ? `${m.teamA.length} contra ${m.teamB.length} convocados`
+              : 'Sin alineaciones'}
+          </span>
+        </div>
+        <button className="btn btn--glass btn--sm" type="button" onClick={() => setLineupsOpen(true)}>
+          {m.teamA.length > 0 || m.teamB.length > 0 ? 'Editar' : 'Colocar'}
+        </button>
+      </div>
       <div className="setrow" style={{ borderBottom: 0 }}>
         <div>
           <b className="text-[#FFC2C9]">Borrar partido</b>
@@ -448,6 +466,24 @@ function SettingsPanel({
           <Trash2 /> {confirm ? '¿Seguro?' : 'Borrar'}
         </button>
       </div>
+
+      {lineupsOpen && (
+        <ManualLineupsModal
+          open={lineupsOpen}
+          onClose={() => setLineupsOpen(false)}
+          clubA={m.clubA}
+          clubB={m.clubB}
+          initialTeamA={m.teamA}
+          initialTeamB={m.teamB}
+          initialCaptainA={m.captainA}
+          initialCaptainB={m.captainB}
+          players={players}
+          onSave={async (lineups) => {
+            await run(() => saveLineups(m, cups, lineups), 'Alineaciones actualizadas')
+            setLineupsOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -502,7 +538,14 @@ export function MatchDetail({
   )
   const mvp = <MvpVoting match={m} votes={votes.data} players={players} />
   const settings = (
-    <SettingsPanel key={m.id} m={m} cups={cups} defaultPlace={defaultPlace} onDeleted={onDeleted} />
+    <SettingsPanel
+      key={m.id}
+      m={m}
+      players={players}
+      cups={cups}
+      defaultPlace={defaultPlace}
+      onDeleted={onDeleted}
+    />
   )
 
   if (desktop)

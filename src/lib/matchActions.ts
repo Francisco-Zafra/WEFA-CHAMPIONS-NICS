@@ -1,5 +1,5 @@
 import { clearResult, emptyTie, setResult, type Cup } from '@/domain/cup'
-import type { ClubId, Match } from '@/domain/types'
+import type { ClubId, Match, MatchPlayer } from '@/domain/types'
 import type { Vote } from '@/domain/votes'
 import { deleteMatch, deleteVotesOf, saveCup, updateMatch } from './data'
 import type { When } from './when'
@@ -45,6 +45,24 @@ export async function saveWhen(m: Match, cups: Cup[], when: When) {
   const cup = cupOf(m, cups)
   const tie = m.cup.tie
   return saveCup(cup, { ties: cup.ties.map((t, i) => (i === tie ? { ...t, ...whenToSave(when) } : t)) })
+}
+
+/** Alineaciones y capitanes */
+export async function saveLineups(
+  m: Match,
+  cups: Cup[],
+  lineups: {
+    teamA: MatchPlayer[]
+    teamB: MatchPlayer[]
+    captainA: string | null
+    captainB: string | null
+  },
+) {
+  if (!m.cup) return updateMatch(m.id, lineups)
+  const cup = cupOf(m, cups)
+  const tie = m.cup.tie
+  const ties = cup.ties.map((t, i) => (i === tie ? { ...t, ...lineups } : t))
+  return saveCup(cup, { ties })
 }
 
 /**

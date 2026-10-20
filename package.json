@@ -17,6 +17,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "migrate": "node scripts/migrate.mjs",
+    "dedup": "node scripts/dedup-players.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules --project wefa-champions-nics"
   },
   "dependencies": {

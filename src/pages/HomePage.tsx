@@ -1,7 +1,8 @@
-import { CalendarClock, Clock, Crown, MapPin, Pencil, Share2, Shuffle, Star } from 'lucide-react'
+import { CalendarClock, Clock, Crown, MapPin, Pencil, Plus, Share2, Shuffle, Star } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MatchWhenFields } from '@/components/MatchWhen'
+import { RecordMatchModal } from '@/components/RecordMatchModal'
 import { initialWhen, whenToSave } from '@/lib/when'
 import { PlayerCard } from '@/components/PlayerCard'
 import { ShareCard } from '@/components/ShareCard'
@@ -103,6 +104,7 @@ export function HomePage({
 }) {
   const now = useNow()
   const { isAdmin } = useAuth()
+  const [recordOpen, setRecordOpen] = useState(false)
   // El próximo partido se recalcula cada minuto (no hace falta cada segundo)
   const minute = Math.floor(now / 60000)
   const next = useMemo(
@@ -123,14 +125,32 @@ export function HomePage({
           title="No hay partido a la vista"
           action={
             isAdmin && (
-              <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
-                <Shuffle /> Hacer un sorteo
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-1.5">
+                <button
+                  className="btn btn--primary h-[52px]"
+                  type="button"
+                  onClick={() => setRecordOpen(true)}
+                >
+                  <Plus /> Registrar partido
+                </button>
+                <Link className="btn btn--glass h-[52px]" to="/sorteo">
+                  <Shuffle /> Hacer un sorteo
+                </Link>
+              </div>
             )
           }
         >
           Cuando guardéis un partido (o los equipos de un cruce de copa) aparecerá aquí con su cuenta atrás.
         </EmptyCards>
+        {recordOpen && (
+          <RecordMatchModal
+            open={recordOpen}
+            onClose={() => setRecordOpen(false)}
+            players={players.data}
+            cups={cups.data}
+            defaultPlace={null}
+          />
+        )}
       </>
     )
 
@@ -138,6 +158,15 @@ export function HomePage({
     <div className="flex flex-col gap-4">
       {banner}
       <Upcoming up={next} now={now} players={players.data} matches={matches.data} cups={cups.data} />
+      {recordOpen && (
+        <RecordMatchModal
+          open={recordOpen}
+          onClose={() => setRecordOpen(false)}
+          players={players.data}
+          cups={cups.data}
+          defaultPlace={null}
+        />
+      )}
     </div>
   )
 }

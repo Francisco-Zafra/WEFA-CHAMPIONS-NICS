@@ -72,6 +72,19 @@ export function GoalsEditor({ m, players }: { m: Match; players: Player[] }) {
       </div>
     )
 
+  if (m.teamA.length === 0 && m.teamB.length === 0)
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="body-text">
+          Este partido no tiene alineaciones. Coloca primero los equipos en ajustes para poder apuntar los
+          goleadores.
+        </p>
+        <Link className="btn btn--glass self-start" to={`/historial/${m.id}?tab=ajustes`}>
+          Ir a ajustes
+        </Link>
+      </div>
+    )
+
   const names = new Map(players.map((p) => [p.id, p.name]))
   const t = tallyGoals(m, goals)
   const club = (s: Side) => getClub(s === 'A' ? m.clubA : m.clubB)

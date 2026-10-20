@@ -1,6 +1,7 @@
-import { Crown, Minus, Plus, Shuffle, Star, Trash2 } from 'lucide-react'
+import { Crown, Minus, Pencil, Plus, Shuffle, Star, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ManualLineupsModal } from '@/components/ManualLineupsModal'
 import { MvpVoting } from '@/components/MvpVoting'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
@@ -96,6 +97,7 @@ function TieDetail({
   const [date, setDate] = useState(t.date ?? isoToday())
   const [busy, setBusy] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
 
   if (!a || !b || !isReady(cup, tie))
     return (
@@ -182,9 +184,20 @@ function TieDetail({
       )}
 
       {t.teamA.length > 0 && (
-        <div className="grid grid-cols-2 gap-4">
-          <Lineup club={a} side="A" team={t.teamA} captain={t.captainA} mvp={match?.mvp ?? null} />
-          <Lineup club={b} side="B" team={t.teamB} captain={t.captainB} mvp={match?.mvp ?? null} />
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 gap-4">
+            <Lineup club={a} side="A" team={t.teamA} captain={t.captainA} mvp={match?.mvp ?? null} />
+            <Lineup club={b} side="B" team={t.teamB} captain={t.captainB} mvp={match?.mvp ?? null} />
+          </div>
+          {isAdmin && (
+            <button
+              className="btn btn--glass btn--sm self-start"
+              type="button"
+              onClick={() => setManualOpen(true)}
+            >
+              <Pencil className="size-3.5" /> Modificar equipos a mano
+            </button>
+          )}
         </div>
       )}
 
@@ -217,6 +230,12 @@ function TieDetail({
         <Link className="btn btn--glass" to={`/historial/${t.matchId}`}>
           Ver ficha del partido · goleadores y MVP
         </Link>
+      )}
+
+      {isAdmin && t.teamA.length === 0 && (
+        <button className="btn btn--glass" type="button" onClick={() => setManualOpen(true)}>
+          <Pencil /> Colocar equipos a mano
+        </button>
       )}
 
       {!t.winner && onDraw && (
@@ -275,6 +294,32 @@ function TieDetail({
             </button>
           </div>
         </>
+      )}
+
+      {manualOpen && (
+        <ManualLineupsModal
+          open={manualOpen}
+          onClose={() => setManualOpen(false)}
+          clubA={a}
+          clubB={b}
+          initialTeamA={t.teamA}
+          initialTeamB={t.teamB}
+          initialCaptainA={t.captainA}
+          initialCaptainB={t.captainB}
+          players={players}
+          onSave={async (lineups) => {
+            setBusy(true)
+            try {
+              const ties = cup.ties.map((item, i) => (i === tie ? { ...item, ...lineups } : item))
+              await saveCup(cup, { ties })
+              toast('Equipos guardados en el cruce')
+            } catch {
+              toast('No se pudieron guardar los equipos', 'error')
+            } finally {
+              setBusy(false)
+            }
+          }}
+        />
       )}
     </div>
   )
