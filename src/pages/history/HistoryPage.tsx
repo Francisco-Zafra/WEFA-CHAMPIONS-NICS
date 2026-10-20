@@ -1,7 +1,8 @@
-import { BarChart3, Shuffle } from 'lucide-react'
-import { useMemo } from 'react'
+import { BarChart3, Plus, Shuffle } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Kit } from '@/components/Kit'
+import { RecordMatchModal } from '@/components/RecordMatchModal'
 import { EmptyCards, ErrorState } from '@/components/States'
 import { Crest } from '@/components/ui'
 import { getClub } from '@/domain/clubs'
@@ -148,6 +149,7 @@ export function HistoryPage({
   const location = useLocation()
   const navigate = useNavigate()
   const preset = location.state as { ids?: string[]; title?: string } | null
+  const [recordOpen, setRecordOpen] = useState(false)
   const names = useMemo(() => new Map(players.data.map((p) => [p.id, p.name])), [players.data])
   const presetIds = preset?.ids
   const list = useMemo(() => {
@@ -205,11 +207,22 @@ export function HistoryPage({
           <p className="eyebrow">Amistosos y copa</p>
           <h1 className={cx('h-display mt-1', desktop ? 'text-[56px]' : 'h-xl')}>Historial</h1>
         </div>
-        {!desktop && (
-          <Link className="btn btn--glass btn--sm h-10" to="/estadisticas">
-            <BarChart3 /> Estadísticas
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              className="btn btn--primary btn--sm h-10"
+              type="button"
+              onClick={() => setRecordOpen(true)}
+            >
+              <Plus className="size-4" /> Registrar partido
+            </button>
+          )}
+          {!desktop && (
+            <Link className="btn btn--glass btn--sm h-10" to="/estadisticas">
+              <BarChart3 /> Estadísticas
+            </Link>
+          )}
+        </div>
       </div>
       <p className="small text-[13px]">
         <strong className="text-[var(--ink)]">{playedCount}</strong> jugados
@@ -245,14 +258,32 @@ export function HistoryPage({
           title="Aún no hay partidos"
           action={
             isAdmin && (
-              <Link className="btn btn--primary mt-1.5 h-[52px]" to="/sorteo">
-                <Shuffle /> Hacer un sorteo
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-1.5">
+                <button
+                  className="btn btn--primary h-[52px]"
+                  type="button"
+                  onClick={() => setRecordOpen(true)}
+                >
+                  <Plus /> Registrar partido
+                </button>
+                <Link className="btn btn--glass h-[52px]" to="/sorteo">
+                  <Shuffle /> Hacer un sorteo
+                </Link>
+              </div>
             )
           }
         >
-          Sortea equipos y pulsa «Guardar partido» en la pizarra para empezar a escribir la historia.
+          Sortea equipos o regístralos a mano para empezar a escribir la historia.
         </EmptyCards>
+        {recordOpen && (
+          <RecordMatchModal
+            open={recordOpen}
+            onClose={() => setRecordOpen(false)}
+            players={players.data}
+            cups={cups}
+            defaultPlace={defaultPlace}
+          />
+        )}
       </div>
     )
 
@@ -284,6 +315,15 @@ export function HistoryPage({
     <div className="flex flex-col gap-2.5">
       {header}
       {listEl}
+      {recordOpen && (
+        <RecordMatchModal
+          open={recordOpen}
+          onClose={() => setRecordOpen(false)}
+          players={players.data}
+          cups={cups}
+          defaultPlace={defaultPlace}
+        />
+      )}
     </div>
   )
 }

@@ -23,7 +23,7 @@
       "def": 84,
       "fis": 84
     },
-    "active": false
+    "active": true
   },
   {
     "legacyId": 4,
@@ -75,7 +75,7 @@
       "def": 95,
       "fis": 95
     },
-    "active": false
+    "active": true
   },
   {
     "legacyId": 8,
