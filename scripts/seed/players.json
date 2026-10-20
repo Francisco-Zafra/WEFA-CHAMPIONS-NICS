@@ -16,14 +16,14 @@
     "legacyId": 3,
     "name": "Ignacio A",
     "stats": {
-      "rit": 82,
-      "tir": 82,
-      "pas": 82,
-      "reg": 82,
-      "def": 82,
-      "fis": 82
+      "rit": 84,
+      "tir": 84,
+      "pas": 84,
+      "reg": 84,
+      "def": 84,
+      "fis": 84
     },
-    "active": true
+    "active": false
   },
   {
     "legacyId": 4,
@@ -42,12 +42,12 @@
     "legacyId": 5,
     "name": "Jacobo",
     "stats": {
-      "rit": 83,
-      "tir": 83,
-      "pas": 83,
-      "reg": 83,
-      "def": 83,
-      "fis": 83
+      "rit": 84,
+      "tir": 84,
+      "pas": 84,
+      "reg": 84,
+      "def": 84,
+      "fis": 84
     },
     "active": true
   },
@@ -75,7 +75,7 @@
       "def": 95,
       "fis": 95
     },
-    "active": true
+    "active": false
   },
   {
     "legacyId": 8,
@@ -88,7 +88,7 @@
       "def": 91,
       "fis": 91
     },
-    "active": true
+    "active": false
   },
   {
     "legacyId": 9,
@@ -126,19 +126,6 @@
       "reg": 81,
       "def": 81,
       "fis": 81
-    },
-    "active": true
-  },
-  {
-    "legacyId": 12,
-    "name": "Alexis",
-    "stats": {
-      "rit": 63,
-      "tir": 63,
-      "pas": 63,
-      "reg": 63,
-      "def": 63,
-      "fis": 63
     },
     "active": false
   },
@@ -186,11 +173,11 @@
     "name": "Fran",
     "stats": {
       "rit": 89,
-      "tir": 92,
+      "tir": 89,
       "pas": 89,
-      "reg": 92,
+      "reg": 89,
       "def": 89,
-      "fis": 83
+      "fis": 89
     },
     "active": true
   },
@@ -335,7 +322,7 @@
       "def": 70,
       "fis": 70
     },
-    "active": false
+    "active": true
   },
   {
     "legacyId": 28,
@@ -347,6 +334,123 @@
       "reg": 92,
       "def": 92,
       "fis": 92
+    },
+    "active": false
+  },
+  {
+    "legacyId": 34,
+    "name": "Cristian",
+    "stats": {
+      "rit": 80,
+      "tir": 80,
+      "pas": 80,
+      "reg": 80,
+      "def": 80,
+      "fis": 80
+    },
+    "active": false
+  },
+  {
+    "legacyId": 35,
+    "name": "Sergio Amigo Guti",
+    "stats": {
+      "rit": 77,
+      "tir": 77,
+      "pas": 77,
+      "reg": 77,
+      "def": 77,
+      "fis": 77
+    },
+    "active": false
+  },
+  {
+    "legacyId": 36,
+    "name": "Ismael Amigo Sergio",
+    "stats": {
+      "rit": 82,
+      "tir": 82,
+      "pas": 82,
+      "reg": 82,
+      "def": 82,
+      "fis": 82
+    },
+    "active": false
+  },
+  {
+    "legacyId": 37,
+    "name": "Amir Amigo Younes",
+    "stats": {
+      "rit": 80,
+      "tir": 80,
+      "pas": 80,
+      "reg": 80,
+      "def": 80,
+      "fis": 80
+    },
+    "active": false
+  },
+  {
+    "legacyId": 38,
+    "name": "Félix Amigo Pablo",
+    "stats": {
+      "rit": 95,
+      "tir": 95,
+      "pas": 95,
+      "reg": 95,
+      "def": 95,
+      "fis": 95
+    },
+    "active": true
+  },
+  {
+    "legacyId": 39,
+    "name": "Javironda",
+    "stats": {
+      "rit": 81,
+      "tir": 81,
+      "pas": 81,
+      "reg": 81,
+      "def": 81,
+      "fis": 81
+    },
+    "active": false
+  },
+  {
+    "legacyId": 40,
+    "name": "El Mae",
+    "stats": {
+      "rit": 76,
+      "tir": 76,
+      "pas": 76,
+      "reg": 76,
+      "def": 76,
+      "fis": 76
+    },
+    "active": false
+  },
+  {
+    "legacyId": 41,
+    "name": "Santi Casu",
+    "stats": {
+      "rit": 93,
+      "tir": 93,
+      "pas": 93,
+      "reg": 93,
+      "def": 93,
+      "fis": 93
+    },
+    "active": false
+  },
+  {
+    "legacyId": 42,
+    "name": "Ale Simio",
+    "stats": {
+      "rit": 83,
+      "tir": 83,
+      "pas": 83,
+      "reg": 83,
+      "def": 83,
+      "fis": 83
     },
     "active": false
   }
